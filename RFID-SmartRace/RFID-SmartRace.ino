@@ -3,12 +3,24 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <Preferences.h>
-#include "./src/R200/R200.h"
 
 //ArduinoWebsockets 0.5.4
 #include <ArduinoWebsockets.h>
 
 using namespace websockets;
+
+unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
+unsigned int timeSec = 0;
+unsigned int timemin = 0;
+unsigned int dataAdd = 0;
+unsigned int incomedate = 0;
+unsigned int parState = 0;
+unsigned int codeState = 0;
+byte epc_bytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
+String last_epc_string = "";
+unsigned long last_epc_read = 0;
+
+#define MIN_LAP_MS 3000 //min time between laps
 
 String websocket_server = "";
 bool ap_mode = false;
@@ -37,7 +49,6 @@ rfid_data rfids[max_rfid_cnt];
 String rfid_string = "";
 
 unsigned long lastResetTime = 0;
-R200 rfid;
 
 void saveConfig() {
   preferences.putString("ssid", ssid);
@@ -176,8 +187,7 @@ void connectWebsocket() {
   }
 }
 
-void send_finish_line_message(int controller_id) {
-  unsigned long timestamp = millis();
+void send_finish_line_message(int controller_id, unsigned long timestamp) {
   if(timestamp > rfids[controller_id].last + 1000) {
     rfids[controller_id].last = timestamp;
     String message = "{\"type\":\"analog_lap\",\"data\":{\"timestamp\":";
@@ -190,12 +200,12 @@ void send_finish_line_message(int controller_id) {
   }
 }
 
-void send_finish_line_event(String rfid_string) {
+void send_finish_line_event(String rfid_string, unsigned long ms) {
   bool found = false;
   for (int i = 0; i < max_rfid_cnt; i++) {
     for(int j = 0; j<storage_rfid_cnt;j++) {
       if(rfids[i].id[j] == rfid_string) {
-        send_finish_line_message(i);
+        send_finish_line_message(i, ms);
         found = true;
         break;
       }
@@ -209,7 +219,7 @@ void send_finish_line_event(String rfid_string) {
         Serial.print(i+1);
         Serial.print(rfids[i].id[0]);
         Serial.println();
-        send_finish_line_message(i);
+        send_finish_line_message(i, ms);
         break;
       }
     }
@@ -243,20 +253,6 @@ void wait(unsigned long wait_time) {
   }
 }
 
-String byteArrayToHexString(const uint8_t arr[], size_t size) {
-  String hexString = "";
-  for (size_t k = 0; k < size; ++k) {
-    if (arr[k] < 16) { // Add leading zero if needed
-      hexString += "0";
-    }
-    hexString += String(arr[k], HEX); // Convert to hex and append
-  }
-  if(hexString == "000000000000000000000000") {
-      return "";
-  }
-  return hexString;
-}
-
 void resetRfidStorage() {
   for(int i=0; i < max_rfid_cnt; i++) {
     for(int j=0; j<storage_rfid_cnt; j++) {
@@ -264,6 +260,82 @@ void resetRfidStorage() {
     }
     rfids[i].name = "Controller " + String(i+1);
     rfids[i].last = millis();
+  }
+}
+
+void check_rfid(byte epc_bytes[]) {
+  char buffer[25]; // Genug Platz für 8 Hex-Ziffern + Nullterminator
+  // Konvertiere die Byte-Werte in hexadezimale Zeichen und speichere sie in epc_bytes
+  for (int i = 0; i < 12; i++) {
+    sprintf(buffer + (i * 2), "%02X", epc_bytes[i]);
+  }
+  buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
+  String epc_string(buffer);
+  if(epc_string != last_epc_string || (last_epc_read + MIN_LAP_MS) < millis()) {
+    send_finish_line_event(epc_string, millis());
+    last_epc_string = epc_string;
+    last_epc_read = millis();
+  }
+}
+
+void init_rfid() {
+  Serial.println("Starting RFID reader...");
+  Serial2.begin(115200,SERIAL_8N1, 16, 17);
+  Serial2.write(ReadMulti,10);
+  Serial.println("R200 RFID-reader started...");
+}
+
+void read_rfid() {
+  if(Serial2.available() > 0)
+  {
+    incomedate = Serial2.read();
+    if((incomedate == 0x02)&(parState == 0))
+    {
+      parState = 1;
+    }
+    else if((parState == 1)&(incomedate == 0x22)&(codeState == 0)){  
+        codeState = 1;
+        dataAdd = 3;
+    }
+    else if(codeState == 1){
+      dataAdd ++;
+      if(dataAdd == 6)
+      {
+        #ifdef DEBUG)
+          Serial.print("RSSI:"); 
+          Serial.println(incomedate, HEX);
+        #endif 
+        }
+       #ifdef DEBUG
+        else if((dataAdd == 7)|(dataAdd == 8)){
+          
+          if(dataAdd == 7){
+            Serial.print("PC:"); 
+            Serial.print(incomedate, HEX);
+        }
+        else {
+           Serial.println(incomedate, HEX);
+        }
+       }
+       #endif
+       else if((dataAdd >= 9)&(dataAdd <= 20)){
+        if(dataAdd == 9){
+          Serial.print("EPC:"); 
+        }        
+        epc_bytes[dataAdd -9] = incomedate;
+       }
+       else if(dataAdd >= 21){
+        check_rfid(epc_bytes);
+        dataAdd= 0;
+        parState = 0;
+        codeState = 0;
+        }
+    }
+     else{
+      dataAdd= 0;
+      parState = 0;
+      codeState = 0;
+    }
   }
 }
 
@@ -316,20 +388,16 @@ void setup() {
 
   server.begin();
   Serial.println("Webserver gestartet...");
-  rfid.begin(&Serial2, 115200, 16, 17);
-  Serial.println("R200 RFID-reader started...");
-  // Get info
-  rfid.dumpModuleInfo();
+  // Start RFID reader
+  init_rfid();
 }
 
 void loop() {
-  rfid.loop();
   server.handleClient();
   dnsServer.processNextRequest();
-  rfid_string = byteArrayToHexString(rfid.uid, 12);
-  if (rfid_string != "") {
-    send_finish_line_event(rfid_string);
-  }
+  
+  // process RFID data
+  read_rfid();
   if(websocket_connected) {
     client.poll();
     if(last_ping < millis() + 5000) {
@@ -339,10 +407,5 @@ void loop() {
   }
   else {
     if(ap_mode == false) connectWebsocket();
-  }
-  if (millis() - lastResetTime > 5)
-  {
-    rfid.poll();
-    lastResetTime = millis();
   }
 }
