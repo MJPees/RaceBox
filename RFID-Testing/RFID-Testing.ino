@@ -20,15 +20,33 @@ String last_epc_string = "";
 unsigned long last_epc_read = 0;
 
 #define MIN_LAP_MS 3000 //min time between laps
+
+void wait(unsigned long wait_time) {
+  unsigned long start_wait_time = millis();
+  while((start_wait_time + wait_time) < millis()) {
+    ;
+  }
+}
+
 void init_rfid() {
   Serial.println("Starting RFID reader...");
   Serial2.begin(115200,SERIAL_8N1, 16, 17);
+  wait(2000);
+  delay(2000);
   Serial2.write(Europe,8);
   delay(100);
+  //Serial.write(HighDensitiy,8);
   Serial2.write(DenseReader,8);
   delay(100);
+  while(Serial2.available()) {
+    Serial2.read();
+  }
+  //Serial2.write(Power16dbm,9);
   Serial2.write(Power26dbm,9);
   delay(100);
+  while(Serial2.available()) {
+    Serial2.read();
+  }
   Serial2.write(ReadMulti,10);
   Serial.println("R200 RFID-reader started...");
 }
@@ -89,8 +107,25 @@ void read_rfid() {
   }
 }
 
+void check_rfid(byte epc_bytes[]) {
+  char buffer[25]; // Genug Platz für 8 Hex-Ziffern + Nullterminator
+  // Konvertiere die Byte-Werte in hexadezimale Zeichen und speichere sie in epc_bytes
+  for (int i = 0; i < 12; i++) {
+    sprintf(buffer + (i * 2), "%02X", epc_bytes[i]);
+  }
+  buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
+  String epc_string(buffer);
+  if(epc_string != last_epc_string || (last_epc_read + MIN_LAP_MS) < millis()) {
+    Serial.println(epc_string);
+    //send_finish_line_event(epc_string, millis());
+    last_epc_string = epc_string;
+    last_epc_read = millis();
+  }
+}
+
 void setup() {
   Serial.begin(115200);
+  wait(2000);
   init_rfid();
 }
 

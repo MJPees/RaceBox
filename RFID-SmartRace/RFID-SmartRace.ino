@@ -275,12 +275,20 @@ void resetRfidStorage() {
 void init_rfid() {
   Serial.println("Starting RFID reader...");
   Serial2.begin(115200,SERIAL_8N1, 16, 17);
+  wait(2000);
+  delay(2000);
   Serial2.write(Europe,8);
   delay(100);
   Serial2.write(DenseReader,8);
   delay(100);
+  while(Serial2.available()) {
+    Serial2.read();
+  }
   Serial2.write(Power26dbm,9);
   delay(100);
+  while(Serial2.available()) {
+    Serial2.read();
+  }
   Serial2.write(ReadMulti,10);
   Serial.println("R200 RFID-reader started...");
 }
