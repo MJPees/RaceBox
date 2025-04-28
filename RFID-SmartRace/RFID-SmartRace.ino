@@ -10,6 +10,15 @@
 using namespace websockets;
 
 unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
+unsigned char Power10dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X03,0XE8,0XA3,0XDD};
+unsigned char Power16dbm[9] ={0XAA,0X00,0XB6,0X00,0X02,0X06,0X40,0XFE,0XDD};
+unsigned char Power20dbm[9] ={0XAA,0X00,0XB6,0X00,0X02,0X07,0XD0,0X8F,0XDD};
+unsigned char Power25dbm[9] ={0XAA,0X00,0XB6,0X00,0X02,0X09,0XC4,0X85,0XDD};
+unsigned char Power26dbm[9] ={0XAA,0X00,0XB6,0X00,0X02,0X0A,0X28,0XEA,0XDD};
+unsigned char Europe[8] = {0XAA,0X00,0X07,0X00,0X01,0X03,0X0B,0XDD};
+unsigned char HighDensitiy[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
+unsigned char DenseReader[8] = {0XAA,0X00,0XF5,0X00,0X01,0X01,0XF7,0XDD};
+
 unsigned int timeSec = 0;
 unsigned int timemin = 0;
 unsigned int dataAdd = 0;
@@ -263,24 +272,15 @@ void resetRfidStorage() {
   }
 }
 
-void check_rfid(byte epc_bytes[]) {
-  char buffer[25]; // Genug Platz für 8 Hex-Ziffern + Nullterminator
-  // Konvertiere die Byte-Werte in hexadezimale Zeichen und speichere sie in epc_bytes
-  for (int i = 0; i < 12; i++) {
-    sprintf(buffer + (i * 2), "%02X", epc_bytes[i]);
-  }
-  buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
-  String epc_string(buffer);
-  if(epc_string != last_epc_string || (last_epc_read + MIN_LAP_MS) < millis()) {
-    send_finish_line_event(epc_string, millis());
-    last_epc_string = epc_string;
-    last_epc_read = millis();
-  }
-}
-
 void init_rfid() {
   Serial.println("Starting RFID reader...");
   Serial2.begin(115200,SERIAL_8N1, 16, 17);
+  Serial2.write(Europe,8);
+  delay(100);
+  Serial2.write(DenseReader,8);
+  delay(100);
+  Serial2.write(Power26dbm,9);
+  delay(100);
   Serial2.write(ReadMulti,10);
   Serial.println("R200 RFID-reader started...");
 }
@@ -336,6 +336,21 @@ void read_rfid() {
       parState = 0;
       codeState = 0;
     }
+  }
+}
+
+void check_rfid(byte epc_bytes[]) {
+  char buffer[25]; // Genug Platz für 8 Hex-Ziffern + Nullterminator
+  // Konvertiere die Byte-Werte in hexadezimale Zeichen und speichere sie in epc_bytes
+  for (int i = 0; i < 12; i++) {
+    sprintf(buffer + (i * 2), "%02X", epc_bytes[i]);
+  }
+  buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
+  String epc_string(buffer);
+  if(epc_string != last_epc_string || (last_epc_read + MIN_LAP_MS) < millis()) {
+    send_finish_line_event(epc_string, millis());
+    last_epc_string = epc_string;
+    last_epc_read = millis();
   }
 }
 
