@@ -59,11 +59,14 @@ String rfid_string = "";
 
 unsigned long lastResetTime = 0;
 
+int powerLevel = 26; // Default power level in dBm
+
 void saveConfig() {
   preferences.putString("ssid", ssid);
   preferences.putString("password", password);
   preferences.putString("serverAddress", serverAddress);
   preferences.putString("serverPort", serverPort);
+  preferences.putInt("powerLevel", powerLevel); // Save power level
   for(int i=0; i<max_rfid_cnt;i++) {
     String key = "RFID" + String(i);
     preferences.putString(key.c_str(), rfids[i].name);
@@ -78,6 +81,7 @@ void loadConfig() {
   password = preferences.getString("password", "");
   serverAddress = preferences.getString("serverAddress", "");
   serverPort = preferences.getString("serverPort", "");
+  powerLevel = preferences.getInt("powerLevel", 26); // Load power level
   for(int i=0; i<max_rfid_cnt;i++) {
     String key = "RFID" + String(i);
     rfids[i].name = preferences.getString(key.c_str(), "Controller " + String(i+1));
@@ -89,11 +93,11 @@ void loadConfig() {
 
 void handleRoot() {
   String html = "<!DOCTYPE html><html><head><title>RFID-SmartRace</title>";
+  html += "<meta charset='UTF-8'>"; // Specify UTF-8 encoding
   html += "<style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;}form{display:flex;flex-direction:column;max-width:100vw;}label{margin-bottom:5px;}input[type=text],input[type=password],input[type=number]{width:100%;padding:8px;margin-bottom:10px;border:1px solid #ccc;border-radius:4px;}input[type=submit]{background-color:#4CAF50;color:white;padding:10px 15px;border:none;border-radius:4px;}</style>";
   html += "</head><body>";
   html += "<form action='/config' method='POST'>";
 
-  //html += "<div>";
   html += "<h1 align=center>RFID-SmartRace</h1>";
   html += "<label for='ssid'>SSID:</label>";
   html += "<input type='text' style='width:auto;' id='ssid' name='ssid' value='" + ssid + "'><br>";
@@ -103,17 +107,23 @@ void handleRoot() {
   html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' value='" + serverAddress + "'><br>";
   html += "<label for='serverPort'>Server Port:</label>";
   html += "<input type='number' style='width:auto;' id='serverPort' name='serverPort' value='" + serverPort + "'><br>";
+  html += "<label for='powerLevel'>Power Level:</label>";
+  html += "<select id='powerLevel' name='powerLevel'>";
+  html += "<option value='10'" + String((powerLevel == 10) ? " selected" : "") + ">10 dBm</option>";
+  html += "<option value='16'" + String((powerLevel == 16) ? " selected" : "") + ">16 dBm</option>";
+  html += "<option value='20'" + String((powerLevel == 20) ? " selected" : "") + ">20 dBm</option>";
+  html += "<option value='25'" + String((powerLevel == 25) ? " selected" : "") + ">25 dBm</option>";
+  html += "<option value='26'" + String((powerLevel == 26) ? " selected" : "") + ">26 dBm</option>";
+  html += "</select><br>";
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
-  //html += "</div>";
-
   html += "<div style='display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Äußerer Grid-Container
   for (int i = 0; i < max_rfid_cnt; i++) {
       html += "<div style='border: 3px solid blue; padding: 10px; margin: 5px; display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Rahmen mit Grid-Spalte
-      html += "<div style='display: grid; grid-template-columns: auto 1fr; align-items: center;'>"; // Grid fÃ¼r Name
+      html += "<div style='display: grid; grid-template-columns: auto 1fr; align-items: center;'>"; // Grid für Name
       html += "<label for='name" + String(i) + "'>Name:</label>";
       html += "<input type='text' maxlength='100' style='width:auto; margin-left: 4px;' id='name" + String(i) + "' name='name" + String(i) + "' value='" + rfids[i].name + "'>";
       html += "</div>";
-      html += "<div style='display: grid; grid-template-columns: repeat(" + String(storage_rfid_cnt * 2) + ", auto); align-items: center;'>"; // Grid fÃ¼r horizontale IDs
+      html += "<div style='display: grid; grid-template-columns: repeat(" + String(storage_rfid_cnt * 2) + ", auto); align-items: center;'>"; // Grid für horizontale IDs
       for(int j = 0; j < storage_rfid_cnt; j++){
         if(j>0) {
           html += "<label style='margin-left: 4px;' for='id" + String(i) + "_" + String(j) + "'>ID" + String(j+1) + ":</label>";
@@ -123,11 +133,12 @@ void handleRoot() {
         }
         html += "<input type='text' style='width:auto; margin-left: 4px;' id='id" + String(i) + "_" + String(j) + "' name='id" + String(i) + "_" + String(j) + "' value='" + rfids[i].id[j] + "'>";
       }
-      html += "</div>"; // Ende Container fÃ¼r horizontale IDs
+      html += "</div>"; // Ende Container für horizontale IDs
       html += "</div>";
   }
-  html += "</div>";
-  html += "</form></body></html>";
+  html += "</div>"; // Ende äußerer Grid-Container 
+  html += "</form>";
+  html += "</body></html>";
   server.send(200, "text/html", html);
 }
 
@@ -137,17 +148,16 @@ void handleConfig() {
     password = server.arg("password");
     serverAddress = server.arg("serverAddress");
     serverPort = server.arg("serverPort");
+    powerLevel = server.arg("powerLevel").toInt(); // Get power level from dropdown
     for (int i = 0; i < max_rfid_cnt; i++) {
       rfids[i].name = server.arg("name" + String(i));
-      for(int j = 0; j < storage_rfid_cnt; j++) {
+      for (int j = 0; j < storage_rfid_cnt; j++) {
         rfids[i].id[j] = server.arg("id" + String(i) + "_" + String(j));
       }
     }
 
     saveConfig();
-    //server.send(200, "text/plain", "Konfiguration gespeichert!");
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Konfiguration gespeichert!</h1><p>Sie werden in 2 Sekunden zur Startseite weitergeleitet.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
-  
 
     WiFi.begin(ssid.c_str(), password.c_str());
 
@@ -165,8 +175,7 @@ void handleConfig() {
       dnsServer.stop();
       connectWebsocket();
       ap_mode = false;
-    }
-    else {
+    } else {
       Serial.println("\nWLAN Verbindung fehlgeschlagen!");
       WiFi.softAP(AP_SSID);
       dnsServer.start(53, "*", WiFi.softAPIP());
@@ -284,11 +293,25 @@ void init_rfid() {
   while(Serial2.available()) {
     Serial2.read();
   }
-  Serial2.write(Power26dbm,9);
+
+  // Set power level based on loaded configuration
+  if (powerLevel == 10) {
+    Serial2.write(Power10dbm, 9);
+  } else if (powerLevel == 16) {
+    Serial2.write(Power16dbm, 9);
+  } else if (powerLevel == 20) {
+    Serial2.write(Power20dbm, 9);
+  } else if (powerLevel == 25) {
+    Serial2.write(Power25dbm, 9);
+  } else if (powerLevel == 26) {
+    Serial2.write(Power26dbm, 9);
+  }
+
   delay(100);
   while(Serial2.available()) {
     Serial2.read();
   }
+
   Serial2.write(ReadMulti,10);
   Serial.println("R200 RFID-reader started...");
 }
@@ -408,7 +431,7 @@ void setup() {
 
   server.on("/", handleRoot);
   server.on("/config", HTTP_POST, handleConfig);
-
+  
   server.begin();
   Serial.println("Webserver gestartet...");
   // Start RFID reader
