@@ -11,10 +11,22 @@ using namespace websockets;
 
 unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
 unsigned char Power10dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X03,0XE8,0XA3,0XDD};
-unsigned char Power16dbm[9] ={0XAA,0X00,0XB6,0X00,0X02,0X06,0X40,0XFE,0XDD};
-unsigned char Power20dbm[9] ={0XAA,0X00,0XB6,0X00,0X02,0X07,0XD0,0X8F,0XDD};
-unsigned char Power25dbm[9] ={0XAA,0X00,0XB6,0X00,0X02,0X09,0XC4,0X85,0XDD};
-unsigned char Power26dbm[9] ={0XAA,0X00,0XB6,0X00,0X02,0X0A,0X28,0XEA,0XDD};
+unsigned char Power11dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X04,0X0C,0X08,0XDD};
+unsigned char Power12dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X04,0XB0,0X6C,0XDD};
+unsigned char Power13dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X05,0X14,0XD1,0XDD};
+unsigned char Power14dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X05,0X78,0X35,0XDD};
+unsigned char Power15dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X05,0XDC,0X99,0XDD};
+unsigned char Power16dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X06,0X40,0XFE,0XDD};
+unsigned char Power17dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X06,0XA4,0X62,0XDD};
+unsigned char Power18dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X07,0X08,0XC7,0XDD};
+unsigned char Power19dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X07,0X6C,0X2B,0XDD};
+unsigned char Power20dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X07,0XD0,0X8F,0XDD};
+unsigned char Power21dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X08,0X34,0XF4,0XDD};
+unsigned char Power22dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X08,0X98,0X58,0XDD};
+unsigned char Power23dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X08,0XFC,0XBC,0XDD};
+unsigned char Power24dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X09,0X60,0X21,0XDD};
+unsigned char Power25dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X09,0XC4,0X85,0XDD};
+unsigned char Power26dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X0A,0X28,0XEA,0XDD};
 unsigned char Europe[8] = {0XAA,0X00,0X07,0X00,0X01,0X03,0X0B,0XDD};
 unsigned char HighDensitiy[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
 unsigned char DenseReader[8] = {0XAA,0X00,0XF5,0X00,0X01,0X01,0XF7,0XDD};
@@ -110,8 +122,20 @@ void handleRoot() {
   html += "<label for='powerLevel'>Power Level:</label>";
   html += "<select id='powerLevel' name='powerLevel'>";
   html += "<option value='10'" + String((powerLevel == 10) ? " selected" : "") + ">10 dBm</option>";
+  html += "<option value='11'" + String((powerLevel == 11) ? " selected" : "") + ">11 dBm</option>";
+  html += "<option value='12'" + String((powerLevel == 12) ? " selected" : "") + ">12 dBm</option>";
+  html += "<option value='13'" + String((powerLevel == 13) ? " selected" : "") + ">13 dBm</option>";
+  html += "<option value='14'" + String((powerLevel == 14) ? " selected" : "") + ">14 dBm</option>";
+  html += "<option value='15'" + String((powerLevel == 15) ? " selected" : "") + ">15 dBm</option>";
   html += "<option value='16'" + String((powerLevel == 16) ? " selected" : "") + ">16 dBm</option>";
+  html += "<option value='17'" + String((powerLevel == 17) ? " selected" : "") + ">17 dBm</option>";
+  html += "<option value='18'" + String((powerLevel == 18) ? " selected" : "") + ">18 dBm</option>";
+  html += "<option value='19'" + String((powerLevel == 19) ? " selected" : "") + ">19 dBm</option>";
   html += "<option value='20'" + String((powerLevel == 20) ? " selected" : "") + ">20 dBm</option>";
+  html += "<option value='21'" + String((powerLevel == 21) ? " selected" : "") + ">21 dBm</option>";
+  html += "<option value='22'" + String((powerLevel == 22) ? " selected" : "") + ">22 dBm</option>";
+  html += "<option value='23'" + String((powerLevel == 23) ? " selected" : "") + ">23 dBm</option>";
+  html += "<option value='24'" + String((powerLevel == 24) ? " selected" : "") + ">24 dBm</option>";
   html += "<option value='25'" + String((powerLevel == 25) ? " selected" : "") + ">25 dBm</option>";
   html += "<option value='26'" + String((powerLevel == 26) ? " selected" : "") + ">26 dBm</option>";
   html += "</select><br>";
@@ -297,10 +321,34 @@ void init_rfid() {
   // Set power level based on loaded configuration
   if (powerLevel == 10) {
     Serial2.write(Power10dbm, 9);
+  } else if (powerLevel == 11) {
+    Serial2.write(Power11dbm, 9);
+  } else if (powerLevel == 12) {
+    Serial2.write(Power12dbm, 9);
+  } else if (powerLevel == 13) {
+    Serial2.write(Power13dbm, 9);
+  } else if (powerLevel == 14) {
+    Serial2.write(Power14dbm, 9);
+  } else if (powerLevel == 15) {
+    Serial2.write(Power15dbm, 9);
   } else if (powerLevel == 16) {
     Serial2.write(Power16dbm, 9);
+  } else if (powerLevel == 17) {
+    Serial2.write(Power17dbm, 9);
+  } else if (powerLevel == 18) {
+    Serial2.write(Power18dbm, 9);
+  } else if (powerLevel == 19) {
+    Serial2.write(Power19dbm, 9);
   } else if (powerLevel == 20) {
     Serial2.write(Power20dbm, 9);
+  } else if (powerLevel == 21) {
+    Serial2.write(Power21dbm, 9);
+  } else if (powerLevel == 22) {
+    Serial2.write(Power22dbm, 9);
+  } else if (powerLevel == 23) {
+    Serial2.write(Power23dbm, 9);
+  } else if (powerLevel == 24) {
+    Serial2.write(Power24dbm, 9);
   } else if (powerLevel == 25) {
     Serial2.write(Power25dbm, 9);
   } else if (powerLevel == 26) {
