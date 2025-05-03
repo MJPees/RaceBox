@@ -24,13 +24,10 @@ Mir ist aktuell keine Bezugsquelle aus Deutschland bekannt. Der Chip selber arbe
 <img src="./images/Invelion_R200_1dbi.png"/>
 <br><br>
 ESP32-WROOM-32U mit externem Antennenanschluss:<br>
-https://amzn.eu/d/4Pnlcaf
-<br><br>
-externe Antenne für ESP32:<br>
-https://amzn.eu/d/8Y2wBZG
+https://amzn.eu/d/12kL505
 <br><br>
 kleine RFID-Tags (Carrera Hybrid):<br>
-https://www.amzn.eu/d/dfBiwW7
+https://amzn.eu/d/fBFeS80
 <br>Anmerkung:<br>
 Die Tags haben im Auslieferungszustand alle die gleiche ID (EPC).<br>
 Die Tags müssen einmalig mit Hilfe der Demo-Software des R200 neu geschrieben werden!
