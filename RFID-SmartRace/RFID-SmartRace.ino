@@ -41,7 +41,7 @@ byte epc_bytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 String last_epc_string = "";
 unsigned long last_epc_read = 0;
 
-#define MIN_LAP_MS 3000 //min time between laps
+int minLapTime = 3000; //min time between laps in ms
 
 String websocket_server = "";
 bool ap_mode = false;
@@ -79,6 +79,7 @@ void saveConfig() {
   preferences.putString("serverAddress", serverAddress);
   preferences.putString("serverPort", serverPort);
   preferences.putInt("powerLevel", powerLevel); // Save power level
+  preferences.putInt("minLapTime", minLapTime); // Save minimum lap time
   for(int i=0; i<max_rfid_cnt;i++) {
     String key = "RFID" + String(i);
     preferences.putString(key.c_str(), rfids[i].name);
@@ -94,6 +95,7 @@ void loadConfig() {
   serverAddress = preferences.getString("serverAddress", "");
   serverPort = preferences.getString("serverPort", "");
   powerLevel = preferences.getInt("powerLevel", 26); // Load power level
+  minLapTime = preferences.getInt("minLapTime", 3000); // Load minimum lap time
   for(int i=0; i<max_rfid_cnt;i++) {
     String key = "RFID" + String(i);
     rfids[i].name = preferences.getString(key.c_str(), "Controller " + String(i+1));
@@ -109,7 +111,6 @@ void handleRoot() {
   html += "<style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;}form{display:flex;flex-direction:column;max-width:100vw;}label{margin-bottom:5px;}input[type=text],input[type=password],input[type=number]{width:100%;padding:8px;margin-bottom:10px;border:1px solid #ccc;border-radius:4px;}input[type=submit]{background-color:#4CAF50;color:white;padding:10px 15px;border:none;border-radius:4px;}</style>";
   html += "</head><body>";
   html += "<form action='/config' method='POST'>";
-
   html += "<h1 align=center>RFID-SmartRace</h1>";
   html += "<label for='ssid'>SSID:</label>";
   html += "<input type='text' style='width:auto;' id='ssid' name='ssid' value='" + ssid + "'><br>";
@@ -119,6 +120,8 @@ void handleRoot() {
   html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' value='" + serverAddress + "'><br>";
   html += "<label for='serverPort'>Server Port:</label>";
   html += "<input type='number' style='width:auto;' id='serverPort' name='serverPort' value='" + serverPort + "'><br>";
+  html += "<label for='minLapTime'>Minimum Lap Time (ms):</label>";
+  html += "<input type='number' style='width:auto;' id='minLapTime' name='minLapTime' value='" + String(minLapTime) + "'><br>";
   html += "<label for='powerLevel'>Power Level:</label>";
   html += "<select id='powerLevel' name='powerLevel'>";
   html += "<option value='10'" + String((powerLevel == 10) ? " selected" : "") + ">10 dBm</option>";
@@ -173,6 +176,7 @@ void handleConfig() {
     serverAddress = server.arg("serverAddress");
     serverPort = server.arg("serverPort");
     powerLevel = server.arg("powerLevel").toInt(); // Get power level from dropdown
+    minLapTime = server.arg("minLapTime").toInt(); // Get minimum lap time from input
     for (int i = 0; i < max_rfid_cnt; i++) {
       rfids[i].name = server.arg("name" + String(i));
       for (int j = 0; j < storage_rfid_cnt; j++) {
@@ -269,8 +273,10 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
 }
 
 void onMessageCallback(WebsocketsMessage message) {
-    Serial.print("Got Message: ");
-    Serial.print(message.data());
+    #ifdef DEBUG
+      Serial.print("Got Message: ");
+      Serial.print(message.data());
+    #endif
 }
 
 void onEventsCallback(WebsocketsEvent event, String data) {
@@ -281,10 +287,14 @@ void onEventsCallback(WebsocketsEvent event, String data) {
         Serial.println("INFO - Connnection Closed");
         websocket_connected = false;
     } else if(event == WebsocketsEvent::GotPing) {
-        //Serial.println("Got a Ping!");
+        #ifdef DEBUG
+          Serial.println("Got a Ping!");
+        #endif
         client.pong();
     } else if(event == WebsocketsEvent::GotPong) {
-        //Serial.println("Got a Pong!");
+        #ifdef DEBUG
+          Serial.println("Got a Pong!");
+        #endif
     }
 }
 
@@ -398,9 +408,6 @@ void read_rfid() {
        }
        #endif
        else if((dataAdd >= 9)&(dataAdd <= 20)){
-        if(dataAdd == 9){
-          Serial.print("EPC:"); 
-        }        
         epc_bytes[dataAdd -9] = incomedate;
        }
        else if(dataAdd >= 21){
@@ -426,7 +433,7 @@ void check_rfid(byte epc_bytes[]) {
   }
   buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
   String epc_string(buffer);
-  if(epc_string != last_epc_string || (last_epc_read + MIN_LAP_MS) < millis()) {
+  if(epc_string != last_epc_string || (last_epc_read + minLapTime) < millis()) {
     send_finish_line_event(epc_string, millis());
     last_epc_string = epc_string;
     last_epc_read = millis();
@@ -436,6 +443,7 @@ void check_rfid(byte epc_bytes[]) {
 void setup() {
   //init rfid storage
   resetRfidStorage();
+  delay(2000);
 
   // Setup Callbacks
   client.onMessage(onMessageCallback);
