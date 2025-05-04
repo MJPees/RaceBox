@@ -438,7 +438,7 @@ void check_rfid(byte epc_bytes[]) {
     send_finish_line_event(epc_string, millis());
     last_epc_string = epc_string;
   }
-  else if (last_epc_read + 3000) < millis() {
+  else if ((last_epc_read + 3000) < millis()) {
     send_finish_line_event(epc_string, millis());
   }
   last_epc_read = millis();
