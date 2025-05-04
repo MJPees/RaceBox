@@ -31,8 +31,6 @@ unsigned char Europe[8] = {0XAA,0X00,0X07,0X00,0X01,0X03,0X0B,0XDD};
 unsigned char HighDensitiy[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
 unsigned char DenseReader[8] = {0XAA,0X00,0XF5,0X00,0X01,0X01,0XF7,0XDD};
 
-unsigned int timeSec = 0;
-unsigned int timemin = 0;
 unsigned int dataAdd = 0;
 unsigned int incomedate = 0;
 unsigned int parState = 0;
@@ -234,27 +232,30 @@ void connectWebsocket() {
 }
 
 void send_finish_line_message(int controller_id, unsigned long timestamp) {
-  if(timestamp > rfids[controller_id].last + 1000) {
-    rfids[controller_id].last = timestamp;
-    String message = "{\"type\":\"analog_lap\",\"data\":{\"timestamp\":";
-    message += rfids[controller_id].last;
-    message += ",\"controller_id\":";
-    message += controller_id +1;
-    message += "}}";
-    Serial.println(message);
-    client.send(message);
-  }
+  rfids[controller_id].last = timestamp;
+  String message = "{\"type\":\"analog_lap\",\"data\":{\"timestamp\":";
+  message += rfids[controller_id].last;
+  message += ",\"controller_id\":";
+  message += controller_id +1;
+  message += "}}";
+  Serial.println(message);
+  client.send(message);
 }
 
 void send_finish_line_event(String rfid_string, unsigned long ms) {
   bool found = false;
-  for (int i = 0; i < max_rfid_cnt; i++) {
-    for(int j = 0; j<storage_rfid_cnt;j++) {
+  for(int j = 0; j<storage_rfid_cnt;j++) {
+    for (int i = 0; i < max_rfid_cnt; i++) {
       if(rfids[i].id[j] == rfid_string) {
-        send_finish_line_message(i, ms);
+        if(rfids[i].last + minLapTime < ms) {
+          send_finish_line_message(i, ms);
+        }
         found = true;
         break;
       }
+    }
+    if (found) {
+      break;
     }
   }
   if(!found) {
@@ -433,11 +434,14 @@ void check_rfid(byte epc_bytes[]) {
   }
   buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
   String epc_string(buffer);
-  if(epc_string != last_epc_string || (last_epc_read + minLapTime) < millis()) {
+  if(epc_string != last_epc_string) {
     send_finish_line_event(epc_string, millis());
     last_epc_string = epc_string;
-    last_epc_read = millis();
   }
+  else if (last_epc_read + 3000) < millis() {
+    send_finish_line_event(epc_string, millis());
+  }
+  last_epc_read = millis();
 }
 
 void setup() {
