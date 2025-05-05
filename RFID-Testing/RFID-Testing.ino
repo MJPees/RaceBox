@@ -1,4 +1,5 @@
 unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
+unsigned char StopReadMulti[7] = {0XAA,0X00,0X28,0X00,0X00,0X28,0XDD};
 unsigned char Power10dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X03,0XE8,0XA3,0XDD};
 unsigned char Power11dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X04,0X4C,0X08,0XDD};
 unsigned char Power12dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X04,0XB0,0X6C,0XDD};
@@ -51,30 +52,39 @@ void init_rfid() {
   Serial2.begin(115200,SERIAL_8N1, 16, 17);
   wait(2000);
   delay(2000);
-  Serial2.write(NoModuleSleepTime,8);
-  delay(100);
   while(Serial2.available()) {
     Serial2.read();
   }
+  Serial.print("\nset europe: ");
   Serial2.write(Europe,8);
-  delay(100);
+  while(Serial2.available() == 0) {delay(1);}
   while(Serial2.available()) {
-    Serial2.read();
+    Serial.print(" 0x");
+    Serial.print(Serial2.read(), HEX);
   }
-  //Serial.write(HighDensitiy,8);
+  Serial.print("\nset dense reader: ");
   Serial2.write(DenseReader,8);
-  delay(100);
+  while(Serial2.available() == 0) {delay(1);}
   while(Serial2.available()) {
-    Serial2.read();
+    Serial.print(" 0x");
+    Serial.print(Serial2.read(), HEX);
   }
-  //Serial2.write(Power16dbm,9);
-  Serial2.write(Power26dbm,9);
-  delay(100);
+  Serial.print("\nno module sleep time: ");
+  Serial2.write(NoModuleSleepTime,8);
+  while(Serial2.available() == 0) {delay(1);}
   while(Serial2.available()) {
-    Serial2.read();
+    Serial.print(" 0x");
+    Serial.print(Serial2.read(), HEX);
+  }
+  Serial.print("\nset power level: ");
+  Serial2.write(Power26dbm,9);
+  while(Serial2.available() == 0) {delay(1);}
+    while(Serial2.available()) {
+    Serial.print(" 0x");
+    Serial.print(Serial2.read(), HEX);
   }
   Serial2.write(ReadMulti,10);
-  Serial.println("R200 RFID-reader started...");
+  Serial.println("\nR200 RFID-reader started...");
 }
 
 void read_rfid() {
@@ -169,7 +179,9 @@ void read_rfid() {
               check_rfid(epc_bytes);
             }
             else {
-              Serial.println("got invalid data frame");
+              #ifdef DEBUG
+                Serial.println("got invalid data frame");
+              #endif
             }
             dataAdd= 0;
             parState = 0;
@@ -183,7 +195,7 @@ void read_rfid() {
           break;
       }
     }
-     else{
+    else{
       dataAdd= 0;
       parState = 0;
       codeState = 0;
@@ -193,6 +205,13 @@ void read_rfid() {
       parameter_length = 0;
       dataCheckSum = 0;
     }
+  }
+  else {
+    #ifdef DEBUG
+      //Serial.println("No data available -> Restart ReadMulti");
+    #endif
+    Serial2.write(StopReadMulti,7);
+    Serial2.write(ReadMulti,10);
   }
 }
 
@@ -219,5 +238,6 @@ void setup() {
 }
 
 void loop() {
+  delay(2);
   read_rfid();
 }
