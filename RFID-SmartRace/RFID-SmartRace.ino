@@ -48,6 +48,7 @@ unsigned int loopCnt = 0;
 byte epc_bytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 String last_epc_string = "";
 unsigned long last_epc_read = 0;
+unsigned long last_restart = 0;
 
 int minLapTime = 3000; //min time between laps in ms
 
@@ -191,7 +192,7 @@ void handleConfig() {
         rfids[i].id[j] = server.arg("id" + String(i) + "_" + String(j));
       }
     }
-
+    setPowerLevel(powerLevel); // Set power level
     saveConfig();
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Konfiguration gespeichert!</h1><p>Sie werden in 2 Sekunden zur Startseite weitergeleitet.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
 
@@ -326,37 +327,11 @@ void resetRfidStorage() {
   }
 }
 
-void init_rfid() {
-  Serial.println("Starting RFID reader...");
-  Serial2.begin(115200,SERIAL_8N1, 16, 17);
-  delay(2000);
-  while(Serial2.available()) {
-    Serial2.read();
-  }
-  Serial.print("\nset europe: ");
-  Serial2.write(Europe,8);
-  while(Serial2.available() == 0) {delay(1);}
-  while(Serial2.available()) {
-    Serial.print(" 0x");
-    Serial.print(Serial2.read(), HEX);
-  }
-  Serial.print("\nset dense reader: ");
-  Serial2.write(DenseReader,8);
-  while(Serial2.available() == 0) {delay(1);}
-  while(Serial2.available()) {
-    Serial.print(" 0x");
-    Serial.print(Serial2.read(), HEX);
-  }
-  Serial.print("\nno module sleep time: ");
-  Serial2.write(NoModuleSleepTime,8);
-  while(Serial2.available() == 0) {delay(1);}
-  while(Serial2.available()) {
-    Serial.print(" 0x");
-    Serial.print(Serial2.read(), HEX);
-  }
-
+void setPowerLevel(int powerLevel) {
   // Set power level based on loaded configuration
-  Serial.print("\nset power level: ");
+  #ifdef DEBUG
+    Serial.print("\nset power level: ");
+  #endif
   if (powerLevel == 10) {
     Serial2.write(Power10dbm, 9);
   } else if (powerLevel == 11) {
@@ -389,15 +364,73 @@ void init_rfid() {
     Serial2.write(Power24dbm, 9);
   } else if (powerLevel == 25) {
     Serial2.write(Power25dbm, 9);
-  } else if (powerLevel == 26) {
+  } else {
     Serial2.write(Power26dbm, 9);
   }
 
   while(Serial2.available() == 0) {delay(1);}
   while(Serial2.available()) {
-    Serial.print(" 0x");
-    Serial.print(Serial2.read(), HEX);
+    #ifdef DEBUG
+      Serial.print(" 0x");
+      Serial.print(Serial2.read(), HEX);
+    #else
+      Serial2.read();
+      delay(1);
+    #endif
   }
+}
+
+void init_rfid() {
+  Serial.println("Starting RFID reader...");
+  Serial2.begin(115200,SERIAL_8N1, 16, 17);
+  delay(2000);
+  while(Serial2.available()) {
+    Serial2.read();
+  }
+  #ifdef DEBUG
+    Serial.print("\nset europe: ");
+  #endif
+  Serial2.write(Europe,8);
+  while(Serial2.available() == 0) {delay(1);}
+  while(Serial2.available()) {
+    #ifdef DEBUG
+      Serial.print(" 0x");
+      Serial.print(Serial2.read(), HEX);
+    #else
+      Serial2.read();
+      delay(1);
+    #endif
+  }
+  #ifdef DEBUG
+    Serial.print("\nset dense reader: ");
+  #endif
+  Serial2.write(DenseReader,8);
+  while(Serial2.available() == 0) {delay(1);}
+  while(Serial2.available()) {
+    #ifdef DEBUG
+      Serial.print(" 0x");
+      Serial.print(Serial2.read(), HEX);
+    #else
+      Serial2.read();
+      delay(1);
+    #endif
+  }
+  #ifdef DEBUG
+    Serial.print("\nno module sleep time: ");
+  #endif
+  Serial2.write(NoModuleSleepTime,8);
+  while(Serial2.available() == 0) {delay(1);}
+  while(Serial2.available()) {
+    #ifdef DEBUG
+      Serial.print(" 0x");
+      Serial.print(Serial2.read(), HEX);
+    #else
+      Serial2.read();
+      delay(1);
+    #endif
+  }
+  setPowerLevel(powerLevel);
+  
   Serial2.write(ReadMulti,10);
   Serial.println("\nR200 RFID-reader started...");
 }
@@ -522,11 +555,14 @@ void read_rfid() {
     }
   }
   else {
-    #ifdef DEBUG
-      Serial.println("No data available -> Restart ReadMulti");
-    #endif
-    Serial2.write(StopReadMulti,7);
-    Serial2.write(ReadMulti,10);
+    if ((last_restart + 300000) < millis()) {
+      last_restart = millis();
+      #ifdef DEBUG
+        Serial.println("Restart ReadMulti");
+      #endif
+      Serial2.write(StopReadMulti,7);
+      Serial2.write(ReadMulti,10);
+    }
   }
 }
 

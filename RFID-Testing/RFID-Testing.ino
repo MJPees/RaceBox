@@ -36,6 +36,7 @@ unsigned int dataCheckSum = 0;
 byte epc_bytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 String last_epc_string = "";
 unsigned long last_epc_read = 0;
+unsigned long last_restart = 0;
 
 #define DEBUG
 #define MIN_LAP_MS 3000 //min time between laps
@@ -79,7 +80,7 @@ void init_rfid() {
   Serial.print("\nset power level: ");
   Serial2.write(Power26dbm,9);
   while(Serial2.available() == 0) {delay(1);}
-    while(Serial2.available()) {
+  while(Serial2.available()) {
     Serial.print(" 0x");
     Serial.print(Serial2.read(), HEX);
   }
@@ -207,11 +208,14 @@ void read_rfid() {
     }
   }
   else {
-    #ifdef DEBUG
-      //Serial.println("No data available -> Restart ReadMulti");
-    #endif
-    Serial2.write(StopReadMulti,7);
-    Serial2.write(ReadMulti,10);
+    if ((last_restart + 300000) < millis()) {
+      last_restart = millis();
+      #ifdef DEBUG
+        Serial.println("Restart ReadMulti");
+      #endif
+      Serial2.write(StopReadMulti,7);
+      Serial2.write(ReadMulti,10);
+    }
   }
 }
 
@@ -238,6 +242,5 @@ void setup() {
 }
 
 void loop() {
-  delay(2);
   read_rfid();
 }
