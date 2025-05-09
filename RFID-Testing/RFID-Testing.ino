@@ -22,33 +22,53 @@ unsigned char HighDensitiy[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
 unsigned char DenseReader[8] = {0XAA,0X00,0XF5,0X00,0X01,0X01,0XF7,0XDD};
 unsigned char NoModuleSleepTime[8] = {0XAA,0X00,0X1D,0x00,0x01,0x00,0x1E,0xDD};
 
-unsigned int dataAdd = 0;
 unsigned int rfidSerialByte = 0;
-unsigned int parState = 0;
-unsigned int codeState = 0;
+bool startByte = false;
+bool gotMessageType = false;
+byte messageType = 0;
+byte command = 0;
 unsigned int rssi = 0;
 unsigned int pc = 0;
-unsigned int parameter_length = 0;
+unsigned int parameterLength = 0;
 unsigned int crc = 0;
 unsigned int checksum = 0;
 unsigned int dataCheckSum = 0;
 
-byte epc_bytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
-String last_epc_string = "";
-unsigned long last_epc_read = 0;
-unsigned long last_restart = 0;
+byte epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
+String LastEpcString = "";
+unsigned long LastEpcRead = 0;
+unsigned long lastRestart = 0;
 
-#define DEBUG
+//#define DEBUG
 #define MIN_LAP_MS 3000 //min time between laps
 
-void wait(unsigned long wait_time) {
-  unsigned long start_wait_time = millis();
-  while((start_wait_time + wait_time) < millis()) {
-    ;
+void wait(unsigned long waitTime) {
+  unsigned long startWaitTime = millis();
+  while((millis() - startWaitTime) < waitTime) {
+    delay(1);
   }
 }
 
-void init_rfid() {
+bool checkResponse(const byte expectedBuffer[], int length) {
+  bool ok = true;
+  byte buffer[length];
+  Serial2.readBytes(buffer, length);
+  for (int i = 0; i < length; ++i) {
+    #ifdef DEBUG
+      Serial.print(" 0x");
+      Serial.print(buffer[i], HEX);
+    #endif
+    if (buffer[i] != expectedBuffer[i]) {
+      ok = false;
+    }
+  }
+  #ifdef DEBUG
+    Serial.println("");
+  #endif
+  return ok;
+}
+
+void initRfid() {
   Serial.println("Starting RFID reader...");
   Serial2.begin(115200,SERIAL_8N1, 16, 17);
   wait(2000);
@@ -56,160 +76,174 @@ void init_rfid() {
   while(Serial2.available()) {
     Serial2.read();
   }
-  Serial.print("\nset europe: ");
-  Serial2.write(Europe,8);
-  while(Serial2.available() == 0) {delay(1);}
-  while(Serial2.available()) {
-    Serial.print(" 0x");
-    Serial.print(Serial2.read(), HEX);
+
+  //set region to Europe
+  bool ok = false;
+  int retries = 0;
+  while (!ok && retries < 3) {
+    Serial2.write(Europe,8);
+    const byte expectedResponse[] = {0xAA,0x01,0x07,0x00,0x01,0x00,0x09,0xDD};
+    ok = checkResponse(expectedResponse, 8);
+    retries++;
   }
-  Serial.print("\nset dense reader: ");
-  Serial2.write(DenseReader,8);
-  while(Serial2.available() == 0) {delay(1);}
-  while(Serial2.available()) {
-    Serial.print(" 0x");
-    Serial.print(Serial2.read(), HEX);
+  if (!ok) {
+    Serial.println("Failed to set Europe region.");
   }
-  Serial.print("\nno module sleep time: ");
-  Serial2.write(NoModuleSleepTime,8);
-  while(Serial2.available() == 0) {delay(1);}
-  while(Serial2.available()) {
-    Serial.print(" 0x");
-    Serial.print(Serial2.read(), HEX);
+  else {
+    Serial.println("Set Europe region.");
   }
-  Serial.print("\nset power level: ");
-  Serial2.write(Power26dbm,9);
-  while(Serial2.available() == 0) {delay(1);}
-  while(Serial2.available()) {
-    Serial.print(" 0x");
-    Serial.print(Serial2.read(), HEX);
+  
+  //set dense reader
+  ok = false;
+  retries = 0;
+  while(!ok && retries < 3) {
+    Serial2.write(DenseReader,8);
+    const byte expectedResponse[] = {0XAA,0X01,0XF5,0X00,0X01,0X00,0XF7,0XDD};
+    ok = checkResponse(expectedResponse, 8);
+    retries++;
   }
+  if (!ok) {
+    Serial.println("Failed to set dense reader.");
+  }
+  else {
+    Serial.println("Set dense reader.");
+  }
+
+  //no module sleep time
+  ok = false;
+  retries = 0;
+  while(!ok && retries < 3) {
+    Serial2.write(NoModuleSleepTime,8);
+    const byte expectedResponse[] = {0XAA,0X01,0X1D,0x00,0x01,0x00,0x1F,0xDD};
+    ok = checkResponse(expectedResponse, 8);
+    retries++;
+  }
+  if (!ok) {
+    Serial.println("Failed to disable module sleep time.");
+  }
+  else {
+    Serial.println("Disabled module sleep time.");
+  }
+  
+  //set power level
+  ok = false;
+  retries = 0;
+  while(!ok && retries < 3) {
+    Serial2.write(Power26dbm,9);
+    const byte expectedResponse[] = {0xAA,0x01,0xB6,0x00,0x01,0x00,0xB8,0xDD};
+    ok = checkResponse(expectedResponse, 8);
+    retries++;
+  }
+  if (!ok) {
+    Serial.println("Failed to set power level.");
+  }
+  else {
+    Serial.println("Set power level.");
+  }
+  
   Serial2.write(ReadMulti,10);
   Serial.println("\nR200 RFID-reader started...");
 }
 
-void read_rfid() {
+int getParameterLength() {
+  byte paramLengthBytes[2];
+  Serial2.readBytes(paramLengthBytes, 2);
+  parameterLength = paramLengthBytes[0] << 8;
+  parameterLength += paramLengthBytes[1];
+  dataCheckSum += paramLengthBytes[0] + paramLengthBytes[1];
+  #ifdef DEBUG
+    Serial.print("Parameter length: ");
+    Serial.println(parameterLength);
+  #endif
+  return parameterLength;
+}
+
+void readDataBytes(byte *dataBytes, int dataLength) {
+  Serial2.readBytes(dataBytes, dataLength);
+  #ifdef DEBUG
+    Serial.print("Data Bytes:");
+  #endif
+  for(int i = 0; i < dataLength; i++) {
+    dataCheckSum += dataBytes[i];
+    #ifdef DEBUG
+      Serial.print(" 0x");
+      Serial.print(dataBytes[i], HEX);
+    #endif
+  }
+  #ifdef DEBUG
+    Serial.println("");
+  #endif
+  dataCheckSum = (dataCheckSum & 0xFF);
+}
+
+void readRfid() {
+  parameterLength = 0;
   if(Serial2.available() > 0)
   {
     rfidSerialByte = Serial2.read();
-    if((rfidSerialByte == 0x02) & (parState == 0))
+    if(!startByte && (rfidSerialByte == 0xAA)) {
+      startByte = true;
+      #ifdef DEBUG
+        Serial.println("Got Start Byte");
+      #endif
+    }
+    else if(startByte && !gotMessageType)
     {
-      parState = 1;
+      gotMessageType = true;
+      messageType = rfidSerialByte;
+      #ifdef DEBUG
+        Serial.print("Got Message Type: 0x");
+        Serial.println(messageType, HEX);
+      #endif
       dataCheckSum = rfidSerialByte;
     }
-    else if((parState == 1) & (rfidSerialByte == 0x22) & (codeState == 0)){  
-        codeState = 1;
-        dataAdd = 3;
-        dataCheckSum += rfidSerialByte;
-    }
-    else if(codeState == 1){
-      dataAdd ++;
-      switch (dataAdd) {
-        case 4:
-          parameter_length = int(rfidSerialByte << 8);
-          dataCheckSum += rfidSerialByte;
-          break;
-        case 5:
-          parameter_length = parameter_length + int(rfidSerialByte);
-          dataCheckSum += rfidSerialByte;
-          #ifdef DEBUG
-            Serial.println("#########################################");
-            Serial.print("Parameter length: ");
-            Serial.println(parameter_length);
-          #endif
-          break;
-        case 6:
-          rssi = rfidSerialByte;
-          dataCheckSum += rfidSerialByte;
-          #ifdef DEBUG
-            Serial.print("RSSI: 0x"); 
-            Serial.println(rssi, HEX);
-          #endif
-          break;
-        case 7:
-          pc = rfidSerialByte << 8;
-          dataCheckSum +=  rfidSerialByte;
-          break;
-        case 8:
-          pc = pc + rfidSerialByte;
-          dataCheckSum +=  rfidSerialByte;
-          #ifdef DEBUG
-            Serial.print("PC: 0x"); 
-            Serial.println(pc, HEX);
-          #endif
-          break;
-        default:
-          if((dataAdd >= 9)&(dataAdd <= parameter_length + 3)) {
-            #ifdef DEBUG
-              if(dataAdd == 9){
-                Serial.print("EPC:"); 
-              }        
-              Serial.print(rfidSerialByte, HEX);
-            #endif
-            epc_bytes[dataAdd -9] = rfidSerialByte;
-            dataCheckSum +=  rfidSerialByte;
-          }
-          else if(dataAdd == parameter_length + 4) {
-            crc = rfidSerialByte << 8;
-            dataCheckSum +=  rfidSerialByte;
-          }
-          else if (dataAdd == parameter_length + 5) {
-            crc = crc + rfidSerialByte;
-            dataCheckSum +=  rfidSerialByte;
-            #ifdef DEBUG
-              Serial.println("");
-              Serial.print("CRC: 0x");
-              Serial.println(crc, HEX);
-            #endif
-          }
-          else if (dataAdd == parameter_length + 6) {
-            checksum = rfidSerialByte;
-            dataCheckSum = (dataCheckSum & 0xFF);
-            #ifdef DEBUG
-              Serial.print("Checksum: 0x");
-              Serial.println(checksum, HEX);
-              Serial.print("dataCheckSum (checksum): 0x");
-              Serial.println(dataCheckSum, HEX);
-            #endif
-          }
-          else {
-            if(rfidSerialByte == 0xDD && dataCheckSum == checksum) {
+    else if(gotMessageType) {  
+      command = rfidSerialByte;
+      #ifdef DEBUG
+        Serial.print("Command: 0x");
+        Serial.println(command, HEX);
+      #endif
+      dataCheckSum += rfidSerialByte;
+      if (getParameterLength() > 0) {
+        byte dataBytes[parameterLength];
+        readDataBytes(dataBytes, parameterLength);
+        byte endBytes[2];
+        Serial2.readBytes(endBytes, 2);
+        bool validData = endBytes[0] == dataCheckSum && endBytes[1] == 0xDD;
+        if(validData) {
+          if(messageType == 0x01) {
+            if(command == 0xFF) {
               #ifdef DEBUG
-                Serial.println("got valid data frame");
-              #endif
-              check_rfid(epc_bytes);
-            }
-            else {
-              #ifdef DEBUG
-                Serial.println("got invalid data frame");
+                Serial.println("No label detected."); 
               #endif
             }
-            dataAdd= 0;
-            parState = 0;
-            codeState = 0;
-            crc = 0;
-            rssi = 0;
-            pc = 0;
-            parameter_length = 0;
-            dataCheckSum = 0;
           }
-          break;
+          else if(messageType == 0x02) {
+            if(command == 0x22) {
+              processLabelData(dataBytes);
+            }
+          }
+          #ifdef DEBUG
+            Serial.println("Got valid data frame");
+            Serial.println("############################");
+          #endif
+        }
+        else {
+          #ifdef DEBUG
+            Serial.println("Got invalid data frame");
+            Serial.println("############################");
+          #endif
+        }
       }
+      resetRfidData();
     }
     else{
-      dataAdd= 0;
-      parState = 0;
-      codeState = 0;
-      crc = 0;
-      rssi = 0;
-      pc = 0;
-      parameter_length = 0;
-      dataCheckSum = 0;
+      resetRfidData();
     }
   }
   else {
-    if ((last_restart + 300000) < millis()) {
-      last_restart = millis();
+    if ((lastRestart + 300000) < millis()) {
+      lastRestart = millis();
       #ifdef DEBUG
         Serial.println("Restart ReadMulti");
       #endif
@@ -219,28 +253,72 @@ void read_rfid() {
   }
 }
 
-void check_rfid(byte epc_bytes[]) {
+void resetRfidData() {
+  startByte = false;
+  gotMessageType = false;
+  crc = 0;
+  rssi = 0;
+  pc = 0;
+  dataCheckSum = 0;
+  checksum = 0;
+  command = 0;
+  messageType = 0;
+}
+
+void processLabelData(byte *dataBytes) {
+  //RSSI
+  rssi = dataBytes[0];
+  #ifdef DEBUG
+    Serial.print("RSSI: 0x"); 
+    Serial.println(rssi, HEX);
+  #endif
+  //PC
+  pc = dataBytes[1] << 8 + dataBytes[2];
+  #ifdef DEBUG
+    Serial.print("PC: 0x"); 
+    Serial.println(pc, HEX);
+  #endif
+  //EPC
+  for(int i = 3; i < parameterLength-2; i++) {
+    epcBytes[i-3] = dataBytes[i];
+    #ifdef DEBUG 
+      if(i == 3) {
+        Serial.print("EPC: "); 
+      }
+      Serial.print(epcBytes[i-3], HEX);
+    #endif
+  }
+  crc = dataBytes[parameterLength-2] << 8 + dataBytes[parameterLength-1];
+  #ifdef DEBUG
+    Serial.println("");
+    Serial.print("CRC: 0x"); 
+    Serial.println(crc, HEX);
+  #endif
+  checkRfid(epcBytes);
+}
+
+void checkRfid(byte epcBytes[]) {
   char buffer[25]; // Genug Platz für 8 Hex-Ziffern + Nullterminator
-  // Konvertiere die Byte-Werte in hexadezimale Zeichen und speichere sie in epc_bytes
+  // Konvertiere die Byte-Werte in hexadezimale Zeichen und speichere sie in epcBytes
   for (int i = 0; i < 12; i++) {
-    sprintf(buffer + (i * 2), "%02X", epc_bytes[i]);
+    sprintf(buffer + (i * 2), "%02X", epcBytes[i]);
   }
   buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
-  String epc_string(buffer);
-  if(epc_string != last_epc_string || (last_epc_read + MIN_LAP_MS) < millis()) {
-    Serial.println(epc_string);
-    //send_finish_line_event(epc_string, millis());
-    last_epc_string = epc_string;
-    last_epc_read = millis();
+  String epcString(buffer);
+  if(epcString != LastEpcString || (LastEpcRead + MIN_LAP_MS) < millis()) {
+    Serial.println(epcString);
+    //send_finish_line_event(epcString, millis());
+    LastEpcString = epcString;
+    LastEpcRead = millis();
   }
 }
 
 void setup() {
   Serial.begin(115200);
   wait(2000);
-  init_rfid();
+  initRfid();
 }
 
 void loop() {
-  read_rfid();
+  readRfid();
 }
