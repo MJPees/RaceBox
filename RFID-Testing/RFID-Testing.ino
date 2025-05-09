@@ -40,8 +40,8 @@ unsigned int checksum = 0;
 unsigned int dataCheckSum = 0;
 
 unsigned char epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
-String LastEpcString = "";
-unsigned long LastEpcRead = 0;
+String lastEpcString = "";
+unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
 
 #define DEBUG
@@ -98,6 +98,7 @@ void setPowerLevel(int powerLevel) {
   
   while(Serial2.available()) {
     Serial2.read();
+    delay(1);
   }
 
   switch (powerLevel) {
@@ -367,11 +368,11 @@ void checkRfid(unsigned char epcBytes[]) {
   }
   buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
   String epcString(buffer);
-  if(epcString != LastEpcString || (LastEpcRead + MIN_LAP_MS) < millis()) {
+  if(epcString != lastEpcString || (lastEpcRead + MIN_LAP_MS) < millis()) {
     Serial.println(epcString);
     //send_finish_line_event(epcString, millis());
-    LastEpcString = epcString;
-    LastEpcRead = millis();
+    lastEpcString = epcString;
+    lastEpcRead = millis();
   }
 }
 
