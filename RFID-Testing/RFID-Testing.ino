@@ -1,26 +1,31 @@
-unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
-unsigned char StopReadMulti[7] = {0XAA,0X00,0X28,0X00,0X00,0X28,0XDD};
-unsigned char Power10dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X03,0XE8,0XA3,0XDD};
-unsigned char Power11dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X04,0X4C,0X08,0XDD};
-unsigned char Power12dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X04,0XB0,0X6C,0XDD};
-unsigned char Power13dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X05,0X14,0XD1,0XDD};
-unsigned char Power14dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X05,0X78,0X35,0XDD};
-unsigned char Power15dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X05,0XDC,0X99,0XDD};
-unsigned char Power16dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X06,0X40,0XFE,0XDD};
-unsigned char Power17dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X06,0XA4,0X62,0XDD};
-unsigned char Power18dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X07,0X08,0XC7,0XDD};
-unsigned char Power19dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X07,0X6C,0X2B,0XDD};
-unsigned char Power20dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X07,0XD0,0X8F,0XDD};
-unsigned char Power21dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X08,0X34,0XF4,0XDD};
-unsigned char Power22dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X08,0X98,0X58,0XDD};
-unsigned char Power23dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X08,0XFC,0XBC,0XDD};
-unsigned char Power24dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X09,0X60,0X21,0XDD};
-unsigned char Power25dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X09,0XC4,0X85,0XDD};
-unsigned char Power26dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X0A,0X28,0XEA,0XDD};
-unsigned char Europe[8] = {0XAA,0X00,0X07,0X00,0X01,0X03,0X0B,0XDD};
-unsigned char HighDensitiy[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
-unsigned char DenseReader[8] = {0XAA,0X00,0XF5,0X00,0X01,0X01,0XF7,0XDD};
-unsigned char NoModuleSleepTime[8] = {0XAA,0X00,0X1D,0x00,0x01,0x00,0x1E,0xDD};
+const unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
+const unsigned char StopReadMultiResponse[] = {0xAA,0x01,0x28,0x00,0x01,0x00,0x2A,0xDD};
+const unsigned char StopReadMulti[7] = {0XAA,0X00,0X28,0X00,0X00,0X28,0XDD};
+const unsigned char Power10dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X03,0XE8,0XA3,0XDD};
+const unsigned char Power11dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X04,0X4C,0X08,0XDD};
+const unsigned char Power12dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X04,0XB0,0X6C,0XDD};
+const unsigned char Power13dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X05,0X14,0XD1,0XDD};
+const unsigned char Power14dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X05,0X78,0X35,0XDD};
+const unsigned char Power15dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X05,0XDC,0X99,0XDD};
+const unsigned char Power16dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X06,0X40,0XFE,0XDD};
+const unsigned char Power17dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X06,0XA4,0X62,0XDD};
+const unsigned char Power18dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X07,0X08,0XC7,0XDD};
+const unsigned char Power19dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X07,0X6C,0X2B,0XDD};
+const unsigned char Power20dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X07,0XD0,0X8F,0XDD};
+const unsigned char Power21dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X08,0X34,0XF4,0XDD};
+const unsigned char Power22dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X08,0X98,0X58,0XDD};
+const unsigned char Power23dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X08,0XFC,0XBC,0XDD};
+const unsigned char Power24dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X09,0X60,0X21,0XDD};
+const unsigned char Power25dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X09,0XC4,0X85,0XDD};
+const unsigned char Power26dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X0A,0X28,0XEA,0XDD};
+const unsigned char PowerLevelResponse[] = {0xAA,0x01,0xB6,0x00,0x01,0x00,0xB8,0xDD};
+const unsigned char Europe[8] = {0XAA,0X00,0X07,0X00,0X01,0X03,0X0B,0XDD};
+const unsigned char RegionResponse[] = {0xAA,0x01,0x07,0x00,0x01,0x00,0x09,0xDD};
+const unsigned char HighDensitiy[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
+const unsigned char DenseReader[8] = {0XAA,0X00,0XF5,0X00,0X01,0X01,0XF7,0XDD};
+const unsigned char DenseReaderResponse[8] = {0XAA,0X01,0XF5,0X00,0X01,0X00,0XF7,0XDD};
+const unsigned char NoModuleSleepTime[8] = {0XAA,0X00,0X1D,0x00,0x01,0x00,0x1E,0xDD};
+const unsigned char NoModuleSleepTimeResponse[] = {0XAA,0X01,0X1D,0x00,0x01,0x00,0x1F,0xDD};
 
 unsigned int rfidSerialByte = 0;
 bool startByte = false;
@@ -39,7 +44,7 @@ String LastEpcString = "";
 unsigned long LastEpcRead = 0;
 unsigned long lastRestart = 0;
 
-//#define DEBUG
+#define DEBUG
 #define MIN_LAP_MS 3000 //min time between laps
 
 void wait(unsigned long waitTime) {
@@ -68,6 +73,95 @@ bool checkResponse(const byte expectedBuffer[], int length) {
   return ok;
 }
 
+bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const unsigned char expectedResponseBuffer[], int expectedLength) {
+  bool ok = false;
+  int retries = 0;
+  while (!ok && retries < 3) {
+    Serial2.write(sendBuffer, sendLength);
+    ok = checkResponse(expectedResponseBuffer, expectedLength);
+    retries++;
+  }
+  return ok;
+}
+
+void setPowerLevel(int powerLevel) {
+  // Set power level based on loaded configuration
+  bool ok;
+  while(Serial2.available()) {
+    Serial2.read();
+  }
+  if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
+    Serial.println("Stopped ReadMulti.");
+  } else {
+    Serial.println("Failed to stop ReadMulti.");
+  }
+  
+  while(Serial2.available()) {
+    Serial2.read();
+  }
+
+  switch (powerLevel) {
+    case 10:
+      ok = setReaderSetting(Power10dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 11:
+      ok = setReaderSetting(Power11dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 12:
+      ok = setReaderSetting(Power12dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 13:
+      ok = setReaderSetting(Power13dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 14:
+      ok = setReaderSetting(Power14dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 15:
+      ok = setReaderSetting(Power15dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 16:
+      ok = setReaderSetting(Power16dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 17:
+      ok = setReaderSetting(Power17dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 18:
+      ok = setReaderSetting(Power18dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 19:
+      ok = setReaderSetting(Power19dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 20:
+      ok = setReaderSetting(Power20dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 21:
+      ok = setReaderSetting(Power21dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 22:
+      ok = setReaderSetting(Power22dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 23:
+      ok = setReaderSetting(Power23dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 24:
+      ok = setReaderSetting(Power24dbm, 9, PowerLevelResponse, 8);
+      break;
+    case 25:
+      ok = setReaderSetting(Power25dbm, 9, PowerLevelResponse, 8);
+      break;
+    default:
+      ok = setReaderSetting(Power26dbm, 9, PowerLevelResponse, 8);
+      break;
+  }
+
+  if(ok) {
+    Serial.println("Set power level.");
+  } else {
+    Serial.println("Failed to set power level.");
+  }
+  Serial2.write(ReadMulti,10);
+}
+
 void initRfid() {
   Serial.println("Starting RFID reader...");
   Serial2.begin(115200,SERIAL_8N1, 16, 17);
@@ -78,70 +172,30 @@ void initRfid() {
   }
 
   //set region to Europe
-  bool ok = false;
-  int retries = 0;
-  while (!ok && retries < 3) {
-    Serial2.write(Europe,8);
-    const byte expectedResponse[] = {0xAA,0x01,0x07,0x00,0x01,0x00,0x09,0xDD};
-    ok = checkResponse(expectedResponse, 8);
-    retries++;
-  }
-  if (!ok) {
-    Serial.println("Failed to set Europe region.");
-  }
-  else {
+
+  if(setReaderSetting(Europe, 8, RegionResponse, 8)) {
     Serial.println("Set Europe region.");
+  } else {
+    Serial.println("Failed to set Europe region.");
   }
   
   //set dense reader
-  ok = false;
-  retries = 0;
-  while(!ok && retries < 3) {
-    Serial2.write(DenseReader,8);
-    const byte expectedResponse[] = {0XAA,0X01,0XF5,0X00,0X01,0X00,0XF7,0XDD};
-    ok = checkResponse(expectedResponse, 8);
-    retries++;
-  }
-  if (!ok) {
-    Serial.println("Failed to set dense reader.");
-  }
-  else {
+  if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
     Serial.println("Set dense reader.");
+  } else {
+    Serial.println("Failed to set dense reader.");
   }
 
   //no module sleep time
-  ok = false;
-  retries = 0;
-  while(!ok && retries < 3) {
-    Serial2.write(NoModuleSleepTime,8);
-    const byte expectedResponse[] = {0XAA,0X01,0X1D,0x00,0x01,0x00,0x1F,0xDD};
-    ok = checkResponse(expectedResponse, 8);
-    retries++;
-  }
-  if (!ok) {
+  if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
+    Serial.println("Disabled module sleep time.");
+  } else {
     Serial.println("Failed to disable module sleep time.");
   }
-  else {
-    Serial.println("Disabled module sleep time.");
-  }
   
-  //set power level
-  ok = false;
-  retries = 0;
-  while(!ok && retries < 3) {
-    Serial2.write(Power26dbm,9);
-    const byte expectedResponse[] = {0xAA,0x01,0xB6,0x00,0x01,0x00,0xB8,0xDD};
-    ok = checkResponse(expectedResponse, 8);
-    retries++;
-  }
-  if (!ok) {
-    Serial.println("Failed to set power level.");
-  }
-  else {
-    Serial.println("Set power level.");
-  }
+  //set power level and start ReadMulti
+  setPowerLevel(26);
   
-  Serial2.write(ReadMulti,10);
   Serial.println("\nR200 RFID-reader started...");
 }
 
