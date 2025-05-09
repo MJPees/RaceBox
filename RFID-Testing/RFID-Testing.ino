@@ -45,7 +45,6 @@ unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
 
 #define DEBUG
-#define MIN_LAP_MS 3000 //min time between laps
 
 void wait(unsigned long waitTime) {
   unsigned long startWaitTime = millis();
@@ -368,12 +367,15 @@ void checkRfid(unsigned char epcBytes[]) {
   }
   buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
   String epcString(buffer);
-  if(epcString != lastEpcString || (lastEpcRead + MIN_LAP_MS) < millis()) {
+  if(epcString != lastEpcString) {
     Serial.println(epcString);
     //send_finish_line_event(epcString, millis());
     lastEpcString = epcString;
-    lastEpcRead = millis();
   }
+  else if ((lastEpcRead + 3000) < millis()) {
+    Serial.println(epcString);
+  }
+  lastEpcRead = millis();
 }
 
 void setup() {
