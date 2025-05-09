@@ -51,11 +51,11 @@ unsigned int checksum = 0;
 unsigned int dataCheckSum = 0;
 
 unsigned char epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
-String LastEpcString = "";
-unsigned long LastEpcRead = 0;
+String lastEpcString = "";
+unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
 
-const int minLapTime = 3000; //min time between laps in ms
+int minLapTime = 3000; //min time between laps in ms
 
 String websocket_server = "";
 bool ap_mode = false;
@@ -706,14 +706,14 @@ void setup() {
   server.begin();
   Serial.println("Webserver gestartet...");
   // Start RFID reader
-  init_rfid();
+  initRfid();
 }
 
 void loop() {
   server.handleClient();
   dnsServer.processNextRequest();
   // process RFID data
-  read_rfid();
+  readRfid();
   if(websocket_connected) {
     client.poll();
     if(last_ping < millis() + 5000) {
