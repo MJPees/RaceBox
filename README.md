@@ -1,12 +1,12 @@
 # RFID-SmartRace
 
-RFID-SmartRace ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a>. Hierzu wird der analoge Sensormodus von SmartRace genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 6 Autos möglich (6 Controller in SmartRace).<br>
+RFID-SmartRace ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a>. Hierzu wird der analoge Sensormodus von SmartRace genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 8 Autos möglich (8 Controller in SmartRace).<br>
 Des Weiteren können 2 RFID-Ids für einen Controller definiert werden. Somit sind auch Langstreckenrennen mit jeweils zwei Fahrzeugen pro Team möglich.
 Der ESP32 geht bei fehlender WLAN-Konfiguration automatisch in einen Accesspoint-Modus.
 Über das Webinterface kann RFID-SmartRace konfiguriert werden.
 Neben SSID und Passwort des zu verwendenden Routers muss die IP-Addresse und der Port des SmartRace-Servers für den analogen Sensorbetrieb gesetzt werden.
-Der Power Level für den RFID-Empfang kann von 10dbm bis 26dbm eingestellt werden (Neustart der Hardware nötig!).
-Die Ids der RFID-Chips für Controller 1-6 werden bei neu erkannten IDs automatisch gefüllt, wenn sie im Webinterface zuvor "leer" sind.
+Der Power Level für den RFID-Empfang kann von 10dbm bis 26dbm eingestellt werden.
+Die Ids der RFID-Chips für Controller 1-8 werden bei neu erkannten IDs automatisch gefüllt, wenn sie im Webinterface zuvor "leer" sind.
 Die optionale ID2 pro Controller muss für Team-Rennen im Webinterface ausgefüllt werden.
 
 ## Konfiguration über Web-Interface:

@@ -71,7 +71,7 @@ Preferences preferences;
 
 String ssid, password, serverAddress, serverPort;
 
-const int max_rfid_cnt=6;
+const int max_rfid_cnt=8;
 const int storage_rfid_cnt = 2;
 
 struct rfid_data {
