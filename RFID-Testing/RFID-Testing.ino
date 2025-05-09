@@ -30,8 +30,8 @@ const unsigned char NoModuleSleepTimeResponse[] = {0XAA,0X01,0X1D,0x00,0x01,0x00
 unsigned int rfidSerialByte = 0;
 bool startByte = false;
 bool gotMessageType = false;
-byte messageType = 0;
-byte command = 0;
+unsigned char messageType = 0;
+unsigned char command = 0;
 unsigned int rssi = 0;
 unsigned int pc = 0;
 unsigned int parameterLength = 0;
@@ -39,7 +39,7 @@ unsigned int crc = 0;
 unsigned int checksum = 0;
 unsigned int dataCheckSum = 0;
 
-byte epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
+unsigned char epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 String LastEpcString = "";
 unsigned long LastEpcRead = 0;
 unsigned long lastRestart = 0;
@@ -54,9 +54,9 @@ void wait(unsigned long waitTime) {
   }
 }
 
-bool checkResponse(const byte expectedBuffer[], int length) {
+bool checkResponse(const unsigned char expectedBuffer[], int length) {
   bool ok = true;
-  byte buffer[length];
+  unsigned char buffer[length];
   Serial2.readBytes(buffer, length);
   for (int i = 0; i < length; ++i) {
     #ifdef DEBUG
@@ -200,7 +200,7 @@ void initRfid() {
 }
 
 int getParameterLength() {
-  byte paramLengthBytes[2];
+  unsigned char paramLengthBytes[2];
   Serial2.readBytes(paramLengthBytes, 2);
   parameterLength = paramLengthBytes[0] << 8;
   parameterLength += paramLengthBytes[1];
@@ -212,7 +212,7 @@ int getParameterLength() {
   return parameterLength;
 }
 
-void readDataBytes(byte *dataBytes, int dataLength) {
+void readDataBytes(unsigned char *dataBytes, int dataLength) {
   Serial2.readBytes(dataBytes, dataLength);
   #ifdef DEBUG
     Serial.print("Data Bytes:");
@@ -259,9 +259,9 @@ void readRfid() {
       #endif
       dataCheckSum += rfidSerialByte;
       if (getParameterLength() > 0) {
-        byte dataBytes[parameterLength];
+        unsigned char dataBytes[parameterLength];
         readDataBytes(dataBytes, parameterLength);
-        byte endBytes[2];
+        unsigned char endBytes[2];
         Serial2.readBytes(endBytes, 2);
         bool validData = endBytes[0] == dataCheckSum && endBytes[1] == 0xDD;
         if(validData) {
@@ -301,7 +301,15 @@ void readRfid() {
       #ifdef DEBUG
         Serial.println("Restart ReadMulti");
       #endif
-      Serial2.write(StopReadMulti,7);
+      if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
+        #ifdef DEBUG
+          Serial.println("Stopped ReadMulti.");
+        #endif
+      } else {
+        #ifdef DEBUG
+          Serial.println("Failed to stop ReadMulti.");
+        #endif
+      }
       Serial2.write(ReadMulti,10);
     }
   }
@@ -319,7 +327,7 @@ void resetRfidData() {
   messageType = 0;
 }
 
-void processLabelData(byte *dataBytes) {
+void processLabelData(unsigned char *dataBytes) {
   //RSSI
   rssi = dataBytes[0];
   #ifdef DEBUG
@@ -351,7 +359,7 @@ void processLabelData(byte *dataBytes) {
   checkRfid(epcBytes);
 }
 
-void checkRfid(byte epcBytes[]) {
+void checkRfid(unsigned char epcBytes[]) {
   char buffer[25]; // Genug Platz für 8 Hex-Ziffern + Nullterminator
   // Konvertiere die Byte-Werte in hexadezimale Zeichen und speichere sie in epcBytes
   for (int i = 0; i < 12; i++) {
