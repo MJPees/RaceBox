@@ -11,8 +11,9 @@
 using namespace websockets;
 
 #define VERSION "1.0.0"
-#define DEBUG
+//#define DEBUG
 #define ESP32C3
+//#define ESP32DEV
 #ifdef ESP32DEV
   #define SerialRFID Serial2;
   #define RX_PIN 16
@@ -20,8 +21,8 @@ using namespace websockets;
   #define LAP_LED_PIN 8
 #elif defined(ESP32C3)
   HardwareSerial SerialRFID(1);
-  #define RX_PIN 20
-  #define TX_PIN 21
+  #define RX_PIN 5
+  #define TX_PIN 6
   #define LAP_LED_PIN 8
 #endif
 

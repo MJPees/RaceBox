@@ -8,8 +8,8 @@
   #define LAP_LED_PIN 8
 #elif defined(ESP32C3)
   HardwareSerial SerialRFID(1);
-  #define RX_PIN 20
-  #define TX_PIN 21
+  #define RX_PIN 5
+  #define TX_PIN 6
   #define LAP_LED_PIN 8
 #endif
 
