@@ -225,6 +225,11 @@ void handleConfig() {
         WiFi.disconnect(true);
         delay(100);
       }
+      WiFi.softAPdisconnect(true);
+      if(dnsServer.isRunning()) {
+        dnsServer.stop();
+      }
+
       WiFi.begin(ssid.c_str(), password.c_str());
 
       int attempts = 0;
@@ -237,8 +242,6 @@ void handleConfig() {
       if (WiFi.status() == WL_CONNECTED) {
         Serial.print("\nWLAN verbunden ");
         Serial.println(WiFi.localIP());
-        WiFi.softAPdisconnect(true);
-        dnsServer.stop();
         connectWebsocket();
         ap_mode = false;
       } else {
@@ -760,7 +763,9 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  dnsServer.processNextRequest();
+  if(dnsServer.isRunning()) {
+    dnsServer.processNextRequest();
+  }
   // process RFID data
   readRfid();
   if(websocket_connected) {
