@@ -203,6 +203,7 @@ void handleRoot() {
 
 void handleConfig() {
   if (server.args() > 0) {
+    bool reConnectWifi = ssid != server.arg("ssid") || password != server.arg("password");
     ssid = server.arg("ssid");
     password = server.arg("password");
     serverAddress = server.arg("serverAddress");
@@ -219,27 +220,33 @@ void handleConfig() {
     saveConfig();
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Konfiguration gespeichert!</h1><p>Sie werden in 2 Sekunden zur Startseite weitergeleitet.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
 
-    WiFi.begin(ssid.c_str(), password.c_str());
+    if(reConnectWifi) {
+      if (WiFi.status() == WL_CONNECTED) {
+        WiFi.disconnect(true);
+        delay(100);
+      }
+      WiFi.begin(ssid.c_str(), password.c_str());
 
-    int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-      delay(500);
-      Serial.print(".");
-      attempts++;
-    }
+      int attempts = 0;
+      while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+        delay(500);
+        Serial.print(".");
+        attempts++;
+      }
 
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.print("\nWLAN verbunden ");
-      Serial.println(WiFi.localIP());
-      WiFi.softAPdisconnect(true);
-      dnsServer.stop();
-      connectWebsocket();
-      ap_mode = false;
-    } else {
-      Serial.println("\nWLAN Verbindung fehlgeschlagen!");
-      WiFi.softAP(AP_SSID);
-      dnsServer.start(53, "*", WiFi.softAPIP());
-      ap_mode = true;
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.print("\nWLAN verbunden ");
+        Serial.println(WiFi.localIP());
+        WiFi.softAPdisconnect(true);
+        dnsServer.stop();
+        connectWebsocket();
+        ap_mode = false;
+      } else {
+        Serial.println("\nWLAN Verbindung fehlgeschlagen!");
+        WiFi.softAP(AP_SSID);
+        dnsServer.start(53, "*", WiFi.softAPIP());
+        ap_mode = true;
+      }
     }
   } else {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Ungültige Anfrage</h1><p>Sie werden in 2 Sekunden zur Startseite weitergeleitet.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
