@@ -2,11 +2,12 @@
 #define DEBUG
 #define ESP32C3
 #ifdef ESP32DEV
+  #define SerialRFID Serial2;
   #define RX_PIN 16
   #define TX_PIN 17
   #define LAP_LED_PIN 8
-#elifdef ESP32C3
-  HardwareSerial Serial2(1);
+#elif defined(ESP32C3)
+  HardwareSerial SerialRFID(1);
   #define RX_PIN 20
   #define TX_PIN 21
   #define LAP_LED_PIN 8
@@ -73,7 +74,7 @@ void wait(unsigned long waitTime) {
 bool checkResponse(const unsigned char expectedBuffer[], int length) {
   bool ok = true;
   unsigned char buffer[length];
-  Serial2.readBytes(buffer, length);
+  SerialRFID.readBytes(buffer, length);
   for (int i = 0; i < length; ++i) {
     #ifdef DEBUG
       Serial.print(" 0x");
@@ -93,7 +94,7 @@ bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const un
   bool ok = false;
   int retries = 0;
   while (!ok && retries < 3) {
-    Serial2.write(sendBuffer, sendLength);
+    SerialRFID.write(sendBuffer, sendLength);
     ok = checkResponse(expectedResponseBuffer, expectedLength);
     retries++;
   }
@@ -103,8 +104,8 @@ bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const un
 void setPowerLevel(int powerLevel) {
   // Set power level based on loaded configuration
   bool ok;
-  while(Serial2.available()) {
-    Serial2.read();
+  while(SerialRFID.available()) {
+    SerialRFID.read();
   }
   if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
     Serial.println("Stopped ReadMulti.");
@@ -112,8 +113,8 @@ void setPowerLevel(int powerLevel) {
     Serial.println("Failed to stop ReadMulti.");
   }
   
-  while(Serial2.available()) {
-    Serial2.read();
+  while(SerialRFID.available()) {
+    SerialRFID.read();
     delay(1);
   }
 
@@ -176,16 +177,16 @@ void setPowerLevel(int powerLevel) {
   } else {
     Serial.println("Failed to set power level.");
   }
-  Serial2.write(ReadMulti,10);
+  SerialRFID.write(ReadMulti,10);
 }
 
 void initRfid() {
   Serial.println("Starting RFID reader...");
-  Serial2.begin(115200,SERIAL_8N1, RX_PIN, TX_PIN);
+  SerialRFID.begin(115200,SERIAL_8N1, RX_PIN, TX_PIN);
   wait(2000);
   delay(2000);
-  while(Serial2.available()) {
-    Serial2.read();
+  while(SerialRFID.available()) {
+    SerialRFID.read();
   }
 
   //set region to Europe
@@ -218,7 +219,7 @@ void initRfid() {
 
 int getParameterLength() {
   unsigned char paramLengthBytes[2];
-  Serial2.readBytes(paramLengthBytes, 2);
+  SerialRFID.readBytes(paramLengthBytes, 2);
   parameterLength = paramLengthBytes[0] << 8;
   parameterLength += paramLengthBytes[1];
   dataCheckSum += paramLengthBytes[0] + paramLengthBytes[1];
@@ -230,7 +231,7 @@ int getParameterLength() {
 }
 
 void readDataBytes(unsigned char *dataBytes, int dataLength) {
-  Serial2.readBytes(dataBytes, dataLength);
+  SerialRFID.readBytes(dataBytes, dataLength);
   #ifdef DEBUG
     Serial.print("Data Bytes:");
   #endif
@@ -249,9 +250,9 @@ void readDataBytes(unsigned char *dataBytes, int dataLength) {
 
 void readRfid() {
   parameterLength = 0;
-  if(Serial2.available() > 0)
+  if(SerialRFID.available() > 0)
   {
-    rfidSerialByte = Serial2.read();
+    rfidSerialByte = SerialRFID.read();
     if(!startByte && (rfidSerialByte == 0xAA)) {
       startByte = true;
       #ifdef DEBUG
@@ -279,7 +280,7 @@ void readRfid() {
         unsigned char dataBytes[parameterLength];
         readDataBytes(dataBytes, parameterLength);
         unsigned char endBytes[2];
-        Serial2.readBytes(endBytes, 2);
+        SerialRFID.readBytes(endBytes, 2);
         bool validData = endBytes[0] == dataCheckSum && endBytes[1] == 0xDD;
         if(validData) {
           if(messageType == 0x01) {
@@ -327,7 +328,7 @@ void readRfid() {
           Serial.println("Failed to stop ReadMulti.");
         #endif
       }
-      Serial2.write(ReadMulti,10);
+      SerialRFID.write(ReadMulti,10);
     }
   }
 }
