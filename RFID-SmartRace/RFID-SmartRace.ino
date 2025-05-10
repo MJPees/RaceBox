@@ -9,6 +9,20 @@
 
 using namespace websockets;
 
+#define VERSION "1.0.0"
+#define DEBUG
+#define ESP32C3
+#ifdef ESP32DEV
+  #define RX_PIN 16
+  #define TX_PIN 17
+  #define LAP_LED_PIN 8
+#elifdef ESP32C3
+  HardwareSerial Serial2(1);
+  #define RX_PIN 20
+  #define TX_PIN 21
+  #define LAP_LED_PIN 8
+#endif
+
 const unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
 const unsigned char StopReadMultiResponse[] = {0xAA,0x01,0x28,0x00,0x01,0x00,0x2A,0xDD};
 const unsigned char StopReadMulti[7] = {0XAA,0X00,0X28,0X00,0X00,0X28,0XDD};
@@ -54,6 +68,7 @@ unsigned char epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 String lastEpcString = "";
 unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
+unsigned long ledOnTime = 0;
 
 int minLapTime = 3000; //min time between laps in ms
 
@@ -264,6 +279,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
     for (int i = 0; i < max_rfid_cnt; i++) {
       if(rfids[i].id[j] == rfid_string) {
         if(rfids[i].last + minLapTime < ms) {
+          ledLapOn();
           send_finish_line_message(i, ms);
         }
         found = true;
@@ -282,6 +298,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
         Serial.print(i+1);
         Serial.print(rfids[i].id[0]);
         Serial.println();
+        ledLapOn();
         send_finish_line_message(i, ms);
         break;
       }
@@ -443,7 +460,7 @@ void setPowerLevel(int powerLevel) {
 
 void initRfid() {
   Serial.println("Starting RFID reader...");
-  Serial2.begin(115200,SERIAL_8N1, 16, 17);
+  Serial2.begin(115200,SERIAL_8N1, RX_PIN, TX_PIN);
   delay(2000);
   while(Serial2.available()) {
     Serial2.read();
@@ -472,7 +489,7 @@ void initRfid() {
   }
   
   //set power level and start ReadMulti
-  setPowerLevel(26);
+  setPowerLevel(powerLevel);
   
   Serial.println("\nR200 RFID-reader started...");
 }
@@ -655,6 +672,22 @@ void checkRfid(unsigned char epcBytes[]) {
   lastEpcRead = millis();
 }
 
+bool isLedLapOn() {
+  if (digitalRead(LAP_LED_PIN) == LOW) {
+    return true;
+  }
+  return false;
+}
+
+void ledLapOn() {
+  digitalWrite(LAP_LED_PIN, LOW);
+  ledOnTime = millis();
+}
+
+void ledLapOff() {
+  digitalWrite(LAP_LED_PIN, HIGH);
+}
+
 void setup() {
   //init rfid storage
   resetRfidStorage();
@@ -707,6 +740,12 @@ void setup() {
   Serial.println("Webserver gestartet...");
   // Start RFID reader
   initRfid();
+  pinMode(LAP_LED_PIN, OUTPUT);
+  digitalWrite(LAP_LED_PIN, HIGH);
+  Serial.print("RFID-SmartRace Version: ");
+  Serial.print(VERSION);
+  Serial.println(" started.");
+  Serial.println("############################");
 }
 
 void loop() {
@@ -723,5 +762,8 @@ void loop() {
   }
   else {
     if(ap_mode == false) connectWebsocket();
+  }
+  if(isLedLapOn && (ledOnTime + 0) < millis()) {
+    ledLapOff();
   }
 }
