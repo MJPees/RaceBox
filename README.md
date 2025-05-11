@@ -7,7 +7,11 @@ Der ESP32 geht bei fehlender WLAN-Konfiguration automatisch in einen Accesspoint
 Neben SSID und Passwort des zu verwendenden Routers muss die IP-Addresse und der Port des SmartRace-Servers für den analogen Sensorbetrieb gesetzt werden.
 Der Power Level für den RFID-Empfang kann von 10dbm bis 26dbm eingestellt werden.
 Die Ids der RFID-Chips für Controller 1-8 werden bei neu erkannten IDs automatisch gefüllt, wenn sie im Webinterface zuvor "leer" sind.
-Die optionale ID2 pro Controller muss für Team-Rennen im Webinterface ausgefüllt werden.
+Die optionale ID2 pro Controller muss für Team-Rennen im Webinterface ausgefüllt werden.<br><br>
+Die optionale LAP LED wird mit Anode (+) an 3,3V und Kathode (-) an Pin D8 angeschlossen. (Vorwiderstand nicht vergessen oder LED mit eingebautem Widerstand verwenden!)<br><br>
+Im Quellcode kann die ESP32 Version für den ESP32-C3 über einen define
+aktiviert werden.<br>
+Standard ist der ESP32-Dev mit externer Antenne.
 
 ## Konfiguration über Web-Interface:
 <img src="./images/Webinterface.png"/>
@@ -59,6 +63,10 @@ R200 GND <--> ESP32 GND<br><br>
 
 ### Darstellung in SmartRace
 <img src="./images/SmartRace.png"/>
+
+### Version mit ESP32-C3
+<img src="./images/ESP32C3_1.jpg"/>
+<img src="./images/ESP32C3_2.jpg"/>
 
 
 
