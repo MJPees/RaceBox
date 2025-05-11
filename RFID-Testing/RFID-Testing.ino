@@ -1,6 +1,7 @@
 #define VERSION "1.0.0"
 #define DEBUG
 #define ESP32C3
+//#define ESP32DEV
 #ifdef ESP32DEV
   #define SerialRFID Serial2;
   #define RX_PIN 16
@@ -173,6 +174,10 @@ void setPowerLevel(int powerLevel) {
 
   if(ok) {
     Serial.println("Set power level.");
+    ledLapOn();
+    delay(200);
+    ledLapOff();
+    delay(500);
   } else {
     Serial.println("Failed to set power level.");
   }
@@ -182,8 +187,7 @@ void setPowerLevel(int powerLevel) {
 void initRfid() {
   Serial.println("Starting RFID reader...");
   SerialRFID.begin(115200,SERIAL_8N1, RX_PIN, TX_PIN);
-  wait(2000);
-  delay(2000);
+  wait(500);
   while(SerialRFID.available()) {
     SerialRFID.read();
   }
@@ -192,6 +196,10 @@ void initRfid() {
 
   if(setReaderSetting(Europe, 8, RegionResponse, 8)) {
     Serial.println("Set Europe region.");
+    ledLapOn();
+    delay(200);
+    ledLapOff();
+    delay(500);
   } else {
     Serial.println("Failed to set Europe region.");
   }
@@ -199,6 +207,10 @@ void initRfid() {
   //set dense reader
   if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
     Serial.println("Set dense reader.");
+    ledLapOn();
+    delay(200);
+    ledLapOff();
+    delay(500);
   } else {
     Serial.println("Failed to set dense reader.");
   }
@@ -206,6 +218,10 @@ void initRfid() {
   //no module sleep time
   if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
     Serial.println("Disabled module sleep time.");
+    ledLapOn();
+    delay(200);
+    ledLapOff();
+    delay(500);
   } else {
     Serial.println("Failed to disable module sleep time.");
   }
@@ -413,11 +429,11 @@ void ledLapOff() {
 }
 
 void setup() {
+  pinMode(LAP_LED_PIN, OUTPUT);
+  digitalWrite(LAP_LED_PIN, HIGH);
   Serial.begin(115200);
   wait(2000);
   initRfid();
-  pinMode(LAP_LED_PIN, OUTPUT);
-  digitalWrite(LAP_LED_PIN, HIGH);
   Serial.print("RFID-SmartRace Version: ");
   Serial.print(VERSION);
   Serial.println(" started.");
