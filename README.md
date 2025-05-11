@@ -1,13 +1,17 @@
 # RFID-SmartRace
 
-RFID-SmartRace ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a>. Hierzu wird der analoge Sensormodus von SmartRace genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 6 Autos möglich (6 Controller in SmartRace).<br>
+RFID-SmartRace ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a>. Hierzu wird der analoge Sensormodus von SmartRace genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 8 Autos möglich (8 Controller in SmartRace).<br>
 Des Weiteren können 2 RFID-Ids für einen Controller definiert werden. Somit sind auch Langstreckenrennen mit jeweils zwei Fahrzeugen pro Team möglich.
 Der ESP32 geht bei fehlender WLAN-Konfiguration automatisch in einen Accesspoint-Modus.
 Über das Webinterface kann RFID-SmartRace konfiguriert werden.
 Neben SSID und Passwort des zu verwendenden Routers muss die IP-Addresse und der Port des SmartRace-Servers für den analogen Sensorbetrieb gesetzt werden.
-Der Power Level für den RFID-Empfang kann von 10dbm bis 26dbm eingestellt werden (Neustart der Hardware nötig!).
-Die Ids der RFID-Chips für Controller 1-6 werden bei neu erkannten IDs automatisch gefüllt, wenn sie im Webinterface zuvor "leer" sind.
-Die optionale ID2 pro Controller muss für Team-Rennen im Webinterface ausgefüllt werden.
+Der Power Level für den RFID-Empfang kann von 10dbm bis 26dbm eingestellt werden.
+Die Ids der RFID-Chips für Controller 1-8 werden bei neu erkannten IDs automatisch gefüllt, wenn sie im Webinterface zuvor "leer" sind.
+Die optionale ID2 pro Controller muss für Team-Rennen im Webinterface ausgefüllt werden.<br><br>
+Die optionale LAP LED wird mit Anode (+) an 3,3V und Kathode (-) an Pin2 (ESP32-DEV) bzw. Pin D8 (ESP32-C3) angeschlossen. (Vorwiderstand nicht vergessen oder LED mit eingebautem Widerstand verwenden!)<br><br>
+Im Quellcode kann die ESP32 Version für den ESP32-C3 über einen define
+aktiviert werden.<br>
+Standard ist der ESP32-Dev mit externer Antenne.
 
 ## Konfiguration über Web-Interface:
 <img src="./images/Webinterface.png"/>
@@ -43,7 +47,7 @@ R200 RX <--> ESP32 17<br>
 R200 GND <--> ESP32 GND<br><br>
 <img src="./images/Invelion_R200.jpg"/>
 
-### Der Einbauort für den RFID-Reader wurde mit Alufolie ausgekleidet um Funk-Störungen zu minimieren.
+### Der Einbauort für den RFID-Reader wurde mit Alufolie ausgekleidet um Funk-Störungen zu minimieren.<br><br>(Es hat sich gezeigt, dass die Abschirmung nicht benötigt wird)
 <img src="./images/Abschirmung_Alufolie.jpg"/>
 
 ### Montage der 1dbi Antenne als Brücke über Start/Ziel:
@@ -59,6 +63,10 @@ R200 GND <--> ESP32 GND<br><br>
 
 ### Darstellung in SmartRace
 <img src="./images/SmartRace.png"/>
+
+### Version mit ESP32-C3
+<img src="./images/ESP32C3_1.jpg"/>
+<img src="./images/ESP32C3_2.jpg"/>
 
 
 
