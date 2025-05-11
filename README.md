@@ -8,7 +8,7 @@ Neben SSID und Passwort des zu verwendenden Routers muss die IP-Addresse und der
 Der Power Level für den RFID-Empfang kann von 10dbm bis 26dbm eingestellt werden.
 Die Ids der RFID-Chips für Controller 1-8 werden bei neu erkannten IDs automatisch gefüllt, wenn sie im Webinterface zuvor "leer" sind.
 Die optionale ID2 pro Controller muss für Team-Rennen im Webinterface ausgefüllt werden.<br><br>
-Die optionale LAP LED wird mit Anode (+) an 3,3V und Kathode (-) an Pin D8 angeschlossen. (Vorwiderstand nicht vergessen oder LED mit eingebautem Widerstand verwenden!)<br><br>
+Die optionale LAP LED wird mit Anode (+) an 3,3V und Kathode (-) an Pin2 (ESP32-DEV) bzw. Pin D8 (ESP32-C3) angeschlossen. (Vorwiderstand nicht vergessen oder LED mit eingebautem Widerstand verwenden!)<br><br>
 Im Quellcode kann die ESP32 Version für den ESP32-C3 über einen define
 aktiviert werden.<br>
 Standard ist der ESP32-Dev mit externer Antenne.
@@ -47,7 +47,7 @@ R200 RX <--> ESP32 17<br>
 R200 GND <--> ESP32 GND<br><br>
 <img src="./images/Invelion_R200.jpg"/>
 
-### Der Einbauort für den RFID-Reader wurde mit Alufolie ausgekleidet um Funk-Störungen zu minimieren.
+### Der Einbauort für den RFID-Reader wurde mit Alufolie ausgekleidet um Funk-Störungen zu minimieren.<br><br>(Es hat sich gezeigt, dass die Abschirmung nicht benötigt wird)
 <img src="./images/Abschirmung_Alufolie.jpg"/>
 
 ### Montage der 1dbi Antenne als Brücke über Start/Ziel:

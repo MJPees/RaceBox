@@ -15,10 +15,10 @@ using namespace websockets;
 //#define ESP32C3
 #define ESP32DEV
 #ifdef ESP32DEV
-  #define SerialRFID Serial2;
+  #define SerialRFID Serial2
   #define RX_PIN 16
   #define TX_PIN 17
-  #define LAP_LED_PIN 8
+  #define LAP_LED_PIN 2
 #elif defined(ESP32C3)
   HardwareSerial SerialRFID(1);
   #define RX_PIN 5
