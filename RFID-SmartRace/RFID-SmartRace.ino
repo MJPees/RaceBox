@@ -469,6 +469,10 @@ void setPowerLevel(int powerLevel) {
 
   if(ok) {
     Serial.println("Set power level.");
+    ledLapOn();
+    delay(100);
+    ledLapOff();
+    delay(200);
   } else {
     Serial.println("Failed to set power level.");
   }
@@ -487,6 +491,10 @@ void initRfid() {
 
   if(setReaderSetting(Europe, 8, RegionResponse, 8)) {
     Serial.println("Set Europe region.");
+    ledLapOn();
+    delay(100);
+    ledLapOff();
+    delay(200);
   } else {
     Serial.println("Failed to set Europe region.");
   }
@@ -494,6 +502,10 @@ void initRfid() {
   //set dense reader
   if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
     Serial.println("Set dense reader.");
+    ledLapOn();
+    delay(100);
+    ledLapOff();
+    delay(200);
   } else {
     Serial.println("Failed to set dense reader.");
   }
@@ -501,6 +513,10 @@ void initRfid() {
   //no module sleep time
   if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
     Serial.println("Disabled module sleep time.");
+    ledLapOn();
+    delay(100);
+    ledLapOff();
+    delay(200);
   } else {
     Serial.println("Failed to disable module sleep time.");
   }
@@ -756,10 +772,11 @@ void setup() {
   
   server.begin();
   Serial.println("Webserver gestartet...");
-  // Start RFID reader
-  initRfid();
+  
   pinMode(LAP_LED_PIN, OUTPUT);
   digitalWrite(LAP_LED_PIN, HIGH);
+  // Start RFID reader
+  initRfid();
   Serial.print("RFID-SmartRace Version: ");
   Serial.print(VERSION);
   Serial.println(" started.");
