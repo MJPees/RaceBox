@@ -64,7 +64,6 @@ unsigned int rssi = 0;
 unsigned int pc = 0;
 unsigned int parameterLength = 0;
 unsigned int crc = 0;
-unsigned int checksum = 0;
 unsigned int dataCheckSum = 0;
 
 unsigned char epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
@@ -135,6 +134,11 @@ void loadConfig() {
       rfids[i].id[j] = preferences.getString((key + "_" + String(j)).c_str(), "");
     }
   }
+}
+
+void handleNotFound() {
+  server.sendHeader("Location", "/");
+  server.send(302, "text/plain", "redirect to configuration page");
 }
 
 void handleRoot() {
@@ -226,7 +230,7 @@ void handleConfig() {
         delay(100);
       }
       WiFi.softAPdisconnect(true);
-      if(dnsServer.isRunning()) {
+      if(dnsServer.isUp()) {
         dnsServer.stop();
       }
 
@@ -247,7 +251,7 @@ void handleConfig() {
       } else {
         Serial.println("\nWLAN Verbindung fehlgeschlagen!");
         WiFi.softAP(AP_SSID);
-        dnsServer.start(53, "*", WiFi.softAPIP());
+        dnsServer.start();
         ap_mode = true;
       }
     }
@@ -630,7 +634,6 @@ void resetRfidData() {
   rssi = 0;
   pc = 0;
   dataCheckSum = 0;
-  checksum = 0;
   command = 0;
   messageType = 0;
 }
@@ -735,19 +738,21 @@ void setup() {
     } else {
       Serial.println("\nWLAN Verbindung fehlgeschlagen!");
       WiFi.softAP(AP_SSID);
-      dnsServer.start(53, "*", WiFi.softAPIP());
+      dnsServer.start();
       Serial.println("AP started ");
       ap_mode = true;
     }
   } else {
     WiFi.softAP(AP_SSID);
-    dnsServer.start(53, "*", WiFi.softAPIP());
+    dnsServer.start();
     Serial.println("AP started ");
     ap_mode = true;
   }
 
   server.on("/", handleRoot);
   server.on("/config", HTTP_POST, handleConfig);
+  // all unknown pages are redirected to configuration page
+  server.onNotFound(handleNotFound);
   
   server.begin();
   Serial.println("Webserver gestartet...");
@@ -763,22 +768,19 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  if(dnsServer.isRunning()) {
-    dnsServer.processNextRequest();
-  }
   // process RFID data
   readRfid();
   if(websocket_connected) {
     client.poll();
-    if(last_ping < millis() + 5000) {
+    if(millis() > (last_ping + 5000)) {
       last_ping = millis();
       client.ping();
     }
   }
   else {
-    if(ap_mode == false) connectWebsocket();
+    if(!ap_mode) connectWebsocket();
   }
-  if(isLedLapOn && (ledOnTime + 0) < millis()) {
+  if(isLedLapOn() && (ledOnTime + 0) < millis()) {
     ledLapOff();
   }
 }

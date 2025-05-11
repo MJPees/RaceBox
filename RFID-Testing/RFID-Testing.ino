@@ -51,7 +51,6 @@ unsigned int rssi = 0;
 unsigned int pc = 0;
 unsigned int parameterLength = 0;
 unsigned int crc = 0;
-unsigned int checksum = 0;
 unsigned int dataCheckSum = 0;
 
 unsigned char epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
@@ -340,7 +339,6 @@ void resetRfidData() {
   rssi = 0;
   pc = 0;
   dataCheckSum = 0;
-  checksum = 0;
   command = 0;
   messageType = 0;
 }
