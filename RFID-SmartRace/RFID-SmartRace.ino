@@ -10,7 +10,7 @@
 
 using namespace websockets;
 
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 //#define DEBUG
 //#define ESP32C3
 #define ESP32DEV
@@ -27,7 +27,7 @@ using namespace websockets;
 #endif
 
 const unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
-const unsigned char StopReadMultiResponse[] = {0xAA,0x01,0x28,0x00,0x01,0x00,0x2A,0xDD};
+const unsigned char StopReadMultiResponse[8] = {0xAA,0x01,0x28,0x00,0x01,0x00,0x2A,0xDD};
 const unsigned char StopReadMulti[7] = {0XAA,0X00,0X28,0X00,0X00,0X28,0XDD};
 const unsigned char Power10dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X03,0XE8,0XA3,0XDD};
 const unsigned char Power11dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X04,0X4C,0X08,0XDD};
@@ -296,7 +296,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
     for (int i = 0; i < max_rfid_cnt; i++) {
       if(rfids[i].id[j] == rfid_string) {
         if(rfids[i].last + minLapTime < ms) {
-          ledLapOn();
+          ledOn();
           send_finish_line_message(i, ms);
         }
         found = true;
@@ -315,7 +315,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
         Serial.print(i+1);
         Serial.print(rfids[i].id[0]);
         Serial.println();
-        ledLapOn();
+        ledOn();
         send_finish_line_message(i, ms);
         break;
       }
@@ -469,9 +469,9 @@ void setPowerLevel(int powerLevel) {
 
   if(ok) {
     Serial.println("Set power level.");
-    ledLapOn();
+    ledOn();
     delay(200);
-    ledLapOff();
+    ledOff();
     delay(500);
   } else {
     Serial.println("Failed to set power level.");
@@ -491,9 +491,9 @@ void initRfid() {
 
   if(setReaderSetting(Europe, 8, RegionResponse, 8)) {
     Serial.println("Set Europe region.");
-    ledLapOn();
+    ledOn();
     delay(200);
-    ledLapOff();
+    ledOff();
     delay(500);
   } else {
     Serial.println("Failed to set Europe region.");
@@ -502,9 +502,9 @@ void initRfid() {
   //set dense reader
   if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
     Serial.println("Set dense reader.");
-    ledLapOn();
+    ledOn();
     delay(200);
-    ledLapOff();
+    ledOff();
     delay(500);
   } else {
     Serial.println("Failed to set dense reader.");
@@ -513,9 +513,9 @@ void initRfid() {
   //no module sleep time
   if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
     Serial.println("Disabled module sleep time.");
-    ledLapOn();
+    ledOn();
     delay(200);
-    ledLapOff();
+    ledOff();
     delay(500);
   } else {
     Serial.println("Failed to disable module sleep time.");
@@ -704,19 +704,19 @@ void checkRfid(unsigned char epcBytes[]) {
   lastEpcRead = millis();
 }
 
-bool isLedLapOn() {
+bool isLedOn() {
   if (digitalRead(LAP_LED_PIN) == LOW) {
     return true;
   }
   return false;
 }
 
-void ledLapOn() {
+void ledOn() {
   digitalWrite(LAP_LED_PIN, LOW);
   ledOnTime = millis();
 }
 
-void ledLapOff() {
+void ledOff() {
   digitalWrite(LAP_LED_PIN, HIGH);
 }
 
@@ -797,7 +797,7 @@ void loop() {
   else {
     if(!ap_mode) connectWebsocket();
   }
-  if(isLedLapOn() && (ledOnTime + 0) < millis()) {
-    ledLapOff();
+  if(isLedOn() && (ledOnTime + 0) < millis()) {
+    ledOff();
   }
 }

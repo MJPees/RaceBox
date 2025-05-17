@@ -34,9 +34,7 @@ kleine RFID-Tags (Carrera Hybrid):<br>
 https://amzn.eu/d/fBFeS80
 <br>Anmerkung:<br>
 Die Tags haben im Auslieferungszustand alle die gleiche ID (EPC).<br>
-Die Tags müssen einmalig mit Hilfe der Demo-Software des R200 neu geschrieben werden!
-<br>Zukünftig wird es auch einen separaten Arduino-Sketch hierfür geben.
-
+Mit Hilfe des Sketches RFID-Label-Writer.ino  kann die ID neu geschrieben werden. Dazu den Sketch auf den ESP32 laden und danach alle Tags einzeln an die Antenne halten. Die ID wird von 1 automatisch hochgezählt. Textausgabe kann über Serial angesehen werden.
 <br><br>
 
 ## Aufbau der Hardware
