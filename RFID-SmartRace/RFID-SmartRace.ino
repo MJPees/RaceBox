@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
@@ -234,6 +233,7 @@ void handleConfig() {
         dnsServer.stop();
       }
 
+      WiFi.setHostname("RFID-SmartRace");
       WiFi.begin(ssid.c_str(), password.c_str());
 
       int attempts = 0;
@@ -740,6 +740,7 @@ void setup() {
   loadConfig();
 
   if (ssid != "") {
+    WiFi.setHostname("RFID-SmartRace");
     WiFi.begin(ssid.c_str(), password.c_str());
 
     int attempts = 0;
