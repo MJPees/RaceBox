@@ -83,6 +83,7 @@ WebsocketsClient client;
 const char* AP_SSID = "RFID-SmartRace-Config";
 WebServer server(80);
 DNSServer dnsServer;
+String hostName = "";
 Preferences preferences;
 
 String ssid, password, serverAddress, serverPort;
@@ -108,6 +109,7 @@ void saveConfig() {
   preferences.putString("password", password);
   preferences.putString("serverAddress", serverAddress);
   preferences.putString("serverPort", serverPort);
+  preferences.putString("hostName", hostName);
   preferences.putInt("powerLevel", powerLevel); // Save power level
   preferences.putInt("minLapTime", minLapTime); // Save minimum lap time
   for(int i=0; i<max_rfid_cnt;i++) {
@@ -124,6 +126,7 @@ void loadConfig() {
   password = preferences.getString("password", "");
   serverAddress = preferences.getString("serverAddress", "");
   serverPort = preferences.getString("serverPort", "");
+  hostName = preferences.getString("hostName", "RFID-SmartRace");
   powerLevel = preferences.getInt("powerLevel", 26); // Load power level
   minLapTime = preferences.getInt("minLapTime", 3000); // Load minimum lap time
   for(int i=0; i<max_rfid_cnt;i++) {
@@ -155,6 +158,8 @@ void handleRoot() {
   html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' value='" + serverAddress + "'><br>";
   html += "<label for='serverPort'>Server Port:</label>";
   html += "<input type='number' style='width:auto;' id='serverPort' name='serverPort' value='" + serverPort + "'><br>";
+  html += "<label for='hostName'>Hostname:</label>";
+  html += "<input type='text' style='width:auto;' id='hostName' name='hostName' value='" + hostName + "'><br>";
   html += "<label for='minLapTime'>Minimum Lap Time (ms):</label>";
   html += "<input type='number' style='width:auto;' id='minLapTime' name='minLapTime' value='" + String(minLapTime) + "'><br>";
   html += "<label for='powerLevel'>Power Level:</label>";
@@ -206,11 +211,12 @@ void handleRoot() {
 
 void handleConfig() {
   if (server.args() > 0) {
-    bool reConnectWifi = ssid != server.arg("ssid") || password != server.arg("password");
+    bool reConnectWifi = ssid != server.arg("ssid") || password != server.arg("password") || hostName != server.arg("hostName");
     ssid = server.arg("ssid");
     password = server.arg("password");
     serverAddress = server.arg("serverAddress");
     serverPort = server.arg("serverPort");
+    hostName = server.arg("hostName");
     powerLevel = server.arg("powerLevel").toInt(); // Get power level from dropdown
     minLapTime = server.arg("minLapTime").toInt(); // Get minimum lap time from input
     for (int i = 0; i < max_rfid_cnt; i++) {
@@ -221,7 +227,7 @@ void handleConfig() {
     }
     setPowerLevel(powerLevel); // Set power level
     saveConfig();
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Konfiguration gespeichert!</h1><p>Sie werden in 2 Sekunden zur Startseite weitergeleitet.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
 
     if(reConnectWifi) {
       if (WiFi.status() == WL_CONNECTED) {
@@ -233,7 +239,7 @@ void handleConfig() {
         dnsServer.stop();
       }
 
-      WiFi.setHostname("RFID-SmartRace");
+      WiFi.setHostname(hostName.c_str());
       WiFi.begin(ssid.c_str(), password.c_str());
 
       int attempts = 0;
@@ -256,7 +262,7 @@ void handleConfig() {
       }
     }
   } else {
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Ungültige Anfrage</h1><p>Sie werden in 2 Sekunden zur Startseite weitergeleitet.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
   }
 }
 
@@ -268,7 +274,7 @@ void connectWebsocket() {
   while(websocket_connected == 0 && attempts < 3) {
     Serial.print(".");
     websocket_connected = client.connect(websocket_server);
-    delay(1000);
+    wait(1000);
     attempts++;
   }
   Serial.println("");
@@ -352,7 +358,7 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 void wait(unsigned long waitTime) {
   unsigned long startWaitTime = millis();
   while((millis() - startWaitTime) < waitTime) {
-    delay(1);
+    server.handleClient();
   }
 }
 
@@ -662,7 +668,7 @@ void processLabelData(unsigned char *dataBytes) {
     Serial.println(rssi, HEX);
   #endif
   //PC
-  pc = dataBytes[1] << 8 + dataBytes[2];
+  pc = (dataBytes[1] << 8) + dataBytes[2];
   #ifdef DEBUG
     Serial.print("PC: 0x"); 
     Serial.println(pc, HEX);
@@ -677,7 +683,7 @@ void processLabelData(unsigned char *dataBytes) {
       Serial.print(epcBytes[i-3], HEX);
     #endif
   }
-  crc = dataBytes[parameterLength-2] << 8 + dataBytes[parameterLength-1];
+  crc = (dataBytes[parameterLength-2] << 8) + dataBytes[parameterLength-1];
   #ifdef DEBUG
     Serial.println("");
     Serial.print("CRC: 0x"); 
@@ -740,7 +746,7 @@ void setup() {
   loadConfig();
 
   if (ssid != "") {
-    WiFi.setHostname("RFID-SmartRace");
+    WiFi.setHostname(hostName.c_str());
     WiFi.begin(ssid.c_str(), password.c_str());
 
     int attempts = 0;

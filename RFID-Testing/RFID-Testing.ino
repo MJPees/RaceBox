@@ -375,7 +375,7 @@ void processLabelData(unsigned char *dataBytes) {
     Serial.println(rssi, HEX);
   #endif
   //PC
-  pc = dataBytes[1] << 8 + dataBytes[2];
+  pc = (dataBytes[1] << 8) + dataBytes[2];
   #ifdef DEBUG
     Serial.print("PC: 0x"); 
     Serial.println(pc, HEX);
@@ -390,7 +390,7 @@ void processLabelData(unsigned char *dataBytes) {
       Serial.print(epcBytes[i-3], HEX);
     #endif
   }
-  crc = dataBytes[parameterLength-2] << 8 + dataBytes[parameterLength-1];
+  crc = (dataBytes[parameterLength-2] << 8) + dataBytes[parameterLength-1];
   #ifdef DEBUG
     Serial.println("");
     Serial.print("CRC: 0x"); 
