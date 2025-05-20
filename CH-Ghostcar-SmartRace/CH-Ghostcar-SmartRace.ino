@@ -383,6 +383,8 @@ void setup() {
   #endif
   #ifdef LED_PIN
     pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, LOW);
+    wait(500);
     digitalWrite(LED_PIN, HIGH);
   #endif
 }

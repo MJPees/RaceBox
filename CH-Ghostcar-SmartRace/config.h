@@ -21,7 +21,7 @@
   #define RGB_LED_PIN 21
 #elif defined(ESP32C3)
   #define ESP32_BLE //For ESP32_BLE use Tools -> Partition Scheme -> No OTA (2MB APP/2MB SPIFFS)
-  #define LED_PIN 5 // optional - LED is used for feedback
+  #define LED_PIN 8 // optional - LED is used for feedback
 #endif
 
 #endif // CONFIG_H
