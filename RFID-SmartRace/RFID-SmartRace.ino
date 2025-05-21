@@ -11,8 +11,6 @@
 #define AP_SSID "RFID-SmartRace-Config"
 #define DEFAULT_HOSTNAME "RFID-SmartRace"
 
-
-
 using namespace websockets;
 
 #define VERSION "1.0.1"
@@ -96,35 +94,8 @@ const unsigned long maxWebsocketBackoff = 30000; // Maximal 30 Sekunden
 
 WebsocketsClient client;
 
-const char ssl_ca_cert[] PROGMEM = \
-    "-----BEGIN CERTIFICATE-----\n" \
-    "MIIEVzCCAj+gAwIBAgIRAIOPbGPOsTmMYgZigxXJ/d4wDQYJKoZIhvcNAQELBQAw\n" \
-    "TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh\n" \
-    "cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw\n" \
-    "WhcNMjcwMzEyMjM1OTU5WjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg\n" \
-    "RW5jcnlwdDELMAkGA1UEAxMCRTUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQNCzqK\n" \
-    "a2GOtu/cX1jnxkJFVKtj9mZhSAouWXW0gQI3ULc/FnncmOyhKJdyIBwsz9V8UiBO\n" \
-    "VHhbhBRrwJCuhezAUUE8Wod/Bk3U/mDR+mwt4X2VEIiiCFQPmRpM5uoKrNijgfgw\n" \
-    "gfUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD\n" \
-    "ATASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSfK1/PPCFPnQS37SssxMZw\n" \
-    "i9LXDTAfBgNVHSMEGDAWgBR5tFnme7bl5AFzgAiIyBpY9umbbjAyBggrBgEFBQcB\n" \
-    "AQQmMCQwIgYIKwYBBQUHMAKGFmh0dHA6Ly94MS5pLmxlbmNyLm9yZy8wEwYDVR0g\n" \
-    "BAwwCjAIBgZngQwBAgEwJwYDVR0fBCAwHjAcoBqgGIYWaHR0cDovL3gxLmMubGVu\n" \
-    "Y3Iub3JnLzANBgkqhkiG9w0BAQsFAAOCAgEAH3KdNEVCQdqk0LKyuNImTKdRJY1C\n" \
-    "2uw2SJajuhqkyGPY8C+zzsufZ+mgnhnq1A2KVQOSykOEnUbx1cy637rBAihx97r+\n" \
-    "bcwbZM6sTDIaEriR/PLk6LKs9Be0uoVxgOKDcpG9svD33J+G9Lcfv1K9luDmSTgG\n" \
-    "6XNFIN5vfI5gs/lMPyojEMdIzK9blcl2/1vKxO8WGCcjvsQ1nJ/Pwt8LQZBfOFyV\n" \
-    "XP8ubAp/au3dc4EKWG9MO5zcx1qT9+NXRGdVWxGvmBFRAajciMfXME1ZuGmk3/GO\n" \
-    "koAM7ZkjZmleyokP1LGzmfJcUd9s7eeu1/9/eg5XlXd/55GtYjAM+C4DG5i7eaNq\n" \
-    "cm2F+yxYIPt6cbbtYVNJCGfHWqHEQ4FYStUyFnv8sjyqU8ypgZaNJ9aVcWSICLOI\n" \
-    "E1/Qv/7oKsnZCWJ926wU6RqG1OYPGOi1zuABhLw61cuPVDT28nQS/e6z95cJXq0e\n" \
-    "K1BcaJ6fJZsmbjRgD5p3mvEf5vdQM7MCEvU0tHbsx2I5mHHJoABHb8KVBgWp/lcX\n" \
-    "GWiWaeOyB7RP+OfDtvi2OsapxXiV7vNVs7fMlrRjY1joKaqmmycnBvAq14AEbtyL\n" \
-    "sVfOS66B8apkeFX2NY4XPEYV4ZSCe8VHPrdrERk2wILG3T/EGmSIkCYVUMSnjmJd\n" \
-    "VQD9F6Na/+zmXCc=\n" \
-    "-----END CERTIFICATE-----\n";
+String ssl_ca_cert = "";
 
-// const char* AP_SSID = "RFID-SmartRace-Config";
 WebServer server(80);
 DNSServer dnsServer;
 String hostName = "";
@@ -156,6 +127,7 @@ void saveConfig() {
   preferences.putString("hostName", hostName);
   preferences.putInt("powerLevel", powerLevel);
   preferences.putInt("minLapTime", minLapTime);
+  preferences.putString("ssl_ca_cert", ssl_ca_cert);
   char key[20];
   for(int i=0; i<max_rfid_cnt; i++) {
     snprintf(key, sizeof(key), "RFID%d", i);
@@ -175,6 +147,36 @@ void loadConfig() {
   hostName = preferences.getString("hostName", DEFAULT_HOSTNAME);
   powerLevel = preferences.getInt("powerLevel", DEFAULT_POWER_LEVEL);
   minLapTime = preferences.getInt("minLapTime", DEFAULT_MIN_LAP_TIME);
+  ssl_ca_cert = preferences.getString("ssl_ca_cert", "");
+  if (ssl_ca_cert == "") {
+    ssl_ca_cert =
+      "-----BEGIN CERTIFICATE-----\n"
+      "MIIEVzCCAj+gAwIBAgIRAIOPbGPOsTmMYgZigxXJ/d4wDQYJKoZIhvcNAQELBQAw\n"
+      "TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh\n"
+      "cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw\n"
+      "WhcNMjcwMzEyMjM1OTU5WjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg\n"
+      "RW5jcnlwdDELMAkGA1UEAxMCRTUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQNCzqK\n"
+      "a2GOtu/cX1jnxkJFVKtj9mZhSAouWXW0gQI3ULc/FnncmOyhKJdyIBwsz9V8UiBO\n"
+      "VHhbhBRrwJCuhezAUUE8Wod/Bk3U/mDR+mwt4X2VEIiiCFQPmRpM5uoKrNijgfgw\n"
+      "gfUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD\n"
+      "ATASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSfK1/PPCFPnQS37SssxMZw\n"
+      "i9LXDTAfBgNVHSMEGDAWgBR5tFnme7bl5AFzgAiIyBpY9umbbjAyBggrBgEFBQcB\n"
+      "AQQmMCQwIgYIKwYBBQUHMAKGFmh0dHA6Ly94MS5pLmxlbmNyLm9yZy8wEwYDVR0g\n"
+      "BAwwCjAIBgZngQwBAgEwJwYDVR0fBCAwHjAcoBqgGIYWaHR0cDovL3gxLmMubGVu\n"
+      "Y3Iub3JnLzANBgkqhkiG9w0BAQsFAAOCAgEAH3KdNEVCQdqk0LKyuNImTKdRJY1C\n"
+      "2uw2SJajuhqkyGPY8C+zzsufZ+mgnhnq1A2KVQOSykOEnUbx1cy637rBAihx97r+\n"
+      "bcwbZM6sTDIaEriR/PLk6LKs9Be0uoVxgOKDcpG9svD33J+G9Lcfv1K9luDmSTgG\n"
+      "6XNFIN5vfI5gs/lMPyojEMdIzK9blcl2/1vKxO8WGCcjvsQ1nJ/Pwt8LQZBfOFyV\n"
+      "XP8ubAp/au3dc4EKWG9MO5zcx1qT9+NXRGdVWxGvmBFRAajciMfXME1ZuGmk3/GO\n"
+      "koAM7ZkjZmleyokP1LGzmfJcUd9s7eeu1/9/eg5XlXd/55GtYjAM+C4DG5i7eaNq\n"
+      "cm2F+yxYIPt6cbbtYVNJCGfHWqHEQ4FYStUyFnv8sjyqU8ypgZaNJ9aVcWSICLOI\n"
+      "E1/Qv/7oKsnZCWJ926wU6RqG1OYPGOi1zuABhLw61cuPVDT28nQS/e6z95cJXq0e\n"
+      "K1BcaJ6fJZsmbjRgD5p3mvEf5vdQM7MCEvU0tHbsx2I5mHHJoABHb8KVBgWp/lcX\n"
+      "GWiWaeOyB7RP+OfDtvi2OsapxXiV7vNVs7fMlrRjY1joKaqmmycnBvAq14AEbtyL\n"
+      "sVfOS66B8apkeFX2NY4XPEYV4ZSCe8VHPrdrERk2wILG3T/EGmSIkCYVUMSnjmJd\n"
+      "VQD9F6Na/+zmXCc=\n"
+      "-----END CERTIFICATE-----\n";
+  }
   char key[20];
   char defaultName[20];
   for(int i=0; i<max_rfid_cnt; i++) {
@@ -204,10 +206,6 @@ void handleRoot() {
   html += "<input type='text' style='width:auto;' id='ssid' name='ssid' value='" + ssid + "'><br>";
   html += "<label for='password'>Passwort:</label>";
   html += "<input type='password' style='width:auto;' id='password' name='password' value='" + password + "'><br>";
-  html += "<label for='serverAddress'>Server Adresse:</label>";
-  html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' value='" + serverAddress + "'><br>";
-  html += "<label for='serverPort'>Server Port:</label>";
-  html += "<input type='number' style='width:auto;' id='serverPort' name='serverPort' value='" + serverPort + "'><br>";
   html += "<label for='hostName'>Hostname:</label>";
   html += "<input type='text' style='width:auto;' id='hostName' name='hostName' value='" + hostName + "'><br>";
   html += "<label for='minLapTime'>Minimum Lap Time (ms):</label>";
@@ -232,10 +230,16 @@ void handleRoot() {
   html += "<option value='25'" + String((powerLevel == 25) ? " selected" : "") + ">25 dBm</option>";
   html += "<option value='26'" + String((powerLevel == 26) ? " selected" : "") + ">26 dBm</option>";
   html += "</select><br>";
+  html += "<label for='serverAddress'>Websocket Server Adresse:</label>";
+  html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' placeholder='ws:// or wss://' value='" + serverAddress + "'><br>";
+  html += "<label for='serverPort'>Server Port:</label>";
+  html += "<input type='number' style='width:auto;' id='serverPort' name='serverPort' value='" + serverPort + "'><br>";
+  html += "<label for='ssl_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+  html += "<textarea id='ssl_ca_cert' name='ssl_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + ssl_ca_cert + "</textarea><br>";
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
   html += "<div style='display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Äußerer Grid-Container
   for (int i = 0; i < max_rfid_cnt; i++) {
-      html += "<div style='border: 3px solid blue; padding: 10px; margin: 5px; display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Rahmen mit Grid-Spalte
+      html += "<div style='border: 3px solid black; padding: 10px; margin: 5px; display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Rahmen mit Grid-Spalte
       html += "<div style='display: grid; grid-template-columns: auto 1fr; align-items: center;'>"; // Grid für Name
       html += "<label for='name" + String(i) + "'>Name:</label>";
       html += "<input type='text' maxlength='100' style='width:auto; margin-left: 4px;' id='name" + String(i) + "' name='name" + String(i) + "' value='" + rfids[i].name + "'>";
@@ -269,6 +273,8 @@ void handleConfig() {
     hostName = server.arg("hostName");
     powerLevel = server.arg("powerLevel").toInt(); // Get power level from dropdown
     minLapTime = server.arg("minLapTime").toInt(); // Get minimum lap time from input
+    ssl_ca_cert = server.arg("ssl_ca_cert");
+    ssl_ca_cert.replace("\r", ""); // Optional: Zeilenumbrüche vereinheitlichen
 
     char nameKey[12];
     char idKey[16];
@@ -331,7 +337,9 @@ void connectWebsocket() {
   Serial.print("Connecting to SmartRace at ");
   Serial.println(websocket_server);
 
-  client.setCACert(ssl_ca_cert);
+  if (ssl_ca_cert.length() > 0) {
+    client.setCACert(ssl_ca_cert.c_str());
+  }
   websocket_connected = client.connect(websocket_server);
 
   if(websocket_connected) {
