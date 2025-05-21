@@ -156,11 +156,13 @@ void saveConfig() {
   preferences.putString("hostName", hostName);
   preferences.putInt("powerLevel", powerLevel);
   preferences.putInt("minLapTime", minLapTime);
-  for(int i=0; i<max_rfid_cnt;i++) {
-    String key = "RFID" + String(i);
-    preferences.putString(key.c_str(), rfids[i].name);
-    for(int j=0; j<storage_rfid_cnt;j++) {
-      preferences.putString((key + "_" + String(j)).c_str(), rfids[i].id[j]); // Store RFId
+  char key[20];
+  for(int i=0; i<max_rfid_cnt; i++) {
+    snprintf(key, sizeof(key), "RFID%d", i);
+    preferences.putString(key, rfids[i].name);
+    for(int j=0; j<storage_rfid_cnt; j++) {
+      snprintf(key, sizeof(key), "RFID%d_%d", i, j);
+      preferences.putString(key, rfids[i].id[j]);
     }
   }
 }
@@ -171,13 +173,17 @@ void loadConfig() {
   serverAddress = preferences.getString("serverAddress", "");
   serverPort = preferences.getString("serverPort", "");
   hostName = preferences.getString("hostName", DEFAULT_HOSTNAME);
-  powerLevel = preferences.getInt("powerLevel", DEFAULT_POWER_LEVEL); // Load power level
-  minLapTime = preferences.getInt("minLapTime", DEFAULT_MIN_LAP_TIME); // Load minimum lap time
-  for(int i=0; i<max_rfid_cnt;i++) {
-    String key = "RFID" + String(i);
-    rfids[i].name = preferences.getString(key.c_str(), "Controller " + String(i+1));
-    for(int j=0; j<storage_rfid_cnt;j++) {
-      rfids[i].id[j] = preferences.getString((key + "_" + String(j)).c_str(), "");
+  powerLevel = preferences.getInt("powerLevel", DEFAULT_POWER_LEVEL);
+  minLapTime = preferences.getInt("minLapTime", DEFAULT_MIN_LAP_TIME);
+  char key[20];
+  char defaultName[20];
+  for(int i=0; i<max_rfid_cnt; i++) {
+    snprintf(key, sizeof(key), "RFID%d", i);
+    snprintf(defaultName, sizeof(defaultName), "Controller %d", i+1);
+    rfids[i].name = preferences.getString(key, defaultName);
+    for(int j=0; j<storage_rfid_cnt; j++) {
+      snprintf(key, sizeof(key), "RFID%d_%d", i, j);
+      rfids[i].id[j] = preferences.getString(key, "");
     }
   }
 }
@@ -263,10 +269,15 @@ void handleConfig() {
     hostName = server.arg("hostName");
     powerLevel = server.arg("powerLevel").toInt(); // Get power level from dropdown
     minLapTime = server.arg("minLapTime").toInt(); // Get minimum lap time from input
+
+    char nameKey[12];
+    char idKey[16];
     for (int i = 0; i < max_rfid_cnt; i++) {
-      rfids[i].name = server.arg("name" + String(i));
+      snprintf(nameKey, sizeof(nameKey), "name%d", i);
+      rfids[i].name = server.arg(nameKey);
       for (int j = 0; j < storage_rfid_cnt; j++) {
-        rfids[i].id[j] = server.arg("id" + String(i) + "_" + String(j));
+        snprintf(idKey, sizeof(idKey), "id%d_%d", i, j);
+        rfids[i].id[j] = server.arg(idKey);
       }
     }
     setPowerLevel(powerLevel); // Set power level
@@ -413,11 +424,13 @@ void wait(unsigned long waitTime) {
 }
 
 void resetRfidStorage() {
+  char nameBuf[20];
   for(int i=0; i < max_rfid_cnt; i++) {
     for(int j=0; j<storage_rfid_cnt; j++) {
       rfids[i].id[j] = "";
     }
-    rfids[i].name = "Controller " + String(i+1);
+    snprintf(nameBuf, sizeof(nameBuf), "Controller %d", i+1);
+    rfids[i].name = nameBuf;
     rfids[i].last = millis();
   }
 }
