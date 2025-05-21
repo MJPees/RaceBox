@@ -9,6 +9,11 @@
 
 using namespace websockets;
 
+#define DEFAULT_POWER_LEVEL 12 // default power level
+#define DEFAULT_MIN_LAP_TIME 3000 //min time between laps in ms
+#define AP_SSID "RFID-SmartRace-Config"
+#define DEFAULT_HOSTNAME "RFID-SmartRace"
+
 #define VERSION "1.0.1"
 //#define DEBUG
 //#define ESP32C3
@@ -71,7 +76,7 @@ unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
 unsigned long ledOnTime = 0;
 
-int minLapTime = 3000; //min time between laps in ms
+int minLapTime = DEFAULT_MIN_LAP_TIME;
 
 String websocket_server = "";
 bool ap_mode = false;
@@ -80,7 +85,35 @@ unsigned long last_ping = 0;
 
 WebsocketsClient client;
 
-const char* AP_SSID = "RFID-SmartRace-Config";
+const char ssl_ca_cert[] PROGMEM = \
+    "-----BEGIN CERTIFICATE-----\n" \
+    "MIIEVzCCAj+gAwIBAgIRAIOPbGPOsTmMYgZigxXJ/d4wDQYJKoZIhvcNAQELBQAw\n" \
+    "TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh\n" \
+    "cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw\n" \
+    "WhcNMjcwMzEyMjM1OTU5WjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg\n" \
+    "RW5jcnlwdDELMAkGA1UEAxMCRTUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQNCzqK\n" \
+    "a2GOtu/cX1jnxkJFVKtj9mZhSAouWXW0gQI3ULc/FnncmOyhKJdyIBwsz9V8UiBO\n" \
+    "VHhbhBRrwJCuhezAUUE8Wod/Bk3U/mDR+mwt4X2VEIiiCFQPmRpM5uoKrNijgfgw\n" \
+    "gfUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD\n" \
+    "ATASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSfK1/PPCFPnQS37SssxMZw\n" \
+    "i9LXDTAfBgNVHSMEGDAWgBR5tFnme7bl5AFzgAiIyBpY9umbbjAyBggrBgEFBQcB\n" \
+    "AQQmMCQwIgYIKwYBBQUHMAKGFmh0dHA6Ly94MS5pLmxlbmNyLm9yZy8wEwYDVR0g\n" \
+    "BAwwCjAIBgZngQwBAgEwJwYDVR0fBCAwHjAcoBqgGIYWaHR0cDovL3gxLmMubGVu\n" \
+    "Y3Iub3JnLzANBgkqhkiG9w0BAQsFAAOCAgEAH3KdNEVCQdqk0LKyuNImTKdRJY1C\n" \
+    "2uw2SJajuhqkyGPY8C+zzsufZ+mgnhnq1A2KVQOSykOEnUbx1cy637rBAihx97r+\n" \
+    "bcwbZM6sTDIaEriR/PLk6LKs9Be0uoVxgOKDcpG9svD33J+G9Lcfv1K9luDmSTgG\n" \
+    "6XNFIN5vfI5gs/lMPyojEMdIzK9blcl2/1vKxO8WGCcjvsQ1nJ/Pwt8LQZBfOFyV\n" \
+    "XP8ubAp/au3dc4EKWG9MO5zcx1qT9+NXRGdVWxGvmBFRAajciMfXME1ZuGmk3/GO\n" \
+    "koAM7ZkjZmleyokP1LGzmfJcUd9s7eeu1/9/eg5XlXd/55GtYjAM+C4DG5i7eaNq\n" \
+    "cm2F+yxYIPt6cbbtYVNJCGfHWqHEQ4FYStUyFnv8sjyqU8ypgZaNJ9aVcWSICLOI\n" \
+    "E1/Qv/7oKsnZCWJ926wU6RqG1OYPGOi1zuABhLw61cuPVDT28nQS/e6z95cJXq0e\n" \
+    "K1BcaJ6fJZsmbjRgD5p3mvEf5vdQM7MCEvU0tHbsx2I5mHHJoABHb8KVBgWp/lcX\n" \
+    "GWiWaeOyB7RP+OfDtvi2OsapxXiV7vNVs7fMlrRjY1joKaqmmycnBvAq14AEbtyL\n" \
+    "sVfOS66B8apkeFX2NY4XPEYV4ZSCe8VHPrdrERk2wILG3T/EGmSIkCYVUMSnjmJd\n" \
+    "VQD9F6Na/+zmXCc=\n" \
+    "-----END CERTIFICATE-----\n";
+
+// const char* AP_SSID = "RFID-SmartRace-Config";
 WebServer server(80);
 DNSServer dnsServer;
 String hostName = "";
@@ -102,7 +135,7 @@ String rfid_string = "";
 
 unsigned long lastResetTime = 0;
 
-int powerLevel = 26; // Default power level in dBm
+int powerLevel = DEFAULT_POWER_LEVEL;
 
 void saveConfig() {
   preferences.putString("ssid", ssid);
@@ -110,8 +143,8 @@ void saveConfig() {
   preferences.putString("serverAddress", serverAddress);
   preferences.putString("serverPort", serverPort);
   preferences.putString("hostName", hostName);
-  preferences.putInt("powerLevel", powerLevel); // Save power level
-  preferences.putInt("minLapTime", minLapTime); // Save minimum lap time
+  preferences.putInt("powerLevel", powerLevel);
+  preferences.putInt("minLapTime", minLapTime);
   for(int i=0; i<max_rfid_cnt;i++) {
     String key = "RFID" + String(i);
     preferences.putString(key.c_str(), rfids[i].name);
@@ -126,9 +159,9 @@ void loadConfig() {
   password = preferences.getString("password", "");
   serverAddress = preferences.getString("serverAddress", "");
   serverPort = preferences.getString("serverPort", "");
-  hostName = preferences.getString("hostName", "RFID-SmartRace");
-  powerLevel = preferences.getInt("powerLevel", 26); // Load power level
-  minLapTime = preferences.getInt("minLapTime", 3000); // Load minimum lap time
+  hostName = preferences.getString("hostName", DEFAULT_HOSTNAME);
+  powerLevel = preferences.getInt("powerLevel", DEFAULT_POWER_LEVEL); // Load power level
+  minLapTime = preferences.getInt("minLapTime", DEFAULT_MIN_LAP_TIME); // Load minimum lap time
   for(int i=0; i<max_rfid_cnt;i++) {
     String key = "RFID" + String(i);
     rfids[i].name = preferences.getString(key.c_str(), "Controller " + String(i+1));
@@ -203,7 +236,7 @@ void handleRoot() {
       html += "</div>"; // Ende Container für horizontale IDs
       html += "</div>";
   }
-  html += "</div>"; // Ende äußerer Grid-Container 
+  html += "</div>"; // Ende äußerer Grid-Container
   html += "</form>";
   html += "</body></html>";
   server.send(200, "text/html", html);
@@ -267,12 +300,13 @@ void handleConfig() {
 }
 
 void connectWebsocket() {
-  websocket_server = String("ws://" + serverAddress + ":" + serverPort);
+  websocket_server = String(serverAddress);
   Serial.print("Connecting to SmartRace at ");
   Serial.println(websocket_server);
   int attempts = 0;
   while(websocket_connected == 0 && attempts < 3) {
     Serial.print(".");
+    client.setCACert(ssl_ca_cert);
     websocket_connected = client.connect(websocket_server);
     wait(1000);
     attempts++;
@@ -413,7 +447,7 @@ void setPowerLevel(int powerLevel) {
   } else {
     Serial.println("Failed to stop ReadMulti.");
   }
-  
+
   while(SerialRFID.available()) {
     SerialRFID.read();
     delay(1);
@@ -504,7 +538,7 @@ void initRfid() {
   } else {
     Serial.println("Failed to set Europe region.");
   }
-  
+
   //set dense reader
   if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
     Serial.println("Set dense reader.");
@@ -526,10 +560,10 @@ void initRfid() {
   } else {
     Serial.println("Failed to disable module sleep time.");
   }
-  
+
   //set power level and start ReadMulti
   setPowerLevel(powerLevel);
-  
+
   Serial.println("\nR200 RFID-reader started...");
 }
 
@@ -585,7 +619,7 @@ void readRfid() {
       #endif
       dataCheckSum = rfidSerialByte;
     }
-    else if(gotMessageType) {  
+    else if(gotMessageType) {
       command = rfidSerialByte;
       #ifdef DEBUG
         Serial.print("Command: 0x");
@@ -602,7 +636,7 @@ void readRfid() {
           if(messageType == 0x01) {
             if(command == 0xFF) {
               #ifdef DEBUG
-                Serial.println("No label detected."); 
+                Serial.println("No label detected.");
               #endif
             }
           }
@@ -664,21 +698,21 @@ void processLabelData(unsigned char *dataBytes) {
   //RSSI
   rssi = dataBytes[0];
   #ifdef DEBUG
-    Serial.print("RSSI: 0x"); 
+    Serial.print("RSSI: 0x");
     Serial.println(rssi, HEX);
   #endif
   //PC
   pc = (dataBytes[1] << 8) + dataBytes[2];
   #ifdef DEBUG
-    Serial.print("PC: 0x"); 
+    Serial.print("PC: 0x");
     Serial.println(pc, HEX);
   #endif
   //EPC
   for(int i = 3; i < parameterLength-2; i++) {
     epcBytes[i-3] = dataBytes[i];
-    #ifdef DEBUG 
+    #ifdef DEBUG
       if(i == 3) {
-        Serial.print("EPC: "); 
+        Serial.print("EPC: ");
       }
       Serial.print(epcBytes[i-3], HEX);
     #endif
@@ -686,7 +720,7 @@ void processLabelData(unsigned char *dataBytes) {
   crc = (dataBytes[parameterLength-2] << 8) + dataBytes[parameterLength-1];
   #ifdef DEBUG
     Serial.println("");
-    Serial.print("CRC: 0x"); 
+    Serial.print("CRC: 0x");
     Serial.println(crc, HEX);
   #endif
   checkRfid(epcBytes);
@@ -778,10 +812,10 @@ void setup() {
   server.on("/config", HTTP_POST, handleConfig);
   // all unknown pages are redirected to configuration page
   server.onNotFound(handleNotFound);
-  
+
   server.begin();
   Serial.println("Webserver gestartet...");
-  
+
   // Start RFID reader
   initRfid();
   Serial.print("RFID-SmartRace Version: ");
