@@ -82,6 +82,9 @@ String websocket_server = "";
 bool ap_mode = false;
 bool websocket_connected = false;
 unsigned long last_ping = 0;
+unsigned long lastWebsocketAttempt = 0;
+unsigned long websocketBackoff = 1000; // Start mit 1 Sekunde
+const unsigned long maxWebsocketBackoff = 30000; // Maximal 30 Sekunden
 
 WebsocketsClient client;
 
@@ -300,22 +303,27 @@ void handleConfig() {
 }
 
 void connectWebsocket() {
+  if (millis() - lastWebsocketAttempt < websocketBackoff) {
+    return; // wait until backoff time is reached
+  }
+  lastWebsocketAttempt = millis();
+
   websocket_server = String(serverAddress);
   Serial.print("Connecting to SmartRace at ");
   Serial.println(websocket_server);
-  int attempts = 0;
-  while(websocket_connected == 0 && attempts < 3) {
-    Serial.print(".");
-    client.setCACert(ssl_ca_cert);
-    websocket_connected = client.connect(websocket_server);
-    wait(1000);
-    attempts++;
-  }
-  Serial.println("");
+
+  client.setCACert(ssl_ca_cert);
+  websocket_connected = client.connect(websocket_server);
+
   if(websocket_connected) {
+    Serial.println("Websocket connected.");
     client.send("{\"type\":\"api_version\"}");
     client.ping();
     client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"Z\"}}");
+    websocketBackoff = 1000; // reset backoff time on successful connection
+  } else {
+    Serial.println("Websocket connection failed.");
+    websocketBackoff = min(websocketBackoff * 2, maxWebsocketBackoff); // Exponentielles Backoff
   }
 }
 
@@ -826,7 +834,6 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  // process RFID data
   readRfid();
   if(websocket_connected) {
     client.poll();
