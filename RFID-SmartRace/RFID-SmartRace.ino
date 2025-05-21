@@ -3,16 +3,17 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <Preferences.h>
+#include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
 
-//ArduinoWebsockets 0.5.4
-#include <ArduinoWebsockets.h>
-
-using namespace websockets;
-
+/* configuration */
 #define DEFAULT_POWER_LEVEL 12 // default power level
 #define DEFAULT_MIN_LAP_TIME 3000 //min time between laps in ms
 #define AP_SSID "RFID-SmartRace-Config"
 #define DEFAULT_HOSTNAME "RFID-SmartRace"
+
+
+
+using namespace websockets;
 
 #define VERSION "1.0.1"
 //#define DEBUG
@@ -29,6 +30,13 @@ using namespace websockets;
   #define TX_PIN 6
   #define LAP_LED_PIN 8
 #endif
+
+#define WIFI_CONNECT_ATTEMPTS 20
+#define WIFI_CONNECT_DELAY_MS 500
+#define WEBSOCKET_PING_INTERVAL 5000
+#define LED_ON_TIME 200
+#define RFID_REPEAT_TIME 3000
+#define RFID_RESTART_TIME 300000
 
 const unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
 const unsigned char StopReadMultiResponse[8] = {0xAA,0x01,0x28,0x00,0x01,0x00,0x2A,0xDD};
@@ -279,8 +287,8 @@ void handleConfig() {
       WiFi.begin(ssid.c_str(), password.c_str());
 
       int attempts = 0;
-      while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-        delay(500);
+      while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
+        delay(WIFI_CONNECT_DELAY_MS);
         Serial.print(".");
         attempts++;
       }
@@ -672,7 +680,7 @@ void readRfid() {
     }
   }
   else {
-    if ((lastRestart + 300000) < millis()) {
+    if ((lastRestart + RFID_RESTART_TIME) < millis()) {
       lastRestart = millis();
       #ifdef DEBUG
         Serial.println("Restart ReadMulti");
@@ -746,7 +754,7 @@ void checkRfid(unsigned char epcBytes[]) {
     send_finish_line_event(epcString, millis());
     lastEpcString = epcString;
   }
-  else if ((lastEpcRead + 3000) < millis()) {
+  else if ((lastEpcRead + RFID_REPEAT_TIME) < millis()) {
     send_finish_line_event(epcString, millis());
   }
   lastEpcRead = millis();
@@ -792,8 +800,8 @@ void setup() {
     WiFi.begin(ssid.c_str(), password.c_str());
 
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-      delay(500);
+    while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
+      delay(WIFI_CONNECT_DELAY_MS);
       Serial.print(".");
       attempts++;
     }
@@ -837,7 +845,7 @@ void loop() {
   readRfid();
   if(websocket_connected) {
     client.poll();
-    if(millis() > (last_ping + 5000)) {
+    if(millis() > (last_ping + WEBSOCKET_PING_INTERVAL)) {
       last_ping = millis();
       client.ping();
     }
@@ -845,7 +853,7 @@ void loop() {
   else {
     if(!ap_mode) connectWebsocket();
   }
-  if(isLedOn() && (ledOnTime + 0) < millis()) {
+  if(isLedOn() && (ledOnTime + LED_ON_TIME) < millis()) {
     ledOff();
   }
 }
