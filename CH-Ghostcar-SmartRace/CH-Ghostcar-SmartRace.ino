@@ -167,12 +167,6 @@ void connectWebsocket() {
     if(!initJoystick) {
       initializeJoystickMode();
       initJoystick = true;
-      #ifdef RGB_LED
-        rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
-      #endif
-      #ifdef LED_PIN
-        digitalWrite(LED_PIN, LOW);
-      #endif
     }
   }
 }
@@ -223,9 +217,21 @@ void onMessageCallback(WebsocketsMessage message) {
 void onEventsCallback(WebsocketsEvent event, String data) {
   if(event == WebsocketsEvent::ConnectionOpened) {
     Serial.println("INFO - Connnection Opened");
+    #ifdef RGB_LED
+      rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
+    #endif
+    #ifdef LED_PIN
+      digitalWrite(LED_PIN, LOW);
+    #endif
     websocket_connected = true;
   } else if(event == WebsocketsEvent::ConnectionClosed) {
     Serial.println("INFO - Connnection Closed");
+    #ifdef RGB_LED
+      rgbLedWrite(RGB_LED_PIN, 0, 0, 255);
+    #endif
+    #ifdef LED_PIN
+      digitalWrite(LED_PIN, HIGH);
+    #endif
     websocket_connected = false;
   } else if(event == WebsocketsEvent::GotPing) {
     #ifdef DEBUG
@@ -364,6 +370,17 @@ void setup() {
     ap_mode = true;
   }
 
+  #ifdef RGB_LED
+    pinMode(RGB_LED_PIN, OUTPUT);
+    rgbLedWrite(RGB_LED_PIN, 0, 0, 255);
+  #endif
+  #ifdef LED_PIN
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, LOW);
+    wait(500);
+    digitalWrite(LED_PIN, HIGH);
+  #endif
+
   server.on("/", handleRoot);
   server.on("/config", HTTP_POST, handleConfig);
   // all unknown pages are redirected to configuration page
@@ -376,17 +393,6 @@ void setup() {
   Serial.print(VERSION);
   Serial.println(" started.");
   Serial.println("############################");
-  
-  #ifdef RGB_LED
-    pinMode(RGB_LED_PIN, OUTPUT);
-    rgbLedWrite(RGB_LED_PIN, 0, 0, 255);
-  #endif
-  #ifdef LED_PIN
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, LOW);
-    wait(500);
-    digitalWrite(LED_PIN, HIGH);
-  #endif
 }
   
 void loop() {
