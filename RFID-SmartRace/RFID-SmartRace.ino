@@ -101,7 +101,7 @@ DNSServer dnsServer;
 String hostName = "";
 Preferences preferences;
 
-String ssid, password, serverAddress, serverPort;
+String ssid, password, serverAddress, apiKey;
 
 const int max_rfid_cnt=8;
 const int storage_rfid_cnt = 2;
@@ -123,10 +123,10 @@ void saveConfig() {
   preferences.putString("ssid", ssid);
   preferences.putString("password", password);
   preferences.putString("serverAddress", serverAddress);
-  preferences.putString("serverPort", serverPort);
   preferences.putString("hostName", hostName);
   preferences.putInt("powerLevel", powerLevel);
   preferences.putInt("minLapTime", minLapTime);
+  preferences.putString("apiKey", apiKey);
   preferences.putString("ssl_ca_cert", ssl_ca_cert);
   char key[20];
   for(int i=0; i<max_rfid_cnt; i++) {
@@ -143,7 +143,7 @@ void loadConfig() {
   ssid = preferences.getString("ssid", "");
   password = preferences.getString("password", "");
   serverAddress = preferences.getString("serverAddress", "");
-  serverPort = preferences.getString("serverPort", "");
+  apiKey = preferences.getString("apiKey", "");
   hostName = preferences.getString("hostName", DEFAULT_HOSTNAME);
   powerLevel = preferences.getInt("powerLevel", DEFAULT_POWER_LEVEL);
   minLapTime = preferences.getInt("minLapTime", DEFAULT_MIN_LAP_TIME);
@@ -230,10 +230,10 @@ void handleRoot() {
   html += "<option value='25'" + String((powerLevel == 25) ? " selected" : "") + ">25 dBm</option>";
   html += "<option value='26'" + String((powerLevel == 26) ? " selected" : "") + ">26 dBm</option>";
   html += "</select><br>";
+  html += "<label for='apiKey'>ApiKey:</label>";
+  html += "<input type='number' style='width:auto;' id='apiKey' name='apiKey' value='" + apiKey + "'><br>";
   html += "<label for='serverAddress'>Websocket Server Adresse:</label>";
   html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' placeholder='ws:// or wss://' value='" + serverAddress + "'><br>";
-  html += "<label for='serverPort'>Server Port:</label>";
-  html += "<input type='number' style='width:auto;' id='serverPort' name='serverPort' value='" + serverPort + "'><br>";
   html += "<label for='ssl_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
   html += "<textarea id='ssl_ca_cert' name='ssl_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + ssl_ca_cert + "</textarea><br>";
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
@@ -269,7 +269,7 @@ void handleConfig() {
     ssid = server.arg("ssid");
     password = server.arg("password");
     serverAddress = server.arg("serverAddress");
-    serverPort = server.arg("serverPort");
+    apiKey = server.arg("apiKey");
     hostName = server.arg("hostName");
     powerLevel = server.arg("powerLevel").toInt(); // Get power level from dropdown
     minLapTime = server.arg("minLapTime").toInt(); // Get minimum lap time from input
