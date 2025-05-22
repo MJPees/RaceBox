@@ -205,7 +205,7 @@ void handleRoot() {
   html += "<style>*, *::before, *::after {box-sizing: border-box;}body {min-height: 100vh;margin: 0;}form {max-width: 535px;margin: 0 auto;}label {margin-bottom: 5px;display:block;}input[type=text],input[type=password],input[type=number],select,textarea {width: 100%;padding: 8px;border: 1px solid #ccc;border-radius: 4px;display: block;}input[type=submit] {width: 100%;background-color: #4CAF50;color: white;padding: 10px 15px;border: none;border-radius: 4px;}</style>";
   html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
-  html += "<form x-data=\"{ targetSystem: '" + targetSystem + "' }\" action='/config' method='POST'>";
+  html += "<form x-data=\"{ targetSystem: '" + targetSystem + "', serverAddress: '" + serverAddress + "' }\" action='/config' method='POST'>";
   html += "<h1 align=center>RFID-SmartRace</h1>";
   html += "<label for='ssid'>SSID:</label>";
   html += "<input type='text' id='ssid' name='ssid' value='" + ssid + "'><br>";
@@ -245,9 +245,11 @@ void handleRoot() {
   html += "<option value='26'" + String((powerLevel == 26) ? " selected" : "") + ">26 dBm</option>";
   html += "</select><br>";
   html += "<label for='serverAddress'>Websocket Server Adresse:</label>";
-  html += "<input type='text' id='serverAddress' name='serverAddress' placeholder='ws:// or wss://' value='" + serverAddress + "'><br>";
+  html += "<input type='text' id='serverAddress' name='serverAddress' placeholder='ws:// or wss://' x-model='serverAddress' value='" + serverAddress + "'><br>";
+  html += "<div x-show=\"serverAddress.startsWith('wss')\">";
   html += "<label for='ssl_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
   html += "<textarea id='ssl_ca_cert' name='ssl_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + ssl_ca_cert + "</textarea><br>";
+  html += "</div>";
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
   html += "<div style='display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Äußerer Grid-Container
   for (int i = 0; i < max_rfid_cnt; i++) {
