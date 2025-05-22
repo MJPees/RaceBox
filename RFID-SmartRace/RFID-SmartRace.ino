@@ -369,13 +369,24 @@ void connectWebsocket() {
   }
 }
 
-void send_finish_line_message(int controller_id, unsigned long timestamp) {
+void send_finish_line_message(int controller_id, unsigned long timestamp, String rfid_string) {
   rfids[controller_id].last = timestamp;
-  String message = "{\"type\":\"analog_lap\",\"data\":{\"timestamp\":";
-  message += rfids[controller_id].last;
-  message += ",\"controller_id\":";
-  message += controller_id +1;
-  message += "}}";
+  String message;
+  message.reserve(128); // Reserve enough space for the largest payload
+
+  if (targetSystem == "ch_racing_club") {
+    message = "{\"command\":\"lap\",\"data\":{";
+    message += "\"timestamp\":" + String(rfids[controller_id].last) + ",";
+    message += "\"rfid\":\"" + rfid_string + "\",";
+    message += "\"api_key\":\"" + apiKey + "\"";
+    message += "}}";
+  } else {
+    message = "{\"type\":\"analog_lap\",\"data\":{";
+    message += "\"timestamp\":" + String(rfids[controller_id].last) + ",";
+    message += "\"controller_id\":" + String(controller_id + 1);
+    message += "}}";
+  }
+
   Serial.println(message);
   client.send(message);
 }
@@ -387,7 +398,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
       if(rfids[i].id[j] == rfid_string) {
         if(rfids[i].last + minLapTime < ms) {
           ledOn();
-          send_finish_line_message(i, ms);
+          send_finish_line_message(i, ms, rfid_string);
         }
         found = true;
         break;
@@ -406,7 +417,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
         Serial.print(rfids[i].id[0]);
         Serial.println();
         ledOn();
-        send_finish_line_message(i, ms);
+        send_finish_line_message(i, ms, rfid_string);
         break;
       }
     }
