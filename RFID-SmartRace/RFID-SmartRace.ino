@@ -119,6 +119,8 @@ unsigned long lastResetTime = 0;
 
 int powerLevel = DEFAULT_POWER_LEVEL;
 
+String targetSystem = "smart_race";
+
 void saveConfig() {
   preferences.putString("ssid", ssid);
   preferences.putString("password", password);
@@ -128,6 +130,7 @@ void saveConfig() {
   preferences.putInt("minLapTime", minLapTime);
   preferences.putString("apiKey", apiKey);
   preferences.putString("ssl_ca_cert", ssl_ca_cert);
+  preferences.putString("targetSystem", targetSystem);
   char key[20];
   for(int i=0; i<max_rfid_cnt; i++) {
     snprintf(key, sizeof(key), "RFID%d", i);
@@ -148,6 +151,7 @@ void loadConfig() {
   powerLevel = preferences.getInt("powerLevel", DEFAULT_POWER_LEVEL);
   minLapTime = preferences.getInt("minLapTime", DEFAULT_MIN_LAP_TIME);
   ssl_ca_cert = preferences.getString("ssl_ca_cert", "");
+  targetSystem = preferences.getString("targetSystem", "smart_race");
   if (ssl_ca_cert == "") {
     ssl_ca_cert =
       "-----BEGIN CERTIFICATE-----\n"
@@ -198,18 +202,28 @@ void handleNotFound() {
 void handleRoot() {
   String html = "<!DOCTYPE html><html><head><title>RFID-SmartRace</title>";
   html += "<meta charset='UTF-8'>"; // Specify UTF-8 encoding
-  html += "<style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;}form{display:flex;flex-direction:column;max-width:100vw;}label{margin-bottom:5px;}input[type=text],input[type=password],input[type=number]{width:100%;padding:8px;margin-bottom:10px;border:1px solid #ccc;border-radius:4px;}input[type=submit]{background-color:#4CAF50;color:white;padding:10px 15px;border:none;border-radius:4px;}</style>";
+  html += "<style>*, *::before, *::after {box-sizing: border-box;}body {min-height: 100vh;margin: 0;}form {max-width: 535px;margin: 0 auto;}label {margin-bottom: 5px;display:block;}input[type=text],input[type=password],input[type=number],select,textarea {width: 100%;padding: 8px;border: 1px solid #ccc;border-radius: 4px;display: block;}input[type=submit] {width: 100%;background-color: #4CAF50;color: white;padding: 10px 15px;border: none;border-radius: 4px;}</style>";
+  html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
-  html += "<form action='/config' method='POST'>";
+  html += "<form x-data=\"{ targetSystem: '" + targetSystem + "' }\" action='/config' method='POST'>";
   html += "<h1 align=center>RFID-SmartRace</h1>";
   html += "<label for='ssid'>SSID:</label>";
-  html += "<input type='text' style='width:auto;' id='ssid' name='ssid' value='" + ssid + "'><br>";
+  html += "<input type='text' id='ssid' name='ssid' value='" + ssid + "'><br>";
   html += "<label for='password'>Passwort:</label>";
-  html += "<input type='password' style='width:auto;' id='password' name='password' value='" + password + "'><br>";
+  html += "<input type='password' id='password' name='password' value='" + password + "'><br>";
   html += "<label for='hostName'>Hostname:</label>";
-  html += "<input type='text' style='width:auto;' id='hostName' name='hostName' value='" + hostName + "'><br>";
+  html += "<input type='text' id='hostName' name='hostName' value='" + hostName + "'><br>";
+  html += "<label for='targetSystem'>Target System:</label>";
+  html += "<select id='targetSystem' name='targetSystem' x-model='targetSystem'>";
+  html += "<option value='smart_race'" + String((targetSystem == "smart_race") ? " selected" : "") + ">SmartRace</option>";
+  html += "<option value='ch_racing_club'" + String((targetSystem == "ch_racing_club") ? " selected" : "") + ">CH Racing Club</option>";
+  html += "</select><br>";
+  html += "<div x-show=\"targetSystem == 'ch_racing_club'\">";
+  html += "<label for='apiKey'>ApiKey:</label>";
+  html += "<input type='number' id='apiKey' name='apiKey' value='" + apiKey + "'><br>";
+  html += "</div>";
   html += "<label for='minLapTime'>Minimum Lap Time (ms):</label>";
-  html += "<input type='number' style='width:auto;' id='minLapTime' name='minLapTime' value='" + String(minLapTime) + "'><br>";
+  html += "<input type='number' id='minLapTime' name='minLapTime' value='" + String(minLapTime) + "'><br>";
   html += "<label for='powerLevel'>Power Level:</label>";
   html += "<select id='powerLevel' name='powerLevel'>";
   html += "<option value='10'" + String((powerLevel == 10) ? " selected" : "") + ">10 dBm</option>";
@@ -230,10 +244,8 @@ void handleRoot() {
   html += "<option value='25'" + String((powerLevel == 25) ? " selected" : "") + ">25 dBm</option>";
   html += "<option value='26'" + String((powerLevel == 26) ? " selected" : "") + ">26 dBm</option>";
   html += "</select><br>";
-  html += "<label for='apiKey'>ApiKey:</label>";
-  html += "<input type='number' style='width:auto;' id='apiKey' name='apiKey' value='" + apiKey + "'><br>";
   html += "<label for='serverAddress'>Websocket Server Adresse:</label>";
-  html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' placeholder='ws:// or wss://' value='" + serverAddress + "'><br>";
+  html += "<input type='text' id='serverAddress' name='serverAddress' placeholder='ws:// or wss://' value='" + serverAddress + "'><br>";
   html += "<label for='ssl_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
   html += "<textarea id='ssl_ca_cert' name='ssl_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + ssl_ca_cert + "</textarea><br>";
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
@@ -275,6 +287,7 @@ void handleConfig() {
     minLapTime = server.arg("minLapTime").toInt(); // Get minimum lap time from input
     ssl_ca_cert = server.arg("ssl_ca_cert");
     ssl_ca_cert.replace("\r", ""); // Optional: Zeilenumbrüche vereinheitlichen
+    targetSystem = server.arg("targetSystem");
 
     char nameKey[12];
     char idKey[16];
