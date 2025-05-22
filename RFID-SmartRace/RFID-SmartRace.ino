@@ -3,9 +3,13 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <Preferences.h>
+#include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
 
-//ArduinoWebsockets 0.5.4
-#include <ArduinoWebsockets.h>
+/* configuration */
+#define DEFAULT_POWER_LEVEL 12 // default power level
+#define DEFAULT_MIN_LAP_TIME 3000 //min time between laps in ms
+#define AP_SSID "RFID-SmartRace-Config"
+#define DEFAULT_HOSTNAME "RFID-SmartRace"
 
 using namespace websockets;
 
@@ -24,6 +28,13 @@ using namespace websockets;
   #define TX_PIN 6
   #define LAP_LED_PIN 8
 #endif
+
+#define WIFI_CONNECT_ATTEMPTS 20
+#define WIFI_CONNECT_DELAY_MS 500
+#define WEBSOCKET_PING_INTERVAL 5000
+#define LED_ON_TIME 200
+#define RFID_REPEAT_TIME 3000
+#define RFID_RESTART_TIME 300000
 
 const unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
 const unsigned char StopReadMultiResponse[8] = {0xAA,0x01,0x28,0x00,0x01,0x00,0x2A,0xDD};
@@ -71,22 +82,26 @@ unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
 unsigned long ledOnTime = 0;
 
-int minLapTime = 3000; //min time between laps in ms
+int minLapTime = DEFAULT_MIN_LAP_TIME;
 
 String websocket_server = "";
 bool ap_mode = false;
 bool websocket_connected = false;
 unsigned long last_ping = 0;
+unsigned long lastWebsocketAttempt = 0;
+unsigned long websocketBackoff = 1000; // Start mit 1 Sekunde
+const unsigned long maxWebsocketBackoff = 30000; // Maximal 30 Sekunden
 
 WebsocketsClient client;
 
-const char* AP_SSID = "RFID-SmartRace-Config";
+String ssl_ca_cert = "";
+
 WebServer server(80);
 DNSServer dnsServer;
 String hostName = "";
 Preferences preferences;
 
-String ssid, password, serverAddress, serverPort;
+String ssid, password, serverAddress, apiKey;
 
 const int max_rfid_cnt=8;
 const int storage_rfid_cnt = 2;
@@ -102,21 +117,24 @@ String rfid_string = "";
 
 unsigned long lastResetTime = 0;
 
-int powerLevel = 26; // Default power level in dBm
+int powerLevel = DEFAULT_POWER_LEVEL;
 
 void saveConfig() {
   preferences.putString("ssid", ssid);
   preferences.putString("password", password);
   preferences.putString("serverAddress", serverAddress);
-  preferences.putString("serverPort", serverPort);
   preferences.putString("hostName", hostName);
-  preferences.putInt("powerLevel", powerLevel); // Save power level
-  preferences.putInt("minLapTime", minLapTime); // Save minimum lap time
-  for(int i=0; i<max_rfid_cnt;i++) {
-    String key = "RFID" + String(i);
-    preferences.putString(key.c_str(), rfids[i].name);
-    for(int j=0; j<storage_rfid_cnt;j++) {
-      preferences.putString((key + "_" + String(j)).c_str(), rfids[i].id[j]); // Store RFId
+  preferences.putInt("powerLevel", powerLevel);
+  preferences.putInt("minLapTime", minLapTime);
+  preferences.putString("apiKey", apiKey);
+  preferences.putString("ssl_ca_cert", ssl_ca_cert);
+  char key[20];
+  for(int i=0; i<max_rfid_cnt; i++) {
+    snprintf(key, sizeof(key), "RFID%d", i);
+    preferences.putString(key, rfids[i].name);
+    for(int j=0; j<storage_rfid_cnt; j++) {
+      snprintf(key, sizeof(key), "RFID%d_%d", i, j);
+      preferences.putString(key, rfids[i].id[j]);
     }
   }
 }
@@ -125,15 +143,49 @@ void loadConfig() {
   ssid = preferences.getString("ssid", "");
   password = preferences.getString("password", "");
   serverAddress = preferences.getString("serverAddress", "");
-  serverPort = preferences.getString("serverPort", "");
-  hostName = preferences.getString("hostName", "RFID-SmartRace");
-  powerLevel = preferences.getInt("powerLevel", 26); // Load power level
-  minLapTime = preferences.getInt("minLapTime", 3000); // Load minimum lap time
-  for(int i=0; i<max_rfid_cnt;i++) {
-    String key = "RFID" + String(i);
-    rfids[i].name = preferences.getString(key.c_str(), "Controller " + String(i+1));
-    for(int j=0; j<storage_rfid_cnt;j++) {
-      rfids[i].id[j] = preferences.getString((key + "_" + String(j)).c_str(), "");
+  apiKey = preferences.getString("apiKey", "");
+  hostName = preferences.getString("hostName", DEFAULT_HOSTNAME);
+  powerLevel = preferences.getInt("powerLevel", DEFAULT_POWER_LEVEL);
+  minLapTime = preferences.getInt("minLapTime", DEFAULT_MIN_LAP_TIME);
+  ssl_ca_cert = preferences.getString("ssl_ca_cert", "");
+  if (ssl_ca_cert == "") {
+    ssl_ca_cert =
+      "-----BEGIN CERTIFICATE-----\n"
+      "MIIEVzCCAj+gAwIBAgIRAIOPbGPOsTmMYgZigxXJ/d4wDQYJKoZIhvcNAQELBQAw\n"
+      "TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh\n"
+      "cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw\n"
+      "WhcNMjcwMzEyMjM1OTU5WjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg\n"
+      "RW5jcnlwdDELMAkGA1UEAxMCRTUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQNCzqK\n"
+      "a2GOtu/cX1jnxkJFVKtj9mZhSAouWXW0gQI3ULc/FnncmOyhKJdyIBwsz9V8UiBO\n"
+      "VHhbhBRrwJCuhezAUUE8Wod/Bk3U/mDR+mwt4X2VEIiiCFQPmRpM5uoKrNijgfgw\n"
+      "gfUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD\n"
+      "ATASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSfK1/PPCFPnQS37SssxMZw\n"
+      "i9LXDTAfBgNVHSMEGDAWgBR5tFnme7bl5AFzgAiIyBpY9umbbjAyBggrBgEFBQcB\n"
+      "AQQmMCQwIgYIKwYBBQUHMAKGFmh0dHA6Ly94MS5pLmxlbmNyLm9yZy8wEwYDVR0g\n"
+      "BAwwCjAIBgZngQwBAgEwJwYDVR0fBCAwHjAcoBqgGIYWaHR0cDovL3gxLmMubGVu\n"
+      "Y3Iub3JnLzANBgkqhkiG9w0BAQsFAAOCAgEAH3KdNEVCQdqk0LKyuNImTKdRJY1C\n"
+      "2uw2SJajuhqkyGPY8C+zzsufZ+mgnhnq1A2KVQOSykOEnUbx1cy637rBAihx97r+\n"
+      "bcwbZM6sTDIaEriR/PLk6LKs9Be0uoVxgOKDcpG9svD33J+G9Lcfv1K9luDmSTgG\n"
+      "6XNFIN5vfI5gs/lMPyojEMdIzK9blcl2/1vKxO8WGCcjvsQ1nJ/Pwt8LQZBfOFyV\n"
+      "XP8ubAp/au3dc4EKWG9MO5zcx1qT9+NXRGdVWxGvmBFRAajciMfXME1ZuGmk3/GO\n"
+      "koAM7ZkjZmleyokP1LGzmfJcUd9s7eeu1/9/eg5XlXd/55GtYjAM+C4DG5i7eaNq\n"
+      "cm2F+yxYIPt6cbbtYVNJCGfHWqHEQ4FYStUyFnv8sjyqU8ypgZaNJ9aVcWSICLOI\n"
+      "E1/Qv/7oKsnZCWJ926wU6RqG1OYPGOi1zuABhLw61cuPVDT28nQS/e6z95cJXq0e\n"
+      "K1BcaJ6fJZsmbjRgD5p3mvEf5vdQM7MCEvU0tHbsx2I5mHHJoABHb8KVBgWp/lcX\n"
+      "GWiWaeOyB7RP+OfDtvi2OsapxXiV7vNVs7fMlrRjY1joKaqmmycnBvAq14AEbtyL\n"
+      "sVfOS66B8apkeFX2NY4XPEYV4ZSCe8VHPrdrERk2wILG3T/EGmSIkCYVUMSnjmJd\n"
+      "VQD9F6Na/+zmXCc=\n"
+      "-----END CERTIFICATE-----\n";
+  }
+  char key[20];
+  char defaultName[20];
+  for(int i=0; i<max_rfid_cnt; i++) {
+    snprintf(key, sizeof(key), "RFID%d", i);
+    snprintf(defaultName, sizeof(defaultName), "Controller %d", i+1);
+    rfids[i].name = preferences.getString(key, defaultName);
+    for(int j=0; j<storage_rfid_cnt; j++) {
+      snprintf(key, sizeof(key), "RFID%d_%d", i, j);
+      rfids[i].id[j] = preferences.getString(key, "");
     }
   }
 }
@@ -154,10 +206,6 @@ void handleRoot() {
   html += "<input type='text' style='width:auto;' id='ssid' name='ssid' value='" + ssid + "'><br>";
   html += "<label for='password'>Passwort:</label>";
   html += "<input type='password' style='width:auto;' id='password' name='password' value='" + password + "'><br>";
-  html += "<label for='serverAddress'>Server Adresse:</label>";
-  html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' value='" + serverAddress + "'><br>";
-  html += "<label for='serverPort'>Server Port:</label>";
-  html += "<input type='number' style='width:auto;' id='serverPort' name='serverPort' value='" + serverPort + "'><br>";
   html += "<label for='hostName'>Hostname:</label>";
   html += "<input type='text' style='width:auto;' id='hostName' name='hostName' value='" + hostName + "'><br>";
   html += "<label for='minLapTime'>Minimum Lap Time (ms):</label>";
@@ -182,10 +230,16 @@ void handleRoot() {
   html += "<option value='25'" + String((powerLevel == 25) ? " selected" : "") + ">25 dBm</option>";
   html += "<option value='26'" + String((powerLevel == 26) ? " selected" : "") + ">26 dBm</option>";
   html += "</select><br>";
+  html += "<label for='apiKey'>ApiKey:</label>";
+  html += "<input type='number' style='width:auto;' id='apiKey' name='apiKey' value='" + apiKey + "'><br>";
+  html += "<label for='serverAddress'>Websocket Server Adresse:</label>";
+  html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' placeholder='ws:// or wss://' value='" + serverAddress + "'><br>";
+  html += "<label for='ssl_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+  html += "<textarea id='ssl_ca_cert' name='ssl_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + ssl_ca_cert + "</textarea><br>";
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
   html += "<div style='display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Äußerer Grid-Container
   for (int i = 0; i < max_rfid_cnt; i++) {
-      html += "<div style='border: 3px solid blue; padding: 10px; margin: 5px; display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Rahmen mit Grid-Spalte
+      html += "<div style='border: 3px solid black; padding: 10px; margin: 5px; display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Rahmen mit Grid-Spalte
       html += "<div style='display: grid; grid-template-columns: auto 1fr; align-items: center;'>"; // Grid für Name
       html += "<label for='name" + String(i) + "'>Name:</label>";
       html += "<input type='text' maxlength='100' style='width:auto; margin-left: 4px;' id='name" + String(i) + "' name='name" + String(i) + "' value='" + rfids[i].name + "'>";
@@ -203,7 +257,7 @@ void handleRoot() {
       html += "</div>"; // Ende Container für horizontale IDs
       html += "</div>";
   }
-  html += "</div>"; // Ende äußerer Grid-Container 
+  html += "</div>"; // Ende äußerer Grid-Container
   html += "</form>";
   html += "</body></html>";
   server.send(200, "text/html", html);
@@ -215,14 +269,21 @@ void handleConfig() {
     ssid = server.arg("ssid");
     password = server.arg("password");
     serverAddress = server.arg("serverAddress");
-    serverPort = server.arg("serverPort");
+    apiKey = server.arg("apiKey");
     hostName = server.arg("hostName");
     powerLevel = server.arg("powerLevel").toInt(); // Get power level from dropdown
     minLapTime = server.arg("minLapTime").toInt(); // Get minimum lap time from input
+    ssl_ca_cert = server.arg("ssl_ca_cert");
+    ssl_ca_cert.replace("\r", ""); // Optional: Zeilenumbrüche vereinheitlichen
+
+    char nameKey[12];
+    char idKey[16];
     for (int i = 0; i < max_rfid_cnt; i++) {
-      rfids[i].name = server.arg("name" + String(i));
+      snprintf(nameKey, sizeof(nameKey), "name%d", i);
+      rfids[i].name = server.arg(nameKey);
       for (int j = 0; j < storage_rfid_cnt; j++) {
-        rfids[i].id[j] = server.arg("id" + String(i) + "_" + String(j));
+        snprintf(idKey, sizeof(idKey), "id%d_%d", i, j);
+        rfids[i].id[j] = server.arg(idKey);
       }
     }
     setPowerLevel(powerLevel); // Set power level
@@ -243,8 +304,8 @@ void handleConfig() {
       WiFi.begin(ssid.c_str(), password.c_str());
 
       int attempts = 0;
-      while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-        delay(500);
+      while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
+        delay(WIFI_CONNECT_DELAY_MS);
         Serial.print(".");
         attempts++;
       }
@@ -267,21 +328,29 @@ void handleConfig() {
 }
 
 void connectWebsocket() {
-  websocket_server = String("ws://" + serverAddress + ":" + serverPort);
+  if (millis() - lastWebsocketAttempt < websocketBackoff) {
+    return; // wait until backoff time is reached
+  }
+  lastWebsocketAttempt = millis();
+
+  websocket_server = String(serverAddress);
   Serial.print("Connecting to SmartRace at ");
   Serial.println(websocket_server);
-  int attempts = 0;
-  while(websocket_connected == 0 && attempts < 3) {
-    Serial.print(".");
-    websocket_connected = client.connect(websocket_server);
-    wait(1000);
-    attempts++;
+
+  if (ssl_ca_cert.length() > 0) {
+    client.setCACert(ssl_ca_cert.c_str());
   }
-  Serial.println("");
+  websocket_connected = client.connect(websocket_server);
+
   if(websocket_connected) {
+    Serial.println("Websocket connected.");
     client.send("{\"type\":\"api_version\"}");
     client.ping();
     client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"Z\"}}");
+    websocketBackoff = 1000; // reset backoff time on successful connection
+  } else {
+    Serial.println("Websocket connection failed.");
+    websocketBackoff = min(websocketBackoff * 2, maxWebsocketBackoff); // Exponentielles Backoff
   }
 }
 
@@ -363,11 +432,13 @@ void wait(unsigned long waitTime) {
 }
 
 void resetRfidStorage() {
+  char nameBuf[20];
   for(int i=0; i < max_rfid_cnt; i++) {
     for(int j=0; j<storage_rfid_cnt; j++) {
       rfids[i].id[j] = "";
     }
-    rfids[i].name = "Controller " + String(i+1);
+    snprintf(nameBuf, sizeof(nameBuf), "Controller %d", i+1);
+    rfids[i].name = nameBuf;
     rfids[i].last = millis();
   }
 }
@@ -413,7 +484,7 @@ void setPowerLevel(int powerLevel) {
   } else {
     Serial.println("Failed to stop ReadMulti.");
   }
-  
+
   while(SerialRFID.available()) {
     SerialRFID.read();
     delay(1);
@@ -504,7 +575,7 @@ void initRfid() {
   } else {
     Serial.println("Failed to set Europe region.");
   }
-  
+
   //set dense reader
   if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
     Serial.println("Set dense reader.");
@@ -526,10 +597,10 @@ void initRfid() {
   } else {
     Serial.println("Failed to disable module sleep time.");
   }
-  
+
   //set power level and start ReadMulti
   setPowerLevel(powerLevel);
-  
+
   Serial.println("\nR200 RFID-reader started...");
 }
 
@@ -585,7 +656,7 @@ void readRfid() {
       #endif
       dataCheckSum = rfidSerialByte;
     }
-    else if(gotMessageType) {  
+    else if(gotMessageType) {
       command = rfidSerialByte;
       #ifdef DEBUG
         Serial.print("Command: 0x");
@@ -602,7 +673,7 @@ void readRfid() {
           if(messageType == 0x01) {
             if(command == 0xFF) {
               #ifdef DEBUG
-                Serial.println("No label detected."); 
+                Serial.println("No label detected.");
               #endif
             }
           }
@@ -630,7 +701,7 @@ void readRfid() {
     }
   }
   else {
-    if ((lastRestart + 300000) < millis()) {
+    if ((lastRestart + RFID_RESTART_TIME) < millis()) {
       lastRestart = millis();
       #ifdef DEBUG
         Serial.println("Restart ReadMulti");
@@ -664,21 +735,21 @@ void processLabelData(unsigned char *dataBytes) {
   //RSSI
   rssi = dataBytes[0];
   #ifdef DEBUG
-    Serial.print("RSSI: 0x"); 
+    Serial.print("RSSI: 0x");
     Serial.println(rssi, HEX);
   #endif
   //PC
   pc = (dataBytes[1] << 8) + dataBytes[2];
   #ifdef DEBUG
-    Serial.print("PC: 0x"); 
+    Serial.print("PC: 0x");
     Serial.println(pc, HEX);
   #endif
   //EPC
   for(int i = 3; i < parameterLength-2; i++) {
     epcBytes[i-3] = dataBytes[i];
-    #ifdef DEBUG 
+    #ifdef DEBUG
       if(i == 3) {
-        Serial.print("EPC: "); 
+        Serial.print("EPC: ");
       }
       Serial.print(epcBytes[i-3], HEX);
     #endif
@@ -686,7 +757,7 @@ void processLabelData(unsigned char *dataBytes) {
   crc = (dataBytes[parameterLength-2] << 8) + dataBytes[parameterLength-1];
   #ifdef DEBUG
     Serial.println("");
-    Serial.print("CRC: 0x"); 
+    Serial.print("CRC: 0x");
     Serial.println(crc, HEX);
   #endif
   checkRfid(epcBytes);
@@ -704,7 +775,7 @@ void checkRfid(unsigned char epcBytes[]) {
     send_finish_line_event(epcString, millis());
     lastEpcString = epcString;
   }
-  else if ((lastEpcRead + 3000) < millis()) {
+  else if ((lastEpcRead + RFID_REPEAT_TIME) < millis()) {
     send_finish_line_event(epcString, millis());
   }
   lastEpcRead = millis();
@@ -750,8 +821,8 @@ void setup() {
     WiFi.begin(ssid.c_str(), password.c_str());
 
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-      delay(500);
+    while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
+      delay(WIFI_CONNECT_DELAY_MS);
       Serial.print(".");
       attempts++;
     }
@@ -778,10 +849,10 @@ void setup() {
   server.on("/config", HTTP_POST, handleConfig);
   // all unknown pages are redirected to configuration page
   server.onNotFound(handleNotFound);
-  
+
   server.begin();
   Serial.println("Webserver gestartet...");
-  
+
   // Start RFID reader
   initRfid();
   Serial.print("RFID-SmartRace Version: ");
@@ -792,11 +863,10 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  // process RFID data
   readRfid();
   if(websocket_connected) {
     client.poll();
-    if(millis() > (last_ping + 5000)) {
+    if(millis() > (last_ping + WEBSOCKET_PING_INTERVAL)) {
       last_ping = millis();
       client.ping();
     }
@@ -804,7 +874,7 @@ void loop() {
   else {
     if(!ap_mode) connectWebsocket();
   }
-  if(isLedOn() && (ledOnTime + 0) < millis()) {
+  if(isLedOn() && (ledOnTime + LED_ON_TIME) < millis()) {
     ledOff();
   }
 }
