@@ -308,39 +308,43 @@ void handleConfig() {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
 
     if(reConnectWifi) {
-      if (WiFi.status() == WL_CONNECTED) {
-        WiFi.disconnect(true);
-        delay(100);
-      }
-      WiFi.softAPdisconnect(true);
-      if(dnsServer.isUp()) {
-        dnsServer.stop();
-      }
-
-      WiFi.setHostname(hostName.c_str());
-      WiFi.begin(ssid.c_str(), password.c_str());
-
-      int attempts = 0;
-      while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
-        delay(WIFI_CONNECT_DELAY_MS);
-        Serial.print(".");
-        attempts++;
-      }
-
-      if (WiFi.status() == WL_CONNECTED) {
-        Serial.print("\nWLAN verbunden ");
-        Serial.println(WiFi.localIP());
-        connectWebsocket();
-        ap_mode = false;
-      } else {
-        Serial.println("\nWLAN Verbindung fehlgeschlagen!");
-        WiFi.softAP(AP_SSID);
-        dnsServer.start();
-        ap_mode = true;
-      }
+      reloadWifi();
     }
   } else {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
+  }
+}
+
+void reloadWifi() {
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFi.disconnect(true);
+    delay(100);
+  }
+  WiFi.softAPdisconnect(true);
+  if(dnsServer.isUp()) {
+    dnsServer.stop();
+  }
+
+  WiFi.setHostname(hostName.c_str());
+  WiFi.begin(ssid.c_str(), password.c_str());
+
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
+    delay(WIFI_CONNECT_DELAY_MS);
+    Serial.print(".");
+    attempts++;
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("\nWLAN connected ");
+    Serial.println(WiFi.localIP());
+    connectWebsocket();
+    ap_mode = false;
+  } else {
+    Serial.println("\nWLAN connect failed, starting AP mode");
+    WiFi.softAP(AP_SSID);
+    dnsServer.start();
+    ap_mode = true;
   }
 }
 
