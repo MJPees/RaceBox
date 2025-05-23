@@ -1,5 +1,6 @@
 #define VERSION "1.0.1"
-#define DEBUG
+//#define DEBUG
+//#define PRINT_RSSI
 //#define ESP32C3
 #define ESP32DEV
 #ifdef ESP32DEV
@@ -370,7 +371,7 @@ void resetRfidData() {
 void processLabelData(unsigned char *dataBytes) {
   //RSSI
   rssi = dataBytes[0];
-  #ifdef DEBUG
+  #if defined(DEBUG) || defined(PRINT_RSSI)
     Serial.print("RSSI: 0x"); 
     Serial.println(rssi, HEX);
   #endif
