@@ -1,4 +1,10 @@
 #define VERSION "1.0.1"
+/* configuration */
+#define DEFAULT_POWER_LEVEL 26 // default power level
+#define LED_ON_TIME 200
+#define RFID_REPEAT_TIME 3000
+#define RFID_RESTART_TIME 300000
+
 //#define DEBUG
 //#define PRINT_RSSI
 //#define ESP32C3
@@ -60,10 +66,7 @@ String lastEpcString = "";
 unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
 unsigned long ledOnTime = 0;
-
-int minLapTime = 3000; //min time between laps in ms
-
-int powerLevel = 10; //default power level
+int powerLevel = DEFAULT_POWER_LEVEL;
 
 void wait(unsigned long waitTime) {
   unsigned long startWaitTime = millis();
@@ -121,7 +124,7 @@ void setPowerLevel(int powerLevel) {
   } else {
     Serial.println("Failed to stop ReadMulti.");
   }
-  
+
   while(SerialRFID.available()) {
     SerialRFID.read();
     delay(1);
@@ -212,7 +215,7 @@ void initRfid() {
   } else {
     Serial.println("Failed to set Europe region.");
   }
-  
+
   //set dense reader
   if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
     Serial.println("Set dense reader.");
@@ -234,10 +237,10 @@ void initRfid() {
   } else {
     Serial.println("Failed to disable module sleep time.");
   }
-  
+
   //set power level and start ReadMulti
   setPowerLevel(powerLevel);
-  
+
   Serial.println("\nR200 RFID-reader started...");
 }
 
@@ -293,7 +296,7 @@ void readRfid() {
       #endif
       dataCheckSum = rfidSerialByte;
     }
-    else if(gotMessageType) {  
+    else if(gotMessageType) {
       command = rfidSerialByte;
       #ifdef DEBUG
         Serial.print("Command: 0x");
@@ -310,7 +313,7 @@ void readRfid() {
           if(messageType == 0x01) {
             if(command == 0xFF) {
               #ifdef DEBUG
-                Serial.println("No label detected."); 
+                Serial.println("No label detected.");
               #endif
             }
           }
@@ -338,7 +341,7 @@ void readRfid() {
     }
   }
   else {
-    if ((lastRestart + 300000) < millis()) {
+    if ((lastRestart + RFID_RESTART_TIME) < millis()) {
       lastRestart = millis();
       #ifdef DEBUG
         Serial.println("Restart ReadMulti");
@@ -372,21 +375,21 @@ void processLabelData(unsigned char *dataBytes) {
   //RSSI
   rssi = dataBytes[0];
   #if defined(DEBUG) || defined(PRINT_RSSI)
-    Serial.print("RSSI: 0x"); 
+    Serial.print("RSSI: 0x");
     Serial.println(rssi, HEX);
   #endif
   //PC
   pc = (dataBytes[1] << 8) + dataBytes[2];
   #ifdef DEBUG
-    Serial.print("PC: 0x"); 
+    Serial.print("PC: 0x");
     Serial.println(pc, HEX);
   #endif
   //EPC
   for(int i = 3; i < parameterLength-2; i++) {
     epcBytes[i-3] = dataBytes[i];
-    #ifdef DEBUG 
+    #ifdef DEBUG
       if(i == 3) {
-        Serial.print("EPC: "); 
+        Serial.print("EPC: ");
       }
       Serial.print(epcBytes[i-3], HEX);
     #endif
@@ -394,7 +397,7 @@ void processLabelData(unsigned char *dataBytes) {
   crc = (dataBytes[parameterLength-2] << 8) + dataBytes[parameterLength-1];
   #ifdef DEBUG
     Serial.println("");
-    Serial.print("CRC: 0x"); 
+    Serial.print("CRC: 0x");
     Serial.println(crc, HEX);
   #endif
   checkRfid(epcBytes);
@@ -413,7 +416,7 @@ void checkRfid(unsigned char epcBytes[]) {
     lastEpcString = epcString;
     ledOn();
   }
-  else if ((lastEpcRead + minLapTime) < millis()) {
+  else if ((lastEpcRead + RFID_REPEAT_TIME) < millis()) {
     Serial.println(epcString);
     ledOn();
   }
@@ -442,7 +445,7 @@ void setup() {
   Serial.begin(115200);
   wait(2000);
   initRfid();
-  Serial.print("RFID-SmartRace Version: ");
+  Serial.print("RFID-Testing Version: ");
   Serial.print(VERSION);
   Serial.println(" started.");
   Serial.println("############################");
@@ -450,7 +453,7 @@ void setup() {
 
 void loop() {
   readRfid();
-  if(isLedOn() && (ledOnTime + 100) < millis()) {
+  if(isLedOn() && (ledOnTime + LED_ON_TIME) < millis()) {
     ledOff();
   }
 }
