@@ -11,8 +11,6 @@
 #define AP_SSID "RFID-SmartRace-Config"
 #define DEFAULT_HOSTNAME "RFID-SmartRace"
 
-using namespace websockets;
-
 #define VERSION "1.0.1"
 //#define DEBUG
 //#define ESP32C3
@@ -33,8 +31,11 @@ using namespace websockets;
 #define WIFI_CONNECT_DELAY_MS 500
 #define WEBSOCKET_PING_INTERVAL 5000
 #define LED_ON_TIME 200
+
 #define RFID_REPEAT_TIME 3000
 #define RFID_RESTART_TIME 300000
+#define RFID_MAX_COUNT 8
+#define RFID_STORAGE_COUNT 2
 
 const unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
 const unsigned char StopReadMultiResponse[8] = {0xAA,0x01,0x28,0x00,0x01,0x00,0x2A,0xDD};
@@ -84,6 +85,8 @@ unsigned long ledOnTime = 0;
 
 int minLapTime = DEFAULT_MIN_LAP_TIME;
 
+using namespace websockets;
+
 String websocket_server = "";
 bool ap_mode = false;
 bool websocket_connected = false;
@@ -99,19 +102,18 @@ String ssl_ca_cert = "";
 WebServer server(80);
 DNSServer dnsServer;
 String hostName = "";
-Preferences preferences;
 
+Preferences preferences;
 String ssid, password, serverAddress, apiKey;
 
-const int max_rfid_cnt=8;
-const int storage_rfid_cnt = 2;
+
 
 struct rfid_data {
-  String id[storage_rfid_cnt];
+  String id[RFID_STORAGE_COUNT];
   String name;
   unsigned long last;
 };
-rfid_data rfids[max_rfid_cnt];
+rfid_data rfids[RFID_MAX_COUNT];
 
 String rfid_string = "";
 
@@ -132,10 +134,10 @@ void saveConfig() {
   preferences.putString("ssl_ca_cert", ssl_ca_cert);
   preferences.putString("targetSystem", targetSystem);
   char key[20];
-  for(int i=0; i<max_rfid_cnt; i++) {
+  for(int i=0; i<RFID_MAX_COUNT; i++) {
     snprintf(key, sizeof(key), "RFID%d", i);
     preferences.putString(key, rfids[i].name);
-    for(int j=0; j<storage_rfid_cnt; j++) {
+    for(int j=0; j<RFID_STORAGE_COUNT; j++) {
       snprintf(key, sizeof(key), "RFID%d_%d", i, j);
       preferences.putString(key, rfids[i].id[j]);
     }
@@ -183,11 +185,11 @@ void loadConfig() {
   }
   char key[20];
   char defaultName[20];
-  for(int i=0; i<max_rfid_cnt; i++) {
+  for(int i=0; i<RFID_MAX_COUNT; i++) {
     snprintf(key, sizeof(key), "RFID%d", i);
     snprintf(defaultName, sizeof(defaultName), "Controller %d", i+1);
     rfids[i].name = preferences.getString(key, defaultName);
-    for(int j=0; j<storage_rfid_cnt; j++) {
+    for(int j=0; j<RFID_STORAGE_COUNT; j++) {
       snprintf(key, sizeof(key), "RFID%d_%d", i, j);
       rfids[i].id[j] = preferences.getString(key, "");
     }
@@ -252,14 +254,14 @@ void handleRoot() {
   html += "</div>";
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
   html += "<div style='display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Äußerer Grid-Container
-  for (int i = 0; i < max_rfid_cnt; i++) {
+  for (int i = 0; i < RFID_MAX_COUNT; i++) {
       html += "<div style='border: 3px solid black; padding: 10px; margin: 5px; display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Rahmen mit Grid-Spalte
       html += "<div style='display: grid; grid-template-columns: auto 1fr; align-items: center;'>"; // Grid für Name
       html += "<label for='name" + String(i) + "'>Name:</label>";
       html += "<input type='text' maxlength='100' style='width:auto; margin-left: 4px;' id='name" + String(i) + "' name='name" + String(i) + "' value='" + rfids[i].name + "'>";
       html += "</div>";
-      html += "<div style='display: grid; grid-template-columns: repeat(" + String(storage_rfid_cnt * 2) + ", auto); align-items: center;'>"; // Grid für horizontale IDs
-      for(int j = 0; j < storage_rfid_cnt; j++){
+      html += "<div style='display: grid; grid-template-columns: repeat(" + String(RFID_STORAGE_COUNT * 2) + ", auto); align-items: center;'>"; // Grid für horizontale IDs
+      for(int j = 0; j < RFID_STORAGE_COUNT; j++){
         if(j>0) {
           html += "<label style='margin-left: 4px;' for='id" + String(i) + "_" + String(j) + "'>ID" + String(j+1) + ":</label>";
         }
@@ -293,10 +295,10 @@ void handleConfig() {
 
     char nameKey[12];
     char idKey[16];
-    for (int i = 0; i < max_rfid_cnt; i++) {
+    for (int i = 0; i < RFID_MAX_COUNT; i++) {
       snprintf(nameKey, sizeof(nameKey), "name%d", i);
       rfids[i].name = server.arg(nameKey);
-      for (int j = 0; j < storage_rfid_cnt; j++) {
+      for (int j = 0; j < RFID_STORAGE_COUNT; j++) {
         snprintf(idKey, sizeof(idKey), "id%d_%d", i, j);
         rfids[i].id[j] = server.arg(idKey);
       }
@@ -393,8 +395,8 @@ void send_finish_line_message(int controller_id, unsigned long timestamp, String
 
 void send_finish_line_event(String rfid_string, unsigned long ms) {
   bool found = false;
-  for(int j = 0; j<storage_rfid_cnt;j++) {
-    for (int i = 0; i < max_rfid_cnt; i++) {
+  for(int j = 0; j<RFID_STORAGE_COUNT;j++) {
+    for (int i = 0; i < RFID_MAX_COUNT; i++) {
       if(rfids[i].id[j] == rfid_string) {
         if(rfids[i].last + minLapTime < ms) {
           ledOn();
@@ -409,7 +411,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
     }
   }
   if(!found) {
-    for(int i=0; i < max_rfid_cnt; i++) {
+    for(int i=0; i < RFID_MAX_COUNT; i++) {
       if(rfids[i].id[0] == "") {
         rfids[i].id[0] = rfid_string;
         Serial.print("INFO - new car at controller id: ");
@@ -459,8 +461,8 @@ void wait(unsigned long waitTime) {
 
 void resetRfidStorage() {
   char nameBuf[20];
-  for(int i=0; i < max_rfid_cnt; i++) {
-    for(int j=0; j<storage_rfid_cnt; j++) {
+  for(int i=0; i < RFID_MAX_COUNT; i++) {
+    for(int j=0; j<RFID_STORAGE_COUNT; j++) {
       rfids[i].id[j] = "";
     }
     snprintf(nameBuf, sizeof(nameBuf), "Controller %d", i+1);
