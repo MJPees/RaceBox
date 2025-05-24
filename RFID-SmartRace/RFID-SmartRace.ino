@@ -859,14 +859,13 @@ void checkRfid(unsigned char epcBytes[]) {
   }
   buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
   String epcString(buffer);
-  if(epcString != lastEpcString) {
-    send_finish_line_event(epcString, millis());
+
+  unsigned long now = millis();
+  if (epcString != lastEpcString || (lastEpcRead + RFID_REPEAT_TIME) < now) {
+    send_finish_line_event(epcString, now);
     lastEpcString = epcString;
+    lastEpcRead = now;
   }
-  else if ((lastEpcRead + RFID_REPEAT_TIME) < millis()) {
-    send_finish_line_event(epcString, millis());
-  }
-  lastEpcRead = millis();
 }
 
 bool isLedOn() {
