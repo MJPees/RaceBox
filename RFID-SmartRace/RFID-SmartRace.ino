@@ -6,10 +6,11 @@
 #include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
 
 /* configuration */
-#define DEFAULT_POWER_LEVEL 12 // default power level
+#define RFID_DEFAULT_POWER_LEVEL 12 // default power level
 #define DEFAULT_MIN_LAP_TIME 3000 //min time between laps in ms
-#define AP_SSID "RFID-SmartRace-Config"
-#define DEFAULT_HOSTNAME "RFID-SmartRace"
+#define WIFI_AP_SSID "RFID-SmartRace-Config"
+#define WIFI_DEFAULT_HOSTNAME "RFID-SmartRace"
+#define PREFERENCES_NAMESPACE "smartRace"
 
 #define VERSION "1.0.1"
 //#define DEBUG
@@ -83,28 +84,38 @@ unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
 unsigned long ledOnTime = 0;
 
-int minLapTime = DEFAULT_MIN_LAP_TIME;
+int config_min_lap_time = DEFAULT_MIN_LAP_TIME;
+
+bool wifi_ap_mode = false;
 
 using namespace websockets;
-
 String websocket_server = "";
-bool ap_mode = false;
+String websocket_ca_cert = "";
 bool websocket_connected = false;
-unsigned long last_ping = 0;
-unsigned long lastWebsocketAttempt = 0;
-unsigned long websocketBackoff = 1000; // Start mit 1 Sekunde
-const unsigned long maxWebsocketBackoff = 30000; // Maximal 30 Sekunden
-
+unsigned long websocket_last_ping = 0;
+unsigned long websocket_last_attempt = 0;
+unsigned long websocket_backoff = 1000; // Start mit 1 Sekunde
+const unsigned long websocket_max_backoff = 30000; // Maximal 30 Sekunden
 WebsocketsClient client;
-
-String ssl_ca_cert = "";
 
 WebServer server(80);
 DNSServer dnsServer;
-String hostName = "";
 
 Preferences preferences;
-String ssid, password, serverAddress, apiKey;
+
+String config_target_system = "smart_race";
+String config_wifi_ssid;
+String config_wifi_password;
+String config_wifi_hostname;
+
+String config_smart_race_websocket_server;
+String config_smart_race_websocket_ca_cert;
+
+String config_ch_racing_club_websocket_server;
+String config_ch_racing_club_websocket_ca_cert;
+String config_ch_racing_club_api_key;
+
+int config_rfid_power_level = RFID_DEFAULT_POWER_LEVEL;
 
 
 
@@ -119,20 +130,26 @@ String rfid_string = "";
 
 unsigned long lastResetTime = 0;
 
-int powerLevel = DEFAULT_POWER_LEVEL;
 
-String targetSystem = "smart_race";
 
-void saveConfig() {
-  preferences.putString("ssid", ssid);
-  preferences.putString("password", password);
-  preferences.putString("serverAddress", serverAddress);
-  preferences.putString("hostName", hostName);
-  preferences.putInt("powerLevel", powerLevel);
-  preferences.putInt("minLapTime", minLapTime);
-  preferences.putString("apiKey", apiKey);
-  preferences.putString("ssl_ca_cert", ssl_ca_cert);
-  preferences.putString("targetSystem", targetSystem);
+void configuration_save() {
+  preferences.begin(PREFERENCES_NAMESPACE);
+
+  preferences.putString("target_system", config_target_system);
+  preferences.putInt("power_level", config_rfid_power_level);
+  preferences.putInt("min_lap_time", config_min_lap_time);
+
+  preferences.putString("wifi_ssid", config_wifi_ssid);
+  preferences.putString("wifi_password", config_wifi_password);
+  preferences.putString("wifi_hostname", config_wifi_hostname);
+
+  preferences.putString("sr_ws_server", config_smart_race_websocket_server);
+  preferences.putString("sr_ws_ca_cert", config_smart_race_websocket_ca_cert);
+
+  preferences.putString("chrc_ws_server", config_ch_racing_club_websocket_server);
+  preferences.putString("chrc_ws_ca_cert", config_ch_racing_club_websocket_ca_cert);
+  preferences.putString("chrc_api_key", config_ch_racing_club_api_key);
+
   char key[20];
   for(int i=0; i<RFID_MAX_COUNT; i++) {
     snprintf(key, sizeof(key), "RFID%d", i);
@@ -144,45 +161,38 @@ void saveConfig() {
   }
 }
 
-void loadConfig() {
-  ssid = preferences.getString("ssid", "");
-  password = preferences.getString("password", "");
-  serverAddress = preferences.getString("serverAddress", "");
-  apiKey = preferences.getString("apiKey", "");
-  hostName = preferences.getString("hostName", DEFAULT_HOSTNAME);
-  powerLevel = preferences.getInt("powerLevel", DEFAULT_POWER_LEVEL);
-  minLapTime = preferences.getInt("minLapTime", DEFAULT_MIN_LAP_TIME);
-  ssl_ca_cert = preferences.getString("ssl_ca_cert", "");
-  targetSystem = preferences.getString("targetSystem", "smart_race");
-  if (ssl_ca_cert == "") {
-    ssl_ca_cert =
-      "-----BEGIN CERTIFICATE-----\n"
-      "MIIEVzCCAj+gAwIBAgIRAIOPbGPOsTmMYgZigxXJ/d4wDQYJKoZIhvcNAQELBQAw\n"
-      "TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh\n"
-      "cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw\n"
-      "WhcNMjcwMzEyMjM1OTU5WjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg\n"
-      "RW5jcnlwdDELMAkGA1UEAxMCRTUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQNCzqK\n"
-      "a2GOtu/cX1jnxkJFVKtj9mZhSAouWXW0gQI3ULc/FnncmOyhKJdyIBwsz9V8UiBO\n"
-      "VHhbhBRrwJCuhezAUUE8Wod/Bk3U/mDR+mwt4X2VEIiiCFQPmRpM5uoKrNijgfgw\n"
-      "gfUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD\n"
-      "ATASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSfK1/PPCFPnQS37SssxMZw\n"
-      "i9LXDTAfBgNVHSMEGDAWgBR5tFnme7bl5AFzgAiIyBpY9umbbjAyBggrBgEFBQcB\n"
-      "AQQmMCQwIgYIKwYBBQUHMAKGFmh0dHA6Ly94MS5pLmxlbmNyLm9yZy8wEwYDVR0g\n"
-      "BAwwCjAIBgZngQwBAgEwJwYDVR0fBCAwHjAcoBqgGIYWaHR0cDovL3gxLmMubGVu\n"
-      "Y3Iub3JnLzANBgkqhkiG9w0BAQsFAAOCAgEAH3KdNEVCQdqk0LKyuNImTKdRJY1C\n"
-      "2uw2SJajuhqkyGPY8C+zzsufZ+mgnhnq1A2KVQOSykOEnUbx1cy637rBAihx97r+\n"
-      "bcwbZM6sTDIaEriR/PLk6LKs9Be0uoVxgOKDcpG9svD33J+G9Lcfv1K9luDmSTgG\n"
-      "6XNFIN5vfI5gs/lMPyojEMdIzK9blcl2/1vKxO8WGCcjvsQ1nJ/Pwt8LQZBfOFyV\n"
-      "XP8ubAp/au3dc4EKWG9MO5zcx1qT9+NXRGdVWxGvmBFRAajciMfXME1ZuGmk3/GO\n"
-      "koAM7ZkjZmleyokP1LGzmfJcUd9s7eeu1/9/eg5XlXd/55GtYjAM+C4DG5i7eaNq\n"
-      "cm2F+yxYIPt6cbbtYVNJCGfHWqHEQ4FYStUyFnv8sjyqU8ypgZaNJ9aVcWSICLOI\n"
-      "E1/Qv/7oKsnZCWJ926wU6RqG1OYPGOi1zuABhLw61cuPVDT28nQS/e6z95cJXq0e\n"
-      "K1BcaJ6fJZsmbjRgD5p3mvEf5vdQM7MCEvU0tHbsx2I5mHHJoABHb8KVBgWp/lcX\n"
-      "GWiWaeOyB7RP+OfDtvi2OsapxXiV7vNVs7fMlrRjY1joKaqmmycnBvAq14AEbtyL\n"
-      "sVfOS66B8apkeFX2NY4XPEYV4ZSCe8VHPrdrERk2wILG3T/EGmSIkCYVUMSnjmJd\n"
-      "VQD9F6Na/+zmXCc=\n"
-      "-----END CERTIFICATE-----\n";
+void configuration_load() {
+  preferences.begin(PREFERENCES_NAMESPACE);
+
+  config_target_system = preferences.getString("target_system", "smart_race");
+  config_rfid_power_level = preferences.getInt("power_level", RFID_DEFAULT_POWER_LEVEL);
+  config_min_lap_time = preferences.getInt("min_lap_time", DEFAULT_MIN_LAP_TIME);
+
+  config_wifi_ssid = preferences.getString("wifi_ssid", "");
+  config_wifi_password = preferences.getString("wifi_password", "");
+  config_wifi_hostname = preferences.getString("wifi_hostname", WIFI_DEFAULT_HOSTNAME);
+
+  config_smart_race_websocket_server = preferences.getString("sr_ws_server", "");
+  config_smart_race_websocket_ca_cert = preferences.getString("sr_ws_ca_cert", "");
+
+  config_ch_racing_club_websocket_server = preferences.getString("chrc_ws_server", "");
+  config_ch_racing_club_websocket_ca_cert = preferences.getString("chrc_ws_ca_cert", "");
+  config_ch_racing_club_api_key = preferences.getString("chrc_api_key", "");
+
+  if (config_target_system == "smart_race") {
+    websocket_server = config_smart_race_websocket_server;
+    websocket_ca_cert = config_smart_race_websocket_ca_cert;
+
+    Serial.println("\nConfiguration: SmartRace loaded");
   }
+
+  if (config_target_system == "ch_racing_club") {
+    websocket_server = config_ch_racing_club_websocket_server;
+    websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
+
+    Serial.println("\nConfiguration: CH Racing Club loaded");
+  }
+
   char key[20];
   char defaultName[20];
   for(int i=0; i<RFID_MAX_COUNT; i++) {
@@ -207,51 +217,68 @@ void handleRoot() {
   html += "<style>*, *::before, *::after {box-sizing: border-box;}body {min-height: 100vh;margin: 0;}form {max-width: 535px;margin: 0 auto;}label {margin-bottom: 5px;display:block;}input[type=text],input[type=password],input[type=number],select,textarea {width: 100%;padding: 8px;border: 1px solid #ccc;border-radius: 4px;display: block;}input[type=submit] {width: 100%;background-color: #4CAF50;color: white;padding: 10px 15px;border: none;border-radius: 4px;}</style>";
   html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
-  html += "<form x-data=\"{ targetSystem: '" + targetSystem + "', serverAddress: '" + serverAddress + "' }\" action='/config' method='POST'>";
+  html += "<form x-data=\"{ targetSystem: '" + config_target_system + "', smartRaceWebsocketServer: '" + config_smart_race_websocket_server + "', racingClubWebsocketServer: '" + config_ch_racing_club_websocket_server + "' }\" action='/config' method='POST'>";
   html += "<h1 align=center>RFID-SmartRace</h1>";
-  html += "<label for='ssid'>SSID:</label>";
-  html += "<input type='text' id='ssid' name='ssid' value='" + ssid + "'><br>";
-  html += "<label for='password'>Passwort:</label>";
-  html += "<input type='password' id='password' name='password' value='" + password + "'><br>";
-  html += "<label for='hostName'>Hostname:</label>";
-  html += "<input type='text' id='hostName' name='hostName' value='" + hostName + "'><br>";
-  html += "<label for='targetSystem'>Target System:</label>";
-  html += "<select id='targetSystem' name='targetSystem' x-model='targetSystem'>";
-  html += "<option value='smart_race'" + String((targetSystem == "smart_race") ? " selected" : "") + ">SmartRace</option>";
-  html += "<option value='ch_racing_club'" + String((targetSystem == "ch_racing_club") ? " selected" : "") + ">CH Racing Club</option>";
+
+  html += "<label for='config_wifi_ssid'>SSID:</label>";
+  html += "<input type='text' id='config_wifi_ssid' name='config_wifi_ssid' value='" + config_wifi_ssid + "'><br>";
+
+  html += "<label for='config_wifi_password'>Passwort:</label>";
+  html += "<input type='password' id='config_wifi_password' name='config_wifi_password' value='" + config_wifi_password + "'><br>";
+
+  html += "<label for='config_wifi_hostname'>Hostname:</label>";
+  html += "<input type='text' id='config_wifi_hostname' name='config_wifi_hostname' value='" + config_wifi_hostname + "'><br>";
+
+  html += "<label for='config_target_system'>Target System:</label>";
+  html += "<select id='config_target_system' name='config_target_system' x-model='targetSystem'>";
+  html += "<option value='smart_race'" + String((config_target_system == "smart_race") ? " selected" : "") + ">SmartRace</option>";
+  html += "<option value='ch_racing_club'" + String((config_target_system == "ch_racing_club") ? " selected" : "") + ">CH Racing Club</option>";
   html += "</select><br>";
+
   html += "<div x-show=\"targetSystem == 'ch_racing_club'\">";
-  html += "<label for='apiKey'>ApiKey:</label>";
-  html += "<input type='number' id='apiKey' name='apiKey' value='" + apiKey + "'><br>";
+  html += "  <label for='config_ch_racing_club_websocket_server'>Websocket Server:</label>";
+  html += "  <input type='text' id='config_ch_racing_club_websocket_server' name='config_ch_racing_club_websocket_server' placeholder='ws:// or wss://' x-model='racingClubWebsocketServer' value='" + config_ch_racing_club_websocket_server + "'><br>";
+  html += "  <div x-show=\"racingClubWebsocketServer.startsWith('wss')\">";
+  html += "    <label for='config_ch_racing_club_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+  html += "    <textarea id='config_ch_racing_club_websocket_ca_cert' name='config_ch_racing_club_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_ch_racing_club_websocket_ca_cert + "</textarea><br>";
+  html += "  </div>";
+  html += "  <label for='config_ch_racing_club_api_key'>ApiKey:</label>";
+  html += "  <input type='number' id='config_ch_racing_club_api_key' name='config_ch_racing_club_api_key' value='" + config_ch_racing_club_api_key + "'><br>";
   html += "</div>";
-  html += "<label for='minLapTime'>Minimum Lap Time (ms):</label>";
-  html += "<input type='number' id='minLapTime' name='minLapTime' value='" + String(minLapTime) + "'><br>";
-  html += "<label for='powerLevel'>Power Level:</label>";
-  html += "<select id='powerLevel' name='powerLevel'>";
-  html += "<option value='10'" + String((powerLevel == 10) ? " selected" : "") + ">10 dBm</option>";
-  html += "<option value='11'" + String((powerLevel == 11) ? " selected" : "") + ">11 dBm</option>";
-  html += "<option value='12'" + String((powerLevel == 12) ? " selected" : "") + ">12 dBm</option>";
-  html += "<option value='13'" + String((powerLevel == 13) ? " selected" : "") + ">13 dBm</option>";
-  html += "<option value='14'" + String((powerLevel == 14) ? " selected" : "") + ">14 dBm</option>";
-  html += "<option value='15'" + String((powerLevel == 15) ? " selected" : "") + ">15 dBm</option>";
-  html += "<option value='16'" + String((powerLevel == 16) ? " selected" : "") + ">16 dBm</option>";
-  html += "<option value='17'" + String((powerLevel == 17) ? " selected" : "") + ">17 dBm</option>";
-  html += "<option value='18'" + String((powerLevel == 18) ? " selected" : "") + ">18 dBm</option>";
-  html += "<option value='19'" + String((powerLevel == 19) ? " selected" : "") + ">19 dBm</option>";
-  html += "<option value='20'" + String((powerLevel == 20) ? " selected" : "") + ">20 dBm</option>";
-  html += "<option value='21'" + String((powerLevel == 21) ? " selected" : "") + ">21 dBm</option>";
-  html += "<option value='22'" + String((powerLevel == 22) ? " selected" : "") + ">22 dBm</option>";
-  html += "<option value='23'" + String((powerLevel == 23) ? " selected" : "") + ">23 dBm</option>";
-  html += "<option value='24'" + String((powerLevel == 24) ? " selected" : "") + ">24 dBm</option>";
-  html += "<option value='25'" + String((powerLevel == 25) ? " selected" : "") + ">25 dBm</option>";
-  html += "<option value='26'" + String((powerLevel == 26) ? " selected" : "") + ">26 dBm</option>";
+
+  html += "<div x-show=\"targetSystem == 'smart_race'\">";
+  html += "  <label for='config_smart_race_websocket_server'>Websocket Server:</label>";
+  html += "  <input type='text' id='config_smart_race_websocket_server' name='config_smart_race_websocket_server' placeholder='ws:// or wss://' x-model='smartRaceWebsocketServer' value='" + config_smart_race_websocket_server + "'><br>";
+  html += "  <div x-show=\"smartRaceWebsocketServer.startsWith('wss')\">";
+  html += "    <label for='config_smart_race_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+  html += "    <textarea id='config_smart_race_websocket_ca_cert' name='config_smart_race_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_smart_race_websocket_ca_cert + "</textarea><br>";
+  html += "  </div>";
+  html += "</div>";
+
+  html += "<label for='config_min_lap_time'>Minimum Lap Time (ms):</label>";
+  html += "<input type='number' id='config_min_lap_time' name='config_min_lap_time' value='" + String(config_min_lap_time) + "'><br>";
+
+  html += "<label for='config_rfid_power_level'>Power Level:</label>";
+  html += "<select id='config_rfid_power_level' name='config_rfid_power_level'>";
+  html += "<option value='10'" + String((config_rfid_power_level == 10) ? " selected" : "") + ">10 dBm</option>";
+  html += "<option value='11'" + String((config_rfid_power_level == 11) ? " selected" : "") + ">11 dBm</option>";
+  html += "<option value='12'" + String((config_rfid_power_level == 12) ? " selected" : "") + ">12 dBm</option>";
+  html += "<option value='13'" + String((config_rfid_power_level == 13) ? " selected" : "") + ">13 dBm</option>";
+  html += "<option value='14'" + String((config_rfid_power_level == 14) ? " selected" : "") + ">14 dBm</option>";
+  html += "<option value='15'" + String((config_rfid_power_level == 15) ? " selected" : "") + ">15 dBm</option>";
+  html += "<option value='16'" + String((config_rfid_power_level == 16) ? " selected" : "") + ">16 dBm</option>";
+  html += "<option value='17'" + String((config_rfid_power_level == 17) ? " selected" : "") + ">17 dBm</option>";
+  html += "<option value='18'" + String((config_rfid_power_level == 18) ? " selected" : "") + ">18 dBm</option>";
+  html += "<option value='19'" + String((config_rfid_power_level == 19) ? " selected" : "") + ">19 dBm</option>";
+  html += "<option value='20'" + String((config_rfid_power_level == 20) ? " selected" : "") + ">20 dBm</option>";
+  html += "<option value='21'" + String((config_rfid_power_level == 21) ? " selected" : "") + ">21 dBm</option>";
+  html += "<option value='22'" + String((config_rfid_power_level == 22) ? " selected" : "") + ">22 dBm</option>";
+  html += "<option value='23'" + String((config_rfid_power_level == 23) ? " selected" : "") + ">23 dBm</option>";
+  html += "<option value='24'" + String((config_rfid_power_level == 24) ? " selected" : "") + ">24 dBm</option>";
+  html += "<option value='25'" + String((config_rfid_power_level == 25) ? " selected" : "") + ">25 dBm</option>";
+  html += "<option value='26'" + String((config_rfid_power_level == 26) ? " selected" : "") + ">26 dBm</option>";
   html += "</select><br>";
-  html += "<label for='serverAddress'>Websocket Server Adresse:</label>";
-  html += "<input type='text' id='serverAddress' name='serverAddress' placeholder='ws:// or wss://' x-model='serverAddress' value='" + serverAddress + "'><br>";
-  html += "<div x-show=\"serverAddress.startsWith('wss')\">";
-  html += "<label for='ssl_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
-  html += "<textarea id='ssl_ca_cert' name='ssl_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + ssl_ca_cert + "</textarea><br>";
-  html += "</div>";
+
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
   html += "<div style='display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Äußerer Grid-Container
   for (int i = 0; i < RFID_MAX_COUNT; i++) {
@@ -281,17 +308,35 @@ void handleRoot() {
 
 void handleConfig() {
   if (server.args() > 0) {
-    bool reConnectWifi = ssid != server.arg("ssid") || password != server.arg("password") || hostName != server.arg("hostName");
-    ssid = server.arg("ssid");
-    password = server.arg("password");
-    serverAddress = server.arg("serverAddress");
-    apiKey = server.arg("apiKey");
-    hostName = server.arg("hostName");
-    powerLevel = server.arg("powerLevel").toInt(); // Get power level from dropdown
-    minLapTime = server.arg("minLapTime").toInt(); // Get minimum lap time from input
-    ssl_ca_cert = server.arg("ssl_ca_cert");
-    ssl_ca_cert.replace("\r", ""); // Optional: Zeilenumbrüche vereinheitlichen
-    targetSystem = server.arg("targetSystem");
+    bool reConnectWifi = config_wifi_ssid != server.arg("config_wifi_ssid") || config_wifi_password != server.arg("config_wifi_password") || config_wifi_hostname != server.arg("config_wifi_hostname");
+    bool reConnectWebsocket = config_target_system != server.arg("config_target_system");
+
+    config_target_system = server.arg("config_target_system");
+    config_rfid_power_level = server.arg("config_rfid_power_level").toInt();
+    config_min_lap_time = server.arg("config_min_lap_time").toInt();
+
+    config_wifi_ssid = server.arg("config_wifi_ssid");
+    config_wifi_password = server.arg("config_wifi_password");
+    config_wifi_hostname = server.arg("config_wifi_hostname");
+
+    if (config_target_system == "smart_race") {
+      config_smart_race_websocket_server = server.arg("config_smart_race_websocket_server");
+      config_smart_race_websocket_ca_cert = server.arg("config_smart_race_websocket_ca_cert");
+      config_smart_race_websocket_ca_cert.replace("\r", "");
+
+      websocket_server = config_smart_race_websocket_server;
+      websocket_ca_cert = config_smart_race_websocket_ca_cert;
+    }
+
+    if (config_target_system == "ch_racing_club") {
+      config_ch_racing_club_websocket_server = server.arg("config_ch_racing_club_websocket_server");
+      config_ch_racing_club_websocket_ca_cert = server.arg("config_ch_racing_club_websocket_ca_cert");
+      config_ch_racing_club_websocket_ca_cert.replace("\r", "");
+      config_ch_racing_club_api_key = server.arg("config_ch_racing_club_api_key");
+
+      websocket_server = config_ch_racing_club_websocket_server;
+      websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
+    }
 
     char nameKey[12];
     char idKey[16];
@@ -303,19 +348,28 @@ void handleConfig() {
         rfids[i].id[j] = server.arg(idKey);
       }
     }
-    setPowerLevel(powerLevel); // Set power level
-    saveConfig();
+
+    rfid_set_power_level(config_rfid_power_level);
+
+    configuration_save();
+
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
 
-    if(reConnectWifi) {
-      reloadWifi();
+    if (reConnectWebsocket) {
+      websocket_connected = false;
+      websocket_last_attempt = 0;
+      connectWebsocket();
     }
+
+    // if(reConnectWifi) {
+    //   wifi_reload();
+    // }
   } else {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
   }
 }
 
-void reloadWifi() {
+void wifi_reload() {
   if (WiFi.status() == WL_CONNECTED) {
     WiFi.disconnect(true);
     delay(100);
@@ -325,8 +379,8 @@ void reloadWifi() {
     dnsServer.stop();
   }
 
-  WiFi.setHostname(hostName.c_str());
-  WiFi.begin(ssid.c_str(), password.c_str());
+  WiFi.setHostname(config_wifi_hostname.c_str());
+  WiFi.begin(config_wifi_ssid.c_str(), config_wifi_password.c_str());
 
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
@@ -336,42 +390,42 @@ void reloadWifi() {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.print("\nWLAN connected ");
+    Serial.print("\nWiFi: connected ");
     Serial.println(WiFi.localIP());
     connectWebsocket();
-    ap_mode = false;
+    wifi_ap_mode = false;
   } else {
-    Serial.println("\nWLAN connect failed, starting AP mode");
-    WiFi.softAP(AP_SSID);
+    Serial.println("\nWiFi: connect failed, starting AP mode");
+    WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
-    ap_mode = true;
+    wifi_ap_mode = true;
   }
 }
 
 void connectWebsocket() {
-  if (millis() - lastWebsocketAttempt < websocketBackoff) {
+  if (millis() - websocket_last_attempt < websocket_backoff) {
     return; // wait until backoff time is reached
   }
-  lastWebsocketAttempt = millis();
+  websocket_last_attempt = millis();
 
-  websocket_server = String(serverAddress);
-  Serial.print("Connecting to SmartRace at ");
+  websocket_server = String(websocket_server);
+  Serial.print("Websocket: connecting ... ");
   Serial.println(websocket_server);
 
-  if (ssl_ca_cert.length() > 0) {
-    client.setCACert(ssl_ca_cert.c_str());
+  if (websocket_ca_cert.length() > 0) {
+    client.setCACert(websocket_ca_cert.c_str());
   }
   websocket_connected = client.connect(websocket_server);
 
   if(websocket_connected) {
-    Serial.println("Websocket connected.");
+    Serial.println("Websocket: connected.");
     client.send("{\"type\":\"api_version\"}");
     client.ping();
     client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"Z\"}}");
-    websocketBackoff = 1000; // reset backoff time on successful connection
+    websocket_backoff = 1000; // reset backoff time on successful connection
   } else {
-    Serial.println("Websocket connection failed.");
-    websocketBackoff = min(websocketBackoff * 2, maxWebsocketBackoff); // Exponentielles Backoff
+    Serial.println("Websocket: connection failed.");
+    websocket_backoff = min(websocket_backoff * 2, websocket_max_backoff); // Exponentielles Backoff
   }
 }
 
@@ -380,11 +434,11 @@ void send_finish_line_message(int controller_id, unsigned long timestamp, String
   String message;
   message.reserve(128); // Reserve enough space for the largest payload
 
-  if (targetSystem == "ch_racing_club") {
+  if (config_target_system == "ch_racing_club") {
     message = "{\"command\":\"lap\",\"data\":{";
     message += "\"timestamp\":" + String(rfids[controller_id].last) + ",";
     message += "\"rfid\":\"" + rfid_string + "\",";
-    message += "\"api_key\":\"" + apiKey + "\"";
+    message += "\"api_key\":\"" + config_ch_racing_club_api_key + "\"";
     message += "}}";
   } else {
     message = "{\"type\":\"analog_lap\",\"data\":{";
@@ -402,7 +456,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
   for(int j = 0; j<RFID_STORAGE_COUNT;j++) {
     for (int i = 0; i < RFID_MAX_COUNT; i++) {
       if(rfids[i].id[j] == rfid_string) {
-        if(rfids[i].last + minLapTime < ms) {
+        if(rfids[i].last + config_min_lap_time < ms) {
           ledOn();
           send_finish_line_message(i, ms, rfid_string);
         }
@@ -418,7 +472,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
     for(int i=0; i < RFID_MAX_COUNT; i++) {
       if(rfids[i].id[0] == "") {
         rfids[i].id[0] = rfid_string;
-        Serial.print("INFO - new car at controller id: ");
+        Serial.print("RFID: new car at controller id: ");
         Serial.print(i+1);
         Serial.print(rfids[i].id[0]);
         Serial.println();
@@ -439,10 +493,10 @@ void onMessageCallback(WebsocketsMessage message) {
 
 void onEventsCallback(WebsocketsEvent event, String data) {
     if(event == WebsocketsEvent::ConnectionOpened) {
-        Serial.println("INFO - Connnection Opened");
+        Serial.println("RFID: connection opened");
         websocket_connected = true;
     } else if(event == WebsocketsEvent::ConnectionClosed) {
-        Serial.println("INFO - Connnection Closed");
+        Serial.println("RFID: connection closed");
         websocket_connected = false;
     } else if(event == WebsocketsEvent::GotPing) {
         #ifdef DEBUG
@@ -505,16 +559,16 @@ bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const un
   return ok;
 }
 
-void setPowerLevel(int powerLevel) {
+void rfid_set_power_level(int config_rfid_power_level) {
   // Set power level based on loaded configuration
   bool ok;
   while(SerialRFID.available()) {
     SerialRFID.read();
   }
   if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
-    Serial.println("Stopped ReadMulti.");
+    Serial.println("RFID: stopped ReadMulti.");
   } else {
-    Serial.println("Failed to stop ReadMulti.");
+    Serial.println("RFID: failed to stop ReadMulti.");
   }
 
   while(SerialRFID.available()) {
@@ -522,7 +576,7 @@ void setPowerLevel(int powerLevel) {
     delay(1);
   }
 
-  switch (powerLevel) {
+  switch (config_rfid_power_level) {
     case 10:
       ok = setReaderSetting(Power10dbm, 9, PowerLevelResponse, 8);
       break;
@@ -577,19 +631,21 @@ void setPowerLevel(int powerLevel) {
   }
 
   if(ok) {
-    Serial.println("Set power level.");
+    Serial.print("RFID: set power level: ");
+    Serial.print(config_rfid_power_level);
+    Serial.println(" dBm");
     ledOn();
     delay(200);
     ledOff();
     delay(500);
   } else {
-    Serial.println("Failed to set power level.");
+    Serial.println("RFID: failed to set power level.");
   }
   SerialRFID.write(ReadMulti,10);
 }
 
 void initRfid() {
-  Serial.println("Starting RFID reader...");
+  Serial.println("RFID: starting...");
   SerialRFID.begin(115200,SERIAL_8N1, RX_PIN, TX_PIN);
   wait(500);
   while(SerialRFID.available()) {
@@ -599,41 +655,41 @@ void initRfid() {
   //set region to Europe
 
   if(setReaderSetting(Europe, 8, RegionResponse, 8)) {
-    Serial.println("Set Europe region.");
+    Serial.println("RFID: set Europe region.");
     ledOn();
     delay(200);
     ledOff();
     delay(500);
   } else {
-    Serial.println("Failed to set Europe region.");
+    Serial.println("RFID: failed to set Europe region.");
   }
 
   //set dense reader
   if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
-    Serial.println("Set dense reader.");
+    Serial.println("RFID: set dense reader.");
     ledOn();
     delay(200);
     ledOff();
     delay(500);
   } else {
-    Serial.println("Failed to set dense reader.");
+    Serial.println("RFID: failed to set dense reader.");
   }
 
   //no module sleep time
   if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
-    Serial.println("Disabled module sleep time.");
+    Serial.println("RFID: disabled module sleep time.");
     ledOn();
     delay(200);
     ledOff();
     delay(500);
   } else {
-    Serial.println("Failed to disable module sleep time.");
+    Serial.println("RFID: failed to disable module sleep time.");
   }
 
   //set power level and start ReadMulti
-  setPowerLevel(powerLevel);
+  rfid_set_power_level(config_rfid_power_level);
 
-  Serial.println("\nR200 RFID-reader started...");
+  Serial.println("RFID: running");
 }
 
 int getParameterLength() {
@@ -842,15 +898,22 @@ void setup() {
 
   Serial.begin(115200);
   wait(2000);
+
+  // reset preferences
+  // preferences.clear();
+
+  Serial.print("RFID-SmartRace Version: ");
+  Serial.println(VERSION);
+  Serial.println("############################");
+
+  configuration_load();
+
   Serial.println();
-  Serial.println("Starting...");
-  preferences.begin("wifiConfig");
+  Serial.print("Starting ...");
 
-  loadConfig();
-
-  if (ssid != "") {
-    WiFi.setHostname(hostName.c_str());
-    WiFi.begin(ssid.c_str(), password.c_str());
+  if (config_wifi_ssid != "") {
+    WiFi.setHostname(config_wifi_hostname.c_str());
+    WiFi.begin(config_wifi_ssid.c_str(), config_wifi_password.c_str());
 
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
@@ -860,21 +923,21 @@ void setup() {
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-      Serial.print("\nWLAN verbunden ");
+      Serial.print("\nWiFi: connected ");
       Serial.println(WiFi.localIP());
-      ap_mode = false;
+      wifi_ap_mode = false;
     } else {
-      Serial.println("\nWLAN Verbindung fehlgeschlagen!");
-      WiFi.softAP(AP_SSID);
+      Serial.println("\nWiFi: connection failed!");
+      WiFi.softAP(WIFI_AP_SSID);
       dnsServer.start();
-      Serial.println("AP started ");
-      ap_mode = true;
+      Serial.println("WiFi: started AP mode");
+      wifi_ap_mode = true;
     }
   } else {
-    WiFi.softAP(AP_SSID);
+    WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
-    Serial.println("AP started ");
-    ap_mode = true;
+    Serial.println("WiFi: started AP mode");
+    wifi_ap_mode = true;
   }
 
   server.on("/", handleRoot);
@@ -883,14 +946,10 @@ void setup() {
   server.onNotFound(handleNotFound);
 
   server.begin();
-  Serial.println("Webserver gestartet...");
+  Serial.println("Webserver: running");
 
   // Start RFID reader
   initRfid();
-  Serial.print("RFID-SmartRace Version: ");
-  Serial.print(VERSION);
-  Serial.println(" started.");
-  Serial.println("############################");
 }
 
 void loop() {
@@ -898,13 +957,13 @@ void loop() {
   readRfid();
   if(websocket_connected) {
     client.poll();
-    if(millis() > (last_ping + WEBSOCKET_PING_INTERVAL)) {
-      last_ping = millis();
+    if(millis() > (websocket_last_ping + WEBSOCKET_PING_INTERVAL)) {
+      websocket_last_ping = millis();
       client.ping();
     }
   }
   else {
-    if(!ap_mode) connectWebsocket();
+    if(!wifi_ap_mode) connectWebsocket();
   }
   if(isLedOn() && (ledOnTime + LED_ON_TIME) < millis()) {
     ledOff();
