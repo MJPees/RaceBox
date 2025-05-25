@@ -1,10 +1,14 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 
-// Turbo-Button at gamepad
-#define KEY_TURBO 3
+#define WIFI_DEFAULT_HOSTNAME "CH-GhostCar-SmartRace"
+
+#define KEY_TURBO 3 // Turbo-Button at gamepad
+#define DEFAULT_SPEED 100 // ghostcar speed %
+#define DEFAULT_BRAKING_TIME 5000 // ms
+#define JOYSTICK_UPDATE_INTERVAL 100 // ms
 
 //For ESP32C3 or ESP32S3_BLE use Tools -> Partition Scheme -> No OTA (2MB APP/2MB SPIFFS)
 #define ESP32C3 // only Bluetooth

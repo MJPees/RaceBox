@@ -7,98 +7,201 @@
 //ArduinoWebsockets 0.5.4
 #include <ArduinoWebsockets.h>
 
+/* configuration */
+#define WIFI_AP_SSID "CH-GhostCar-SmartRace-Config"
+#define PREFERENCES_NAMESPACE "smartRace"
+
 #if defined(ESP32_BLE)
   #include "src/Joystick_BLE/Joystick_BLE.h"
   Joystick_ Joystick;
 #else
-  #define ESP32S3
   #include <Joystick_ESP32S2.h> // Tested V0.9.5 https://github.com/schnoog/Joystick_ESP32S2
   Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD, 
                    14, 2,true, false, false, false, false, 
                    false,false, false, true, true, false);
 #endif
 
-using namespace websockets;
+#define WIFI_CONNECT_ATTEMPTS 20
+#define WIFI_CONNECT_DELAY_MS 500
+#define WEBSOCKET_PING_INTERVAL 5000
 
 bool initJoystick = false;
 bool activeLaunchControl = false;
 
+bool wifi_ap_mode = false;
+
+using namespace websockets;
 String websocket_server = "";
-bool ap_mode = false;
+String websocket_ca_cert = "";
 bool websocket_connected = false;
-unsigned long last_ping = 0;
+unsigned long websocket_last_ping = 0;
+unsigned long websocket_last_attempt = 0;
+unsigned long websocket_backoff = 1000; // Start mit 1 Sekunde
+const unsigned long websocket_max_backoff = 30000; // Maximal 30 Sekunden
+
 unsigned long lastJoystickUpdate = 0;
 bool isBraking = false;
 unsigned long brakeTime = 0;
 
 WebsocketsClient client;
 
-const char* AP_SSID = "CH-GhostCar-SmartRace-Config";
 WebServer server(80);
 DNSServer dnsServer;
-String hostName = "";
+
 Preferences preferences;
 
-int speed = 100; // ghostcar speed %
+String config_target_system = "smart_race";
+String config_wifi_ssid;
+String config_wifi_password;
+String config_wifi_hostname;
 
-String ssid, password, serverAddress, serverPort;
+String config_smart_race_websocket_server;
+String config_smart_race_websocket_ca_cert;
 
-void saveConfig() {
-  preferences.putString("ssid", ssid);
-  preferences.putString("password", password);
-  preferences.putString("serverAddress", serverAddress);
-  preferences.putString("serverPort", serverPort);
-  preferences.putString("hostName", hostName);
-  preferences.putInt("speed", speed); // ghostcar speed
+String config_ch_racing_club_websocket_server;
+String config_ch_racing_club_websocket_ca_cert;
+String config_ch_racing_club_api_key;
+
+int speed = DEFAULT_SPEED; // ghostcar speed %
+
+void configuration_save() {
+  preferences.begin(PREFERENCES_NAMESPACE);
+
+  preferences.putString("target_system", config_target_system);
+
+  preferences.putString("wifi_ssid", config_wifi_ssid);
+  preferences.putString("wifi_password", config_wifi_password);
+  preferences.putString("wifi_hostname", config_wifi_hostname);
+
+  preferences.putString("sr_ws_server", config_smart_race_websocket_server);
+  preferences.putString("sr_ws_ca_cert", config_smart_race_websocket_ca_cert);
+
+  preferences.putString("chrc_ws_server", config_ch_racing_club_websocket_server);
+  preferences.putString("chrc_ws_ca_cert", config_ch_racing_club_websocket_ca_cert);
+  preferences.putString("chrc_api_key", config_ch_racing_club_api_key);
+
+  preferences.putInt("speed", speed);
 }
-  
-void loadConfig() {
-  ssid = preferences.getString("ssid", "");
-  password = preferences.getString("password", "");
-  serverAddress = preferences.getString("serverAddress", "");
-  serverPort = preferences.getString("serverPort", "");
-  hostName = preferences.getString("hostName", "CH-GhostCar-SmartRace");
-  speed = preferences.getInt("speed", 100); // ghostcar speed
+
+void configuration_load() {
+  preferences.begin(PREFERENCES_NAMESPACE);
+
+  config_target_system = preferences.getString("target_system", "smart_race");
+  config_rfid_power_level = preferences.getInt("power_level", RFID_DEFAULT_POWER_LEVEL);
+  config_min_lap_time = preferences.getInt("min_lap_time", DEFAULT_MIN_LAP_TIME);
+
+  config_wifi_ssid = preferences.getString("wifi_ssid", "");
+  config_wifi_password = preferences.getString("wifi_password", "");
+  config_wifi_hostname = preferences.getString("wifi_hostname", WIFI_DEFAULT_HOSTNAME);
+
+  config_smart_race_websocket_server = preferences.getString("sr_ws_server", "");
+  config_smart_race_websocket_ca_cert = preferences.getString("sr_ws_ca_cert", "");
+
+  config_ch_racing_club_websocket_server = preferences.getString("chrc_ws_server", "");
+  config_ch_racing_club_websocket_ca_cert = preferences.getString("chrc_ws_ca_cert", "");
+  config_ch_racing_club_api_key = preferences.getString("chrc_api_key", "");
+  speed = preferences.getInt("speed", DEFAULT_SPEED);
+
+  if (config_target_system == "smart_race") {
+    websocket_server = config_smart_race_websocket_server;
+    websocket_ca_cert = config_smart_race_websocket_ca_cert;
+
+    Serial.println("\nConfiguration: SmartRace loaded");
+  }
+
+  if (config_target_system == "ch_racing_club") {
+    websocket_server = config_ch_racing_club_websocket_server;
+    websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
+
+    Serial.println("\nConfiguration: CH Racing Club loaded");
+  }
 }
-  
+
 void handleNotFound() {
   server.sendHeader("Location", "/");
   server.send(302, "text/plain", "redirect to configuration page");
 }
-  
+
 void handleRoot() {
   String html = "<!DOCTYPE html><html><head><title>CH-GhostCar-SmartRace</title>";
   html += "<meta charset='UTF-8'>"; // Specify UTF-8 encoding
-  html += "<style>body{display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;}form{display:flex;flex-direction:column;max-width:100vw;}label{margin-bottom:5px;}input[type=text],input[type=password],input[type=number]{width:100%;padding:8px;margin-bottom:10px;border:1px solid #ccc;border-radius:4px;}input[type=submit]{background-color:#4CAF50;color:white;padding:10px 15px;border:none;border-radius:4px;}</style>";
+  html += "<style>*, *::before, *::after {box-sizing: border-box;}body {min-height: 100vh;margin: 0;}form {max-width: 535px;margin: 0 auto;}label {margin-bottom: 5px;display:block;}input[type=text],input[type=password],input[type=number],select,textarea {width: 100%;padding: 8px;border: 1px solid #ccc;border-radius: 4px;display: block;}input[type=submit] {width: 100%;background-color: #4CAF50;color: white;padding: 10px 15px;border: none;border-radius: 4px;}</style>";
+  html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
-  html += "<form action='/config' method='POST'>";
+  html += "<form x-data=\"{ targetSystem: '" + config_target_system + "', smartRaceWebsocketServer: '" + config_smart_race_websocket_server + "', racingClubWebsocketServer: '" + config_ch_racing_club_websocket_server + "' }\" action='/config' method='POST'>";
   html += "<h1 align=center>CH-GhostCar-SmartRace</h1>";
-  html += "<label for='ssid'>SSID:</label>";
-  html += "<input type='text' style='width:auto;' id='ssid' name='ssid' value='" + ssid + "'><br>";
-  html += "<label for='password'>Passwort:</label>";
-  html += "<input type='password' style='width:auto;' id='password' name='password' value='" + password + "'><br>";
-  html += "<label for='serverAddress'>Server Adresse:</label>";
-  html += "<input type='text' style='width:auto;' id='serverAddress' name='serverAddress' value='" + serverAddress + "'><br>";
-  html += "<label for='serverPort'>Server Port:</label>";
-  html += "<input type='number' style='width:auto;' id='serverPort' name='serverPort' value='" + serverPort + "'><br>";
-  html += "<label for='hostName'>Hostname:</label>";
-  html += "<input type='text' style='width:auto;' id='hostName' name='hostName' value='" + hostName + "'><br>";
+
+  html += "<label for='config_wifi_ssid'>SSID:</label>";
+  html += "<input type='text' id='config_wifi_ssid' name='config_wifi_ssid' value='" + config_wifi_ssid + "'><br>";
+
+  html += "<label for='config_wifi_password'>Passwort:</label>";
+  html += "<input type='password' id='config_wifi_password' name='config_wifi_password' value='" + config_wifi_password + "'><br>";
+
+  html += "<label for='config_wifi_hostname'>Hostname:</label>";
+  html += "<input type='text' id='config_wifi_hostname' name='config_wifi_hostname' value='" + config_wifi_hostname + "'><br>";
+
+  html += "<label for='config_target_system'>Target System:</label>";
+  html += "<select id='config_target_system' name='config_target_system' x-model='targetSystem'>";
+  html += "<option value='smart_race'" + String((config_target_system == "smart_race") ? " selected" : "") + ">SmartRace</option>";
+  html += "<option value='ch_racing_club'" + String((config_target_system == "ch_racing_club") ? " selected" : "") + ">CH Racing Club</option>";
+  html += "</select><br>";
+
+  html += "<div x-show=\"targetSystem == 'ch_racing_club'\">";
+  html += "  <label for='config_ch_racing_club_websocket_server'>Websocket Server:</label>";
+  html += "  <input type='text' id='config_ch_racing_club_websocket_server' name='config_ch_racing_club_websocket_server' placeholder='ws:// or wss://' x-model='racingClubWebsocketServer' value='" + config_ch_racing_club_websocket_server + "'><br>";
+  html += "  <div x-show=\"racingClubWebsocketServer.startsWith('wss')\">";
+  html += "    <label for='config_ch_racing_club_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+  html += "    <textarea id='config_ch_racing_club_websocket_ca_cert' name='config_ch_racing_club_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_ch_racing_club_websocket_ca_cert + "</textarea><br>";
+  html += "  </div>";
+  html += "  <label for='config_ch_racing_club_api_key'>ApiKey:</label>";
+  html += "  <input type='number' id='config_ch_racing_club_api_key' name='config_ch_racing_club_api_key' value='" + config_ch_racing_club_api_key + "'><br>";
+  html += "</div>";
+
+  html += "<div x-show=\"targetSystem == 'smart_race'\">";
+  html += "  <label for='config_smart_race_websocket_server'>Websocket Server:</label>";
+  html += "  <input type='text' id='config_smart_race_websocket_server' name='config_smart_race_websocket_server' placeholder='ws:// or wss://' x-model='smartRaceWebsocketServer' value='" + config_smart_race_websocket_server + "'><br>";
+  html += "  <div x-show=\"smartRaceWebsocketServer.startsWith('wss')\">";
+  html += "    <label for='config_smart_race_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+  html += "    <textarea id='config_smart_race_websocket_ca_cert' name='config_smart_race_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_smart_race_websocket_ca_cert + "</textarea><br>";
+  html += "  </div>";
+  html += "</div>";
   html += "<label for='speed'>GhostCar speed (%):</label>";
-  html += "<input type='number' style='width:auto;' id='speed' name='speed' value='" + String(speed) + "'><br>";
+  html += "<input type='number' id='speed' name='speed' value='" + String(speed) + "'><br>";
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
   html += "</form>";
   html += "</body></html>";
   server.send(200, "text/html", html);
 }
-  
+
 void handleConfig() {
   if (server.args() > 0) {
-    bool reConnectWifi = ssid != server.arg("ssid") || password != server.arg("password" || hostName != server.arg("hostName"));
-    ssid = server.arg("ssid");
-    password = server.arg("password");
-    serverAddress = server.arg("serverAddress");
-    serverPort = server.arg("serverPort");
-    hostName = server.arg("hostName");
+    bool reConnectWifi = config_wifi_ssid != server.arg("config_wifi_ssid") || config_wifi_password != server.arg("config_wifi_password") || config_wifi_hostname != server.arg("config_wifi_hostname");
+    bool reConnectWebsocket = config_target_system != server.arg("config_target_system");
+
+    config_target_system = server.arg("config_target_system");
+
+    config_wifi_ssid = server.arg("config_wifi_ssid");
+    config_wifi_password = server.arg("config_wifi_password");
+    config_wifi_hostname = server.arg("config_wifi_hostname");
+
+    if (config_target_system == "smart_race") {
+      config_smart_race_websocket_server = server.arg("config_smart_race_websocket_server");
+      config_smart_race_websocket_ca_cert = server.arg("config_smart_race_websocket_ca_cert");
+      config_smart_race_websocket_ca_cert.replace("\r", "");
+
+      websocket_server = config_smart_race_websocket_server;
+      websocket_ca_cert = config_smart_race_websocket_ca_cert;
+    }
+
+    if (config_target_system == "ch_racing_club") {
+      config_ch_racing_club_websocket_server = server.arg("config_ch_racing_club_websocket_server");
+      config_ch_racing_club_websocket_ca_cert = server.arg("config_ch_racing_club_websocket_ca_cert");
+      config_ch_racing_club_websocket_ca_cert.replace("\r", "");
+      config_ch_racing_club_api_key = server.arg("config_ch_racing_club_api_key");
+
+      websocket_server = config_ch_racing_club_websocket_server;
+      websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
+    }
     speed = server.arg("speed").toInt();
     if (speed > 100) {
       speed = 100;
@@ -108,59 +211,83 @@ void handleConfig() {
     }
     Joystick.setAccelerator(speed);
     Joystick.sendState();
-    saveConfig();
+    configuration_save();
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>CH-GhostCar-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
 
-    if(reConnectWifi) {
-      if (WiFi.status() == WL_CONNECTED) {
-        WiFi.disconnect(true);
-        delay(100);
-      }
-      WiFi.softAPdisconnect(true);
-      if(dnsServer.isUp()) {
-        dnsServer.stop();
-      }
-
-      WiFi.setHostname(hostName.c_str());
-      WiFi.begin(ssid.c_str(), password.c_str());
-
-      int attempts = 0;
-      while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-        delay(500);
-        Serial.print(".");
-        attempts++;
-      }
-
-      if (WiFi.status() == WL_CONNECTED) {
-        Serial.print("\nWLAN verbunden ");
-        Serial.println(WiFi.localIP());
-        connectWebsocket();
-        ap_mode = false;
-      } else {
-        Serial.println("\nWLAN Verbindung fehlgeschlagen!");
-        WiFi.softAP(AP_SSID);
-        dnsServer.start();
-        ap_mode = true;
-      }
+    if (reConnectWebsocket) {
+      websocket_connected = false;
+      websocket_last_attempt = 0;
+      connectWebsocket();
     }
+
+    // if(reConnectWifi) {
+    //   wifi_reload();
+    // }
   } else {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>CH-GhostCar-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
   }
 }
-  
-void connectWebsocket() {
-  websocket_server = String("ws://" + serverAddress + ":" + serverPort);
-  Serial.print("Connecting to SmartRace at ");
-  Serial.println(websocket_server);
+
+void wifi_reload() {
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFi.disconnect(true);
+    delay(100);
+  }
+  WiFi.softAPdisconnect(true);
+  if(dnsServer.isUp()) {
+    dnsServer.stop();
+  }
+
+  WiFi.setHostname(config_wifi_hostname.c_str());
+  WiFi.begin(config_wifi_ssid.c_str(), config_wifi_password.c_str());
+
   int attempts = 0;
-  while(websocket_connected == 0 && attempts < 3) {
-    Serial.print(".");
-    websocket_connected = client.connect(websocket_server);
-    wait(1000);
+  while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
+    delay(WIFI_CONNECT_DELAY_MS);
+    #ifdef ESP32_BLE
+      Serial.print(".");
+    #endif
     attempts++;
   }
-  Serial.println("");
+
+  if (WiFi.status() == WL_CONNECTED) {
+    #ifdef ESP32_BLE
+      Serial.print("\nWiFi: connected ");
+      Serial.println(WiFi.localIP());
+    #endif
+    connectWebsocket();
+    wifi_ap_mode = false;
+  } else {
+    #ifdef ESP32_BLE
+      Serial.println("\nWiFi: connect failed, starting AP mode");
+    #endif
+    WiFi.softAP(WIFI_AP_SSID);
+    dnsServer.start();
+    wifi_ap_mode = true;
+  }
+}
+
+void connectWebsocket() {
+  if (millis() - websocket_last_attempt < websocket_backoff) {
+    return; // wait until backoff time is reached
+  }
+  websocket_last_attempt = millis();
+
+  websocket_server = String(serverAddress);
+  #ifdef ESP32_BLE
+    Serial.print("Websocket: connecting ... ");
+    Serial.println(websocket_server);
+  #endif
+
+  if (websocket_ca_cert.length() > 0) {
+    client.setCACert(websocket_ca_cert.c_str());
+  }
+  websocket_connected = client.connect(websocket_server);
+
   if(websocket_connected) {
+    #ifdef ESP32_BLE
+      Serial.println("Websocket: connected.");
+    #endif
     client.send("{\"type\":\"api_version\"}");
     client.ping();
     client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"1\"}}");
@@ -168,46 +295,51 @@ void connectWebsocket() {
       initializeJoystickMode();
       initJoystick = true;
     }
+    websocket_backoff = 1000; // reset backoff time on successful connection
+  } else {
+    #ifdef ESP32_BLE
+      Serial.println("Websocket: connection failed.");
+    #endif
+    websocket_backoff = min(websocket_backoff * 2, websocket_max_backoff); // Exponentielles Backoff
   }
 }
 
-
 void onMessageCallback(WebsocketsMessage message) {
-  #ifdef DEBUG
-    Serial.print("Got Message: ");
+  #if (defined(DEBUG) && defined(ESP32_BLE)) 
+    Serial.print("Websocket: Got Message: ");
     Serial.println(message.data());
   #endif
   if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"prepare_for_start\"}") {
-    #ifdef DEBUG
+    #if (defined(DEBUG) && defined(ESP32_BLE))
       Serial.println("INFO - prepare_for_start");
     #endif
   }
   else if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"starting\"}") {
-    #ifdef DEBUG
+    #if (defined(DEBUG) && defined(ESP32_BLE))
       Serial.println("INFO - starting");
     #endif
     activateLaunchControl();
   }
   else if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"running\"}") {
-    #ifdef DEBUG
+    #if defined(DEBUG) && defined(ESP32_BLE)
       Serial.println("INFO - running");
     #endif
     drive();
   }
   else if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"suspended\"}") {
-    #ifdef DEBUG
+    #if defined(DEBUG) && defined(ESP32_BLE)
       Serial.println("INFO - suspended");
     #endif
     stop();
   }
   else if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"ended\"}") {
-    #ifdef DEBUG
+    #if defined(DEBUG) && defined(ESP32_BLE)
       Serial.println("INFO - ended");
     #endif
     stop();
   }
   else if (message.data() == "{\"type\":\"reset\"}") {
-    #ifdef DEBUG
+    #if defined(DEBUG) && defined(ESP32_BLE)
       Serial.println("INFO - reset");
     #endif
     stop();
@@ -216,7 +348,9 @@ void onMessageCallback(WebsocketsMessage message) {
 
 void onEventsCallback(WebsocketsEvent event, String data) {
   if(event == WebsocketsEvent::ConnectionOpened) {
-    Serial.println("INFO - Connnection Opened");
+    #ifdef ESP32_BLE
+      Serial.println("Websocket: connnection opened");
+    #endif
     #ifdef RGB_LED
       rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
     #endif
@@ -225,7 +359,9 @@ void onEventsCallback(WebsocketsEvent event, String data) {
     #endif
     websocket_connected = true;
   } else if(event == WebsocketsEvent::ConnectionClosed) {
-    Serial.println("INFO - Connnection Closed");
+    #ifdef ESP32_BLE
+      Serial.println("Websocket: connnection closed");
+    #endif
     #ifdef RGB_LED
       rgbLedWrite(RGB_LED_PIN, 0, 0, 255);
     #endif
@@ -234,13 +370,13 @@ void onEventsCallback(WebsocketsEvent event, String data) {
     #endif
     websocket_connected = false;
   } else if(event == WebsocketsEvent::GotPing) {
-    #ifdef DEBUG
-      Serial.println("Got a Ping!");
+     #if defined(DEBUG) && defined(ESP32_BLE)
+      Serial.println("Websocket: got a ping!");
     #endif
     client.pong();
   } else if(event == WebsocketsEvent::GotPong) {
-    #ifdef DEBUG
-      Serial.println("Got a Pong!");
+     #if defined(DEBUG) && defined(ESP32_BLE)
+      Serial.println("Websocket: got a pong!");
     #endif
   }
 }
@@ -253,7 +389,7 @@ void wait(unsigned long waitTime) {
 }
 
 void activateLaunchControl() {
-  #ifdef DEBUG
+   #if defined(DEBUG) && defined(ESP32_BLE)
     Serial.println("INFO - activate launch control");
   #endif
   activeLaunchControl = true;
@@ -268,7 +404,7 @@ void activateLaunchControl() {
 }
 
 void drive() {
-  #ifdef DEBUG
+   #if defined(DEBUG) && defined(ESP32_BLE)
     Serial.println("INFO - ghostcar driving");
   #endif
   isBraking = false;
@@ -288,7 +424,7 @@ void drive() {
 }
 
 void stop() {
-  #ifdef DEBUG
+   #if defined(DEBUG) && defined(ESP32_BLE)
     Serial.println("INFO - ghostcar stopped");
   #endif
   resetJoystickPosition();
@@ -333,41 +469,58 @@ void setup() {
   client.onMessage(onMessageCallback);
   client.onEvent(onEventsCallback);
 
-  Serial.begin(115200);
-  wait(2000);
-  Serial.println();
-  Serial.println("Starting...");
-  preferences.begin("wifiConfig");
+  #ifdef ESP32_BLE
+    Serial.begin(115200);
+    wait(2000);
+    Serial.print("CH-GhostCar-SmartRace Version: ");
+    Serial.print(VERSION);
+    Serial.println(" started.");
+    Serial.println("############################");
+  #endif
+  configuration_load();
 
-  loadConfig();
+  #ifdef ESP32_BLE
+    Serial.println();
+    Serial.print("Starting ...");
+  #endif
 
-  if (ssid != "") {
-    WiFi.setHostname(hostName.c_str());
-    WiFi.begin(ssid.c_str(), password.c_str());
+  if (config_wifi_ssid != "") {
+    WiFi.setHostname(config_wifi_hostname.c_str());
+    WiFi.begin(config_wifi_ssid.c_str(), config_wifi_password.c_str());
 
     int attempts = 0;
-    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
-      delay(500);
-      Serial.print(".");
+    while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
+      delay(WIFI_CONNECT_DELAY_MS);
+      #ifdef ESP32_BLE
+        Serial.print(".");
+      #endif
       attempts++;
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-      Serial.print("\nWLAN verbunden ");
-      Serial.println(WiFi.localIP());
-      ap_mode = false;
+      #ifdef ESP32_BLE
+        Serial.print("\nWiFi:  connected ");
+        Serial.println(WiFi.localIP());
+      #endif
+      wifi_ap_mode = false;
     } else {
-      Serial.println("\nWLAN Verbindung fehlgeschlagen!");
-      WiFi.softAP(AP_SSID);
+      #ifdef ESP32_BLE
+        Serial.println("\nWiFi:  connection failed!");
+      #endif
+      WiFi.softAP(WIFI_AP_SSID);
       dnsServer.start();
-      Serial.println("AP started ");
-      ap_mode = true;
+      #ifdef ESP32_BLE
+        Serial.println("WiFi: started AP mode");
+      #endif
+      wifi_ap_mode = true;
     }
   } else {
-    WiFi.softAP(AP_SSID);
+    WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
-    Serial.println("AP started ");
-    ap_mode = true;
+    #ifdef ESP32_BLE
+      Serial.println("WiFi: started AP mod");
+    #endif
+    wifi_ap_mode = true;
   }
 
   #ifdef RGB_LED
@@ -385,35 +538,32 @@ void setup() {
   server.on("/config", HTTP_POST, handleConfig);
   // all unknown pages are redirected to configuration page
   server.onNotFound(handleNotFound);
-  
-  server.begin();
-  Serial.println("Webserver gestartet...");
 
-  Serial.print("CH-GhostCar-SmartRace Version: ");
-  Serial.print(VERSION);
-  Serial.println(" started.");
-  Serial.println("############################");
+  server.begin();
+  #ifdef ESP32_BLE
+    Serial.println("Webserver: running");
+  #endif
 }
-  
+
 void loop() {
   server.handleClient();
   if(websocket_connected) {
     client.poll();
-    if(millis() > (last_ping + 5000)) {
-      last_ping = millis();
+    if(millis() > (websocket_last_ping + WEBSOCKET_PING_INTERVAL)) {
+      websocket_last_ping = millis();
       client.ping();
     }
-    if(millis() > (lastJoystickUpdate + 100)) {
+    if(millis() > (lastJoystickUpdate + JOYSTICK_UPDATE_INTERVAL)) {
       lastJoystickUpdate = millis();
       Joystick.sendState();
     }
-    if(isBraking && (millis() > (brakeTime+5000))) {
+    if(isBraking && (millis() > (brakeTime + DEFAULT_BRAKING_TIME))) {
       isBraking = false;
       Joystick.setBrake(0);
       Joystick.sendState();
     }
   }
   else {
-    if(!ap_mode) connectWebsocket();
+    if(!wifi_ap_mode) connectWebsocket();
   }
 }
