@@ -508,10 +508,10 @@ void onMessageCallback(WebsocketsMessage message) {
 
 void onEventsCallback(WebsocketsEvent event, String data) {
     if(event == WebsocketsEvent::ConnectionOpened) {
-        Serial.println("RFID: connection opened");
+        Serial.println("Websocket: connection opened");
         websocket_connected = true;
     } else if(event == WebsocketsEvent::ConnectionClosed) {
-        Serial.println("RFID: connection closed");
+        Serial.println("Websocket: connection closed");
         websocket_connected = false;
     } else if(event == WebsocketsEvent::GotPing) {
         #ifdef DEBUG
