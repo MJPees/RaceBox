@@ -244,7 +244,7 @@ void handleRoot() {
   html += "    <textarea id='config_ch_racing_club_websocket_ca_cert' name='config_ch_racing_club_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_ch_racing_club_websocket_ca_cert + "</textarea><br>";
   html += "  </div>";
   html += "  <label for='config_ch_racing_club_api_key'>ApiKey:</label>";
-  html += "  <input type='number' id='config_ch_racing_club_api_key' name='config_ch_racing_club_api_key' value='" + config_ch_racing_club_api_key + "'><br>";
+  html += "  <input type='text' id='config_ch_racing_club_api_key' name='config_ch_racing_club_api_key' value='" + config_ch_racing_club_api_key + "'><br>";
   html += "</div>";
 
   html += "<div x-show=\"targetSystem == 'smart_race'\">";
