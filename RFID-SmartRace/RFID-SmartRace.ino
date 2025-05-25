@@ -359,9 +359,9 @@ void handleConfig() {
       connectWebsocket();
     }
 
-    // if(reConnectWifi) {
-    //   wifi_reload();
-    // }
+    if(reConnectWifi) {
+      wifi_reload();
+    }
   } else {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = '/'; }, 2000);</script></body></html>");
   }
