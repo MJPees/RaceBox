@@ -3,9 +3,8 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <Preferences.h>
-
-//ArduinoWebsockets 0.5.4
-#include <ArduinoWebsockets.h>
+#include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
+#include <ArduinoJson.h>
 
 /* configuration */
 #define WIFI_AP_SSID "CH-GhostCar-SmartRace-Config"
@@ -25,7 +24,6 @@
 #define WIFI_CONNECT_DELAY_MS 500
 #define WEBSOCKET_PING_INTERVAL 5000
 
-bool initJoystick = false;
 bool activeLaunchControl = false;
 
 bool wifi_ap_mode = false;
@@ -289,10 +287,6 @@ void connectWebsocket() {
     client.send("{\"type\":\"api_version\"}");
     client.ping();
     client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"1\"}}");
-    if(!initJoystick) {
-      initializeJoystickMode();
-      initJoystick = true;
-    }
     websocket_backoff = 1000; // reset backoff time on successful connection
   } else {
     #ifdef ESP32_BLE
@@ -303,44 +297,71 @@ void connectWebsocket() {
 }
 
 void onMessageCallback(WebsocketsMessage message) {
-  #if (defined(DEBUG) && defined(ESP32_BLE)) 
-    Serial.print("Websocket: Got Message: ");
-    Serial.println(message.data());
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, message.data());
+  if (error) {
+    Serial.print("Websocket: JSON deserialization failed: ");
+    Serial.println(error.c_str());
+    return;
+  }
+
+  #ifdef DEBUG
+    Serial.print("websocket: received message: ");
+    serializeJsonPretty(doc, Serial);
+    Serial.println();
   #endif
-  if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"prepare_for_start\"}") {
-    #if (defined(DEBUG) && defined(ESP32_BLE))
-      Serial.println("INFO - prepare_for_start");
-    #endif
+  if (config_target_system == "ch_racing_club") {
+    //handleCHRacingClubUpdateEvent(doc);
+  } else {
+    if (doc.containsKey("type")) {
+      handleSmartRaceUpdateEvent(doc["type"].as<String>(), doc);
+    } else {
+      Serial.println("Received message without 'type' key: " + message.data());
+    }
   }
-  else if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"starting\"}") {
-    #if (defined(DEBUG) && defined(ESP32_BLE))
-      Serial.println("INFO - starting");
-    #endif
-    activateLaunchControl();
-  }
-  else if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"running\"}") {
-    #if defined(DEBUG) && defined(ESP32_BLE)
-      Serial.println("INFO - running");
-    #endif
-    drive();
-  }
-  else if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"suspended\"}") {
-    #if defined(DEBUG) && defined(ESP32_BLE)
-      Serial.println("INFO - suspended");
-    #endif
-    stop();
-  }
-  else if (message.data() == "{\"type\":\"update_event_status\",\"data\":\"ended\"}") {
-    #if defined(DEBUG) && defined(ESP32_BLE)
-      Serial.println("INFO - ended");
-    #endif
-    stop();
-  }
-  else if (message.data() == "{\"type\":\"reset\"}") {
+}
+
+void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
+  if (type == "update_event_status" && doc.containsKey("data")) {
+    String data = doc["data"].as<String>();
+    if (data == "prepare_for_start") {
+      #if defined(DEBUG) && defined(ESP32_BLE)
+        Serial.println("INFO - prepare_for_start");
+      #endif
+    } else if (data == "starting") {
+      #if defined(DEBUG) && defined(ESP32_BLE)
+        Serial.println("INFO - starting");
+      #endif
+      activateLaunchControl();
+    } else if (data == "running") {
+      #if defined(DEBUG) && defined(ESP32_BLE)
+        Serial.println("INFO - running");
+      #endif
+      drive();
+    } else if (data == "suspended") {
+      #if defined(DEBUG) && defined(ESP32_BLE)
+        Serial.println("INFO - suspended");
+      #endif
+      stop();
+    } else if (data == "ended") {
+      #if defined(DEBUG) && defined(ESP32_BLE)
+        Serial.println("INFO - ended");
+      #endif
+      stop();
+    } else {
+      #if defined(DEBUG) && defined(ESP32_BLE)
+        Serial.println("Unknown message type: " + type);
+      #endif
+    }
+  } else if (type == "reset") {
     #if defined(DEBUG) && defined(ESP32_BLE)
       Serial.println("INFO - reset");
     #endif
     stop();
+  } else {
+    #if defined(DEBUG) && defined(ESP32_BLE)
+      Serial.println("Unknown message type: " + type);
+    #endif
   }
 }
 
@@ -531,6 +552,8 @@ void setup() {
     wait(500);
     digitalWrite(LED_PIN, HIGH);
   #endif
+
+  initializeJoystickMode();
 
   server.on("/", handleRoot);
   server.on("/config", HTTP_POST, handleConfig);
