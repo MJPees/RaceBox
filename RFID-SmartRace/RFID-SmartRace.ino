@@ -4,6 +4,7 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 #include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
+#include <ArduinoJson.h>
 
 /* configuration */
 #define RFID_DEFAULT_POWER_LEVEL 12 // default power level
@@ -117,8 +118,6 @@ String config_ch_racing_club_api_key;
 
 int config_rfid_power_level = RFID_DEFAULT_POWER_LEVEL;
 
-
-
 struct rfid_data {
   String id[RFID_STORAGE_COUNT];
   String name;
@@ -129,7 +128,6 @@ rfid_data rfids[RFID_MAX_COUNT];
 String rfid_string = "";
 
 unsigned long lastResetTime = 0;
-
 
 
 void configuration_save() {
@@ -430,25 +428,33 @@ void connectWebsocket() {
 }
 
 void send_finish_line_message(int controller_id, unsigned long timestamp, String rfid_string) {
-  rfids[controller_id].last = timestamp;
-  String message;
-  message.reserve(128); // Reserve enough space for the largest payload
+  int last_timestamp = rfids[controller_id].last;
+  int lap_time = last_timestamp > 0 ? timestamp - last_timestamp : timestamp;
 
+  // set last timestamp for the controller
+  rfids[controller_id].last = timestamp;
+
+  // build the message
+  JsonDocument doc;
   if (config_target_system == "ch_racing_club") {
-    message = "{\"command\":\"lap\",\"data\":{";
-    message += "\"timestamp\":" + String(rfids[controller_id].last) + ",";
-    message += "\"rfid\":\"" + rfid_string + "\",";
-    message += "\"api_key\":\"" + config_ch_racing_club_api_key + "\"";
-    message += "}}";
+    doc["command"] = "lap";
+    doc["data"]["api_key"] = config_ch_racing_club_api_key;
+    doc["data"]["rfid"] = rfid_string;
+    doc["data"]["duration"] = lap_time;
   } else {
-    message = "{\"type\":\"analog_lap\",\"data\":{";
-    message += "\"timestamp\":" + String(rfids[controller_id].last) + ",";
-    message += "\"controller_id\":" + String(controller_id + 1);
-    message += "}}";
+    doc["type"] = "analog_lap";
+    doc["data"]["timestamp"] = rfids[controller_id].last;
+    doc["data"]["controller_id"] = controller_id + 1;
   }
 
-  Serial.println(message);
-  client.send(message);
+  // send the message via websocket
+  char output[256];
+  serializeJson(doc, output);
+  client.send(output);
+
+  // print the message to the serial console
+  Serial.print("websocket: ");
+  Serial.println(output);
 }
 
 void send_finish_line_event(String rfid_string, unsigned long ms) {
@@ -485,10 +491,19 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
 }
 
 void onMessageCallback(WebsocketsMessage message) {
-    #ifdef DEBUG
-      Serial.print("Got Message: ");
-      Serial.print(message.data());
-    #endif
+  JsonDocument doc;
+  DeserializationError error = deserializeJson(doc, message.data());
+  if (error) {
+    Serial.print("websocket: JSON deserialization failed: ");
+    Serial.println(error.c_str());
+    return;
+  }
+
+  #ifdef DEBUG
+    Serial.print("websocket: received message: ");
+    serializeJsonPretty(doc, Serial);
+    Serial.println();
+  #endif
 }
 
 void onEventsCallback(WebsocketsEvent event, String data) {
@@ -653,7 +668,6 @@ void initRfid() {
   }
 
   //set region to Europe
-
   if(setReaderSetting(Europe, 8, RegionResponse, 8)) {
     Serial.println("RFID: set Europe region.");
     ledOn();
