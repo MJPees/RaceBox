@@ -13,7 +13,7 @@
 #define WIFI_DEFAULT_HOSTNAME "RFID-SmartRace"
 #define PREFERENCES_NAMESPACE "smartRace"
 
-#define VERSION "1.0.1"
+#define VERSION "1.2.0"
 //#define DEBUG
 //#define ESP32C3
 #define ESP32DEV
