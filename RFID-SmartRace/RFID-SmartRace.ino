@@ -453,7 +453,7 @@ void send_finish_line_message(int controller_id, unsigned long timestamp, String
   client.send(output);
 
   // print the message to the serial console
-  Serial.print("websocket: ");
+  Serial.print("Websocket: ");
   Serial.println(output);
 }
 
@@ -494,13 +494,13 @@ void onMessageCallback(WebsocketsMessage message) {
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, message.data());
   if (error) {
-    Serial.print("websocket: JSON deserialization failed: ");
+    Serial.print("Websocket: JSON deserialization failed: ");
     Serial.println(error.c_str());
     return;
   }
 
   #ifdef DEBUG
-    Serial.print("websocket: received message: ");
+    Serial.print("Websocket: received message: ");
     serializeJsonPretty(doc, Serial);
     Serial.println();
   #endif
