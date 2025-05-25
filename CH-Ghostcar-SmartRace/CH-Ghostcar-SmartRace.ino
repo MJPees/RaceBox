@@ -87,8 +87,6 @@ void configuration_load() {
   preferences.begin(PREFERENCES_NAMESPACE);
 
   config_target_system = preferences.getString("target_system", "smart_race");
-  config_rfid_power_level = preferences.getInt("power_level", RFID_DEFAULT_POWER_LEVEL);
-  config_min_lap_time = preferences.getInt("min_lap_time", DEFAULT_MIN_LAP_TIME);
 
   config_wifi_ssid = preferences.getString("wifi_ssid", "");
   config_wifi_password = preferences.getString("wifi_password", "");
@@ -273,7 +271,7 @@ void connectWebsocket() {
   }
   websocket_last_attempt = millis();
 
-  websocket_server = String(serverAddress);
+  websocket_server = String(websocket_server);
   #ifdef ESP32_BLE
     Serial.print("Websocket: connecting ... ");
     Serial.println(websocket_server);
