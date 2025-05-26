@@ -22,11 +22,13 @@
   #define RX_PIN 16
   #define TX_PIN 17
   #define LAP_LED_PIN 2
+  #define WEBSOCKET_LED_PIN 4
 #elif defined(ESP32C3)
   HardwareSerial SerialRFID(1);
   #define RX_PIN 5
   #define TX_PIN 6
   #define LAP_LED_PIN 8
+  #define WEBSOCKET_LED_PIN 9
 #endif
 
 #define WIFI_CONNECT_ATTEMPTS 20
@@ -507,22 +509,24 @@ void onMessageCallback(WebsocketsMessage message) {
 }
 
 void onEventsCallback(WebsocketsEvent event, String data) {
-    if(event == WebsocketsEvent::ConnectionOpened) {
-        Serial.println("Websocket: connection opened");
-        websocket_connected = true;
-    } else if(event == WebsocketsEvent::ConnectionClosed) {
-        Serial.println("Websocket: connection closed");
-        websocket_connected = false;
-    } else if(event == WebsocketsEvent::GotPing) {
-        #ifdef DEBUG
-          Serial.println("Got a Ping!");
-        #endif
-        client.pong();
-    } else if(event == WebsocketsEvent::GotPong) {
-        #ifdef DEBUG
-          Serial.println("Got a Pong!");
-        #endif
-    }
+  if(event == WebsocketsEvent::ConnectionOpened) {
+      Serial.println("Websocket: connection opened");
+      websocket_connected = true;
+      digitalWrite(WEBSOCKET_LED_PIN, LOW);
+  } else if(event == WebsocketsEvent::ConnectionClosed) {
+      Serial.println("Websocket: connection closed");
+      websocket_connected = false;
+      digitalWrite(WEBSOCKET_LED_PIN, HIGH);
+  } else if(event == WebsocketsEvent::GotPing) {
+      #ifdef DEBUG
+        Serial.println("Got a Ping!");
+      #endif
+      client.pong();
+  } else if(event == WebsocketsEvent::GotPong) {
+      #ifdef DEBUG
+        Serial.println("Got a Pong!");
+      #endif
+  }
 }
 
 void wait(unsigned long waitTime) {
@@ -901,6 +905,10 @@ void ledOff() {
 void setup() {
   pinMode(LAP_LED_PIN, OUTPUT);
   digitalWrite(LAP_LED_PIN, HIGH);
+  
+  pinMode(WEBSOCKET_LED_PIN, OUTPUT);
+  digitalWrite(WEBSOCKET_LED_PIN, HIGH);
+  
   //init rfid storage
   resetRfidStorage();
   delay(2000);
