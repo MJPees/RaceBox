@@ -21,20 +21,20 @@
   #define SerialRFID Serial2
   #define RX_PIN 16
   #define TX_PIN 17
-  #define LAP_LED_PIN 2
+  #define RFID_LED_PIN 2
   #define WEBSOCKET_LED_PIN 4
 #elif defined(ESP32C3)
   HardwareSerial SerialRFID(1);
   #define RX_PIN 5
   #define TX_PIN 6
-  #define LAP_LED_PIN 8
+  #define RFID_LED_PIN 8
   #define WEBSOCKET_LED_PIN 9
 #endif
 
 #define WIFI_CONNECT_ATTEMPTS 20
 #define WIFI_CONNECT_DELAY_MS 500
 #define WEBSOCKET_PING_INTERVAL 5000
-#define LED_ON_TIME 200
+#define RFID_LED_ON_TIME 200
 
 #define RFID_REPEAT_TIME 3000
 #define RFID_RESTART_TIME 300000
@@ -85,11 +85,12 @@ unsigned char epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 String lastEpcString = "";
 unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
-unsigned long ledOnTime = 0;
+unsigned long rfid_led_on_ms = 0;
 
 int config_min_lap_time = DEFAULT_MIN_LAP_TIME;
 
 bool wifi_ap_mode = false;
+bool webserver_running = false;
 
 using namespace websockets;
 String websocket_server = "";
@@ -384,7 +385,7 @@ void wifi_reload() {
 
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
-    delay(WIFI_CONNECT_DELAY_MS);
+    wait(WIFI_CONNECT_DELAY_MS);
     Serial.print(".");
     attempts++;
   }
@@ -392,7 +393,6 @@ void wifi_reload() {
   if (WiFi.status() == WL_CONNECTED) {
     Serial.print("\nWiFi: connected ");
     Serial.println(WiFi.localIP());
-    connectWebsocket();
     wifi_ap_mode = false;
   } else {
     Serial.println("\nWiFi: connect failed, starting AP mode");
@@ -419,13 +419,17 @@ void connectWebsocket() {
 
   if(websocket_connected) {
     Serial.println("Websocket: connected.");
-    client.send("{\"type\":\"api_version\"}");
     client.ping();
     client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"Z\"}}");
     websocket_backoff = 1000; // reset backoff time on successful connection
   } else {
     Serial.println("Websocket: connection failed.");
-    websocket_backoff = min(websocket_backoff * 2, websocket_max_backoff); // Exponentielles Backoff
+    if (config_target_system == "ch_racing_club") {
+      websocket_backoff = min(websocket_backoff * 2, websocket_max_backoff); // Exponentielles Backoff
+    }
+    else {
+      websocket_backoff = 3000; // set backoff time for SmartRace
+    }
   }
 }
 
@@ -465,7 +469,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
     for (int i = 0; i < RFID_MAX_COUNT; i++) {
       if(rfids[i].id[j] == rfid_string) {
         if(rfids[i].last + config_min_lap_time < ms) {
-          ledOn();
+          ledOn(RFID_LED_PIN);
           send_finish_line_message(i, ms, rfid_string);
         }
         found = true;
@@ -484,7 +488,7 @@ void send_finish_line_event(String rfid_string, unsigned long ms) {
         Serial.print(i+1);
         Serial.print(rfids[i].id[0]);
         Serial.println();
-        ledOn();
+        ledOn(RFID_LED_PIN);
         send_finish_line_message(i, ms, rfid_string);
         break;
       }
@@ -512,11 +516,11 @@ void onEventsCallback(WebsocketsEvent event, String data) {
   if(event == WebsocketsEvent::ConnectionOpened) {
       Serial.println("Websocket: connection opened");
       websocket_connected = true;
-      digitalWrite(WEBSOCKET_LED_PIN, LOW);
+      ledOn(WEBSOCKET_LED_PIN);
   } else if(event == WebsocketsEvent::ConnectionClosed) {
       Serial.println("Websocket: connection closed");
       websocket_connected = false;
-      digitalWrite(WEBSOCKET_LED_PIN, HIGH);
+      ledOff(WEBSOCKET_LED_PIN);
   } else if(event == WebsocketsEvent::GotPing) {
       #ifdef DEBUG
         Serial.println("Got a Ping!");
@@ -532,7 +536,8 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 void wait(unsigned long waitTime) {
   unsigned long startWaitTime = millis();
   while((millis() - startWaitTime) < waitTime) {
-    server.handleClient();
+    if (webserver_running) server.handleClient();
+    else delay(1);
   }
 }
 
@@ -653,9 +658,9 @@ void rfid_set_power_level(int config_rfid_power_level) {
     Serial.print("RFID: set power level: ");
     Serial.print(config_rfid_power_level);
     Serial.println(" dBm");
-    ledOn();
+    ledOn(RFID_LED_PIN);
     delay(200);
-    ledOff();
+    ledOff(RFID_LED_PIN);
     delay(500);
   } else {
     Serial.println("RFID: failed to set power level.");
@@ -674,9 +679,9 @@ void initRfid() {
   //set region to Europe
   if(setReaderSetting(Europe, 8, RegionResponse, 8)) {
     Serial.println("RFID: set Europe region.");
-    ledOn();
+    ledOn(RFID_LED_PIN);
     delay(200);
-    ledOff();
+    ledOff(RFID_LED_PIN);
     delay(500);
   } else {
     Serial.println("RFID: failed to set Europe region.");
@@ -685,9 +690,9 @@ void initRfid() {
   //set dense reader
   if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
     Serial.println("RFID: set dense reader.");
-    ledOn();
+    ledOn(RFID_LED_PIN);
     delay(200);
-    ledOff();
+    ledOff(RFID_LED_PIN);
     delay(500);
   } else {
     Serial.println("RFID: failed to set dense reader.");
@@ -696,9 +701,9 @@ void initRfid() {
   //no module sleep time
   if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
     Serial.println("RFID: disabled module sleep time.");
-    ledOn();
+    ledOn(RFID_LED_PIN);
     delay(200);
-    ledOff();
+    ledOff(RFID_LED_PIN);
     delay(500);
   } else {
     Serial.println("RFID: failed to disable module sleep time.");
@@ -886,28 +891,28 @@ void checkRfid(unsigned char epcBytes[]) {
   }
 }
 
-bool isLedOn() {
-  if (digitalRead(LAP_LED_PIN) == LOW) {
+bool isLedOn(int led_pin) {
+  if (digitalRead(led_pin) == LOW) {
     return true;
   }
   return false;
 }
 
-void ledOn() {
-  digitalWrite(LAP_LED_PIN, LOW);
-  ledOnTime = millis();
+void ledOn(int led_pin) {
+  digitalWrite(led_pin, LOW);
+  rfid_led_on_ms = millis();
 }
 
-void ledOff() {
-  digitalWrite(LAP_LED_PIN, HIGH);
+void ledOff(int led_pin) {
+  digitalWrite(led_pin, HIGH);
 }
 
 void setup() {
-  pinMode(LAP_LED_PIN, OUTPUT);
-  digitalWrite(LAP_LED_PIN, HIGH);
+  pinMode(RFID_LED_PIN, OUTPUT);
+  ledOff(RFID_LED_PIN);
   
   pinMode(WEBSOCKET_LED_PIN, OUTPUT);
-  digitalWrite(WEBSOCKET_LED_PIN, HIGH);
+  ledOff(WEBSOCKET_LED_PIN);
   
   //init rfid storage
   resetRfidStorage();
@@ -938,7 +943,7 @@ void setup() {
 
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
-      delay(WIFI_CONNECT_DELAY_MS);
+      wait(WIFI_CONNECT_DELAY_MS);
       Serial.print(".");
       attempts++;
     }
@@ -968,6 +973,7 @@ void setup() {
 
   server.begin();
   Serial.println("Webserver: running");
+  webserver_running = true;
 
   // Start RFID reader
   initRfid();
@@ -986,7 +992,7 @@ void loop() {
   else {
     if(!wifi_ap_mode) connectWebsocket();
   }
-  if(isLedOn() && (ledOnTime + LED_ON_TIME) < millis()) {
-    ledOff();
+  if(isLedOn(RFID_LED_PIN) && (rfid_led_on_ms + RFID_LED_ON_TIME) < millis()) {
+    ledOff(RFID_LED_PIN);
   }
 }

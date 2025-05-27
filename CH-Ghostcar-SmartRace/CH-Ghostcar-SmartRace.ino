@@ -27,6 +27,7 @@
 bool activeLaunchControl = false;
 
 bool wifi_ap_mode = false;
+bool webserver_running = false;
 
 using namespace websockets;
 String websocket_server = "";
@@ -217,7 +218,7 @@ void handleConfig() {
     }
 
     if(reConnectWifi) {
-       wifi_reload();
+      wifi_reload();
     }
   } else {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>CH-GhostCar-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
@@ -239,7 +240,7 @@ void wifi_reload() {
 
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
-    delay(WIFI_CONNECT_DELAY_MS);
+    wait(WIFI_CONNECT_DELAY_MS);
     #ifdef ESP32_BLE
       Serial.print(".");
     #endif
@@ -251,7 +252,6 @@ void wifi_reload() {
       Serial.print("\nWiFi: connected ");
       Serial.println(WiFi.localIP());
     #endif
-    connectWebsocket();
     wifi_ap_mode = false;
   } else {
     #ifdef ESP32_BLE
@@ -284,7 +284,6 @@ void connectWebsocket() {
     #ifdef ESP32_BLE
       Serial.println("Websocket: connected.");
     #endif
-    client.send("{\"type\":\"api_version\"}");
     client.ping();
     client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"1\"}}");
     websocket_backoff = 1000; // reset backoff time on successful connection
@@ -292,7 +291,12 @@ void connectWebsocket() {
     #ifdef ESP32_BLE
       Serial.println("Websocket: connection failed.");
     #endif
-    websocket_backoff = min(websocket_backoff * 2, websocket_max_backoff); // Exponentielles Backoff
+    if (config_target_system == "ch_racing_club") {
+      websocket_backoff = min(websocket_backoff * 2, websocket_max_backoff); // Exponentielles Backoff
+    }
+    else {
+      websocket_backoff = 3000; // set backoff time for SmartRace
+    }
   }
 }
 
@@ -403,7 +407,8 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 void wait(unsigned long waitTime) {
   unsigned long startWaitTime = millis();
   while((millis() - startWaitTime) < waitTime) {
-    server.handleClient();
+    if (webserver_running) server.handleClient();
+    else delay(1);
   }
 }
 
@@ -509,7 +514,7 @@ void setup() {
 
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
-      delay(WIFI_CONNECT_DELAY_MS);
+      wait(WIFI_CONNECT_DELAY_MS);
       #ifdef ESP32_BLE
         Serial.print(".");
       #endif
@@ -564,6 +569,7 @@ void setup() {
   #ifdef ESP32_BLE
     Serial.println("Webserver: running");
   #endif
+  webserver_running = true;
 }
 
 void loop() {
