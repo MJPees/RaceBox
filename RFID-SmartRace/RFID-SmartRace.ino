@@ -309,6 +309,14 @@ void handleRoot() {
 
 void handleConfig() {
   if (server.args() > 0) {
+    while(SerialRFID.available()) {
+      SerialRFID.read();
+    }
+    if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
+      Serial.println("RFID: stopped ReadMulti.");
+    } else {
+      Serial.println("RFID: failed to stop ReadMulti.");
+    }
     bool reConnectWifi = config_wifi_ssid != server.arg("config_wifi_ssid") || config_wifi_password != server.arg("config_wifi_password") || config_wifi_hostname != server.arg("config_wifi_hostname");
     bool reConnectWebsocket = config_target_system != server.arg("config_target_system");
 
@@ -350,8 +358,6 @@ void handleConfig() {
       }
     }
 
-    rfid_set_power_level(config_rfid_power_level);
-
     configuration_save();
 
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
@@ -365,6 +371,7 @@ void handleConfig() {
     if(reConnectWifi) {
       wifi_reload();
     }
+    rfid_set_power_level(config_rfid_power_level);
   } else {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
   }
@@ -666,6 +673,7 @@ void rfid_set_power_level(int config_rfid_power_level) {
     Serial.println("RFID: failed to set power level.");
   }
   SerialRFID.write(ReadMulti,10);
+  Serial.println("RFID: started ReadMulti.");
 }
 
 void initRfid() {
@@ -827,6 +835,7 @@ void readRfid() {
         #endif
       }
       SerialRFID.write(ReadMulti,10);
+      Serial.println("RFID: started ReadMulti.");
     }
   }
 }
