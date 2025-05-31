@@ -426,8 +426,24 @@ void connectWebsocket() {
 
   if(websocket_connected) {
     Serial.println("Websocket: connected.");
+
+    JsonDocument doc;
+    if(config_target_system == "smart_race") {
+      doc["type"] = "controller_set";
+      doc["data"]["controller_id"] = "Z";
+    }
+
+    if(config_target_system == "ch_racing_club") {
+      doc["command"] = "connect";
+      doc["data"]["api_key"] = config_ch_racing_club_api_key;
+      doc["data"]["ip"] = WiFi.localIP().toString();
+    }
+
+    char output[256];
+    serializeJson(doc, output);
     client.ping();
-    client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"Z\"}}");
+    client.send(output);
+
     websocket_backoff = 1000; // reset backoff time on successful connection
   } else {
     Serial.println("Websocket: connection failed.");
@@ -919,10 +935,10 @@ void ledOff(int led_pin) {
 void setup() {
   pinMode(RFID_LED_PIN, OUTPUT);
   ledOff(RFID_LED_PIN);
-  
+
   pinMode(WEBSOCKET_LED_PIN, OUTPUT);
   ledOff(WEBSOCKET_LED_PIN);
-  
+
   //init rfid storage
   resetRfidStorage();
   delay(2000);
