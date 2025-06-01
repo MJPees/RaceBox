@@ -134,8 +134,6 @@ unsigned long lastResetTime = 0;
 
 
 void configuration_save() {
-  preferences.begin(PREFERENCES_NAMESPACE);
-
   preferences.putString("target_system", config_target_system);
   preferences.putInt("power_level", config_rfid_power_level);
   preferences.putInt("min_lap_time", config_min_lap_time);
@@ -163,8 +161,6 @@ void configuration_save() {
 }
 
 void configuration_load() {
-  preferences.begin(PREFERENCES_NAMESPACE);
-
   config_target_system = preferences.getString("target_system", "smart_race");
   config_rfid_power_level = preferences.getInt("power_level", RFID_DEFAULT_POWER_LEVEL);
   config_min_lap_time = preferences.getInt("min_lap_time", DEFAULT_MIN_LAP_TIME);
@@ -230,78 +226,82 @@ void handleRoot() {
   html += "<label for='config_wifi_hostname'>Hostname:</label>";
   html += "<input type='text' id='config_wifi_hostname' name='config_wifi_hostname' value='" + config_wifi_hostname + "'><br>";
 
-  html += "<label for='config_target_system'>Target System:</label>";
-  html += "<select id='config_target_system' name='config_target_system' x-model='targetSystem'>";
-  html += "<option value='smart_race'" + String((config_target_system == "smart_race") ? " selected" : "") + ">SmartRace</option>";
-  html += "<option value='ch_racing_club'" + String((config_target_system == "ch_racing_club") ? " selected" : "") + ">CH Racing Club</option>";
-  html += "</select><br>";
+  if (!wifi_ap_mode) {
+    html += "<label for='config_target_system'>Target System:</label>";
+    html += "<select id='config_target_system' name='config_target_system' x-model='targetSystem'>";
+    html += "<option value='smart_race'" + String((config_target_system == "smart_race") ? " selected" : "") + ">SmartRace</option>";
+    html += "<option value='ch_racing_club'" + String((config_target_system == "ch_racing_club") ? " selected" : "") + ">CH Racing Club</option>";
+    html += "</select><br>";
 
-  html += "<div x-show=\"targetSystem == 'ch_racing_club'\">";
-  html += "  <label for='config_ch_racing_club_websocket_server'>Websocket Server:</label>";
-  html += "  <input type='text' id='config_ch_racing_club_websocket_server' name='config_ch_racing_club_websocket_server' placeholder='ws:// or wss://' x-model='racingClubWebsocketServer' value='" + config_ch_racing_club_websocket_server + "'><br>";
-  html += "  <div x-show=\"racingClubWebsocketServer.startsWith('wss')\">";
-  html += "    <label for='config_ch_racing_club_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
-  html += "    <textarea id='config_ch_racing_club_websocket_ca_cert' name='config_ch_racing_club_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_ch_racing_club_websocket_ca_cert + "</textarea><br>";
-  html += "  </div>";
-  html += "  <label for='config_ch_racing_club_api_key'>ApiKey:</label>";
-  html += "  <input type='number' id='config_ch_racing_club_api_key' name='config_ch_racing_club_api_key' value='" + config_ch_racing_club_api_key + "'><br>";
-  html += "</div>";
+    html += "<div x-show=\"targetSystem == 'ch_racing_club'\">";
+    html += "  <label for='config_ch_racing_club_websocket_server'>Websocket Server:</label>";
+    html += "  <input type='text' id='config_ch_racing_club_websocket_server' name='config_ch_racing_club_websocket_server' placeholder='ws:// or wss://' x-model='racingClubWebsocketServer' value='" + config_ch_racing_club_websocket_server + "'><br>";
+    html += "  <div x-show=\"racingClubWebsocketServer.startsWith('wss')\">";
+    html += "    <label for='config_ch_racing_club_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+    html += "    <textarea id='config_ch_racing_club_websocket_ca_cert' name='config_ch_racing_club_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_ch_racing_club_websocket_ca_cert + "</textarea><br>";
+    html += "  </div>";
+    html += "  <label for='config_ch_racing_club_api_key'>ApiKey:</label>";
+    html += "  <input type='text' id='config_ch_racing_club_api_key' name='config_ch_racing_club_api_key' value='" + config_ch_racing_club_api_key + "'><br>";
+    html += "</div>";
 
-  html += "<div x-show=\"targetSystem == 'smart_race'\">";
-  html += "  <label for='config_smart_race_websocket_server'>Websocket Server:</label>";
-  html += "  <input type='text' id='config_smart_race_websocket_server' name='config_smart_race_websocket_server' placeholder='ws:// or wss://' x-model='smartRaceWebsocketServer' value='" + config_smart_race_websocket_server + "'><br>";
-  html += "  <div x-show=\"smartRaceWebsocketServer.startsWith('wss')\">";
-  html += "    <label for='config_smart_race_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
-  html += "    <textarea id='config_smart_race_websocket_ca_cert' name='config_smart_race_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_smart_race_websocket_ca_cert + "</textarea><br>";
-  html += "  </div>";
-  html += "</div>";
+    html += "<div x-show=\"targetSystem == 'smart_race'\">";
+    html += "  <label for='config_smart_race_websocket_server'>Websocket Server:</label>";
+    html += "  <input type='text' id='config_smart_race_websocket_server' name='config_smart_race_websocket_server' placeholder='ws:// or wss://' x-model='smartRaceWebsocketServer' value='" + config_smart_race_websocket_server + "'><br>";
+    html += "  <div x-show=\"smartRaceWebsocketServer.startsWith('wss')\">";
+    html += "    <label for='config_smart_race_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+    html += "    <textarea id='config_smart_race_websocket_ca_cert' name='config_smart_race_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_smart_race_websocket_ca_cert + "</textarea><br>";
+    html += "  </div>";
+    html += "</div>";
 
-  html += "<label for='config_min_lap_time'>Minimum Lap Time (ms):</label>";
-  html += "<input type='number' id='config_min_lap_time' name='config_min_lap_time' value='" + String(config_min_lap_time) + "'><br>";
+    html += "<label for='config_min_lap_time'>Minimum Lap Time (ms):</label>";
+    html += "<input type='number' id='config_min_lap_time' name='config_min_lap_time' value='" + String(config_min_lap_time) + "'><br>";
 
-  html += "<label for='config_rfid_power_level'>Power Level:</label>";
-  html += "<select id='config_rfid_power_level' name='config_rfid_power_level'>";
-  html += "<option value='10'" + String((config_rfid_power_level == 10) ? " selected" : "") + ">10 dBm</option>";
-  html += "<option value='11'" + String((config_rfid_power_level == 11) ? " selected" : "") + ">11 dBm</option>";
-  html += "<option value='12'" + String((config_rfid_power_level == 12) ? " selected" : "") + ">12 dBm</option>";
-  html += "<option value='13'" + String((config_rfid_power_level == 13) ? " selected" : "") + ">13 dBm</option>";
-  html += "<option value='14'" + String((config_rfid_power_level == 14) ? " selected" : "") + ">14 dBm</option>";
-  html += "<option value='15'" + String((config_rfid_power_level == 15) ? " selected" : "") + ">15 dBm</option>";
-  html += "<option value='16'" + String((config_rfid_power_level == 16) ? " selected" : "") + ">16 dBm</option>";
-  html += "<option value='17'" + String((config_rfid_power_level == 17) ? " selected" : "") + ">17 dBm</option>";
-  html += "<option value='18'" + String((config_rfid_power_level == 18) ? " selected" : "") + ">18 dBm</option>";
-  html += "<option value='19'" + String((config_rfid_power_level == 19) ? " selected" : "") + ">19 dBm</option>";
-  html += "<option value='20'" + String((config_rfid_power_level == 20) ? " selected" : "") + ">20 dBm</option>";
-  html += "<option value='21'" + String((config_rfid_power_level == 21) ? " selected" : "") + ">21 dBm</option>";
-  html += "<option value='22'" + String((config_rfid_power_level == 22) ? " selected" : "") + ">22 dBm</option>";
-  html += "<option value='23'" + String((config_rfid_power_level == 23) ? " selected" : "") + ">23 dBm</option>";
-  html += "<option value='24'" + String((config_rfid_power_level == 24) ? " selected" : "") + ">24 dBm</option>";
-  html += "<option value='25'" + String((config_rfid_power_level == 25) ? " selected" : "") + ">25 dBm</option>";
-  html += "<option value='26'" + String((config_rfid_power_level == 26) ? " selected" : "") + ">26 dBm</option>";
-  html += "</select><br>";
+    html += "<label for='config_rfid_power_level'>Power Level:</label>";
+    html += "<select id='config_rfid_power_level' name='config_rfid_power_level'>";
+    html += "<option value='10'" + String((config_rfid_power_level == 10) ? " selected" : "") + ">10 dBm</option>";
+    html += "<option value='11'" + String((config_rfid_power_level == 11) ? " selected" : "") + ">11 dBm</option>";
+    html += "<option value='12'" + String((config_rfid_power_level == 12) ? " selected" : "") + ">12 dBm</option>";
+    html += "<option value='13'" + String((config_rfid_power_level == 13) ? " selected" : "") + ">13 dBm</option>";
+    html += "<option value='14'" + String((config_rfid_power_level == 14) ? " selected" : "") + ">14 dBm</option>";
+    html += "<option value='15'" + String((config_rfid_power_level == 15) ? " selected" : "") + ">15 dBm</option>";
+    html += "<option value='16'" + String((config_rfid_power_level == 16) ? " selected" : "") + ">16 dBm</option>";
+    html += "<option value='17'" + String((config_rfid_power_level == 17) ? " selected" : "") + ">17 dBm</option>";
+    html += "<option value='18'" + String((config_rfid_power_level == 18) ? " selected" : "") + ">18 dBm</option>";
+    html += "<option value='19'" + String((config_rfid_power_level == 19) ? " selected" : "") + ">19 dBm</option>";
+    html += "<option value='20'" + String((config_rfid_power_level == 20) ? " selected" : "") + ">20 dBm</option>";
+    html += "<option value='21'" + String((config_rfid_power_level == 21) ? " selected" : "") + ">21 dBm</option>";
+    html += "<option value='22'" + String((config_rfid_power_level == 22) ? " selected" : "") + ">22 dBm</option>";
+    html += "<option value='23'" + String((config_rfid_power_level == 23) ? " selected" : "") + ">23 dBm</option>";
+    html += "<option value='24'" + String((config_rfid_power_level == 24) ? " selected" : "") + ">24 dBm</option>";
+    html += "<option value='25'" + String((config_rfid_power_level == 25) ? " selected" : "") + ">25 dBm</option>";
+    html += "<option value='26'" + String((config_rfid_power_level == 26) ? " selected" : "") + ">26 dBm</option>";
+    html += "</select><br>";
+  }
 
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
-  html += "<div style='display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Äußerer Grid-Container
-  for (int i = 0; i < RFID_MAX_COUNT; i++) {
-      html += "<div style='border: 3px solid black; padding: 10px; margin: 5px; display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Rahmen mit Grid-Spalte
-      html += "<div style='display: grid; grid-template-columns: auto 1fr; align-items: center;'>"; // Grid für Name
-      html += "<label for='name" + String(i) + "'>Name:</label>";
-      html += "<input type='text' maxlength='100' style='width:auto; margin-left: 4px;' id='name" + String(i) + "' name='name" + String(i) + "' value='" + rfids[i].name + "'>";
-      html += "</div>";
-      html += "<div style='display: grid; grid-template-columns: repeat(" + String(RFID_STORAGE_COUNT * 2) + ", auto); align-items: center;'>"; // Grid für horizontale IDs
-      for(int j = 0; j < RFID_STORAGE_COUNT; j++){
-        if(j>0) {
-          html += "<label style='margin-left: 4px;' for='id" + String(i) + "_" + String(j) + "'>ID" + String(j+1) + ":</label>";
+  if (!wifi_ap_mode) {
+    html += "<div style='display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Äußerer Grid-Container
+    for (int i = 0; i < RFID_MAX_COUNT; i++) {
+        html += "<div style='border: 3px solid black; padding: 10px; margin: 5px; display: grid; grid-template-columns: 1fr; gap: 5px;'>"; // Rahmen mit Grid-Spalte
+        html += "<div style='display: grid; grid-template-columns: auto 1fr; align-items: center;'>"; // Grid für Name
+        html += "<label for='name" + String(i) + "'>Name:</label>";
+        html += "<input type='text' maxlength='100' style='width:auto; margin-left: 4px;' id='name" + String(i) + "' name='name" + String(i) + "' value='" + rfids[i].name + "'>";
+        html += "</div>";
+        html += "<div style='display: grid; grid-template-columns: repeat(" + String(RFID_STORAGE_COUNT * 2) + ", auto); align-items: center;'>"; // Grid für horizontale IDs
+        for(int j = 0; j < RFID_STORAGE_COUNT; j++){
+          if(j>0) {
+            html += "<label style='margin-left: 4px;' for='id" + String(i) + "_" + String(j) + "'>ID" + String(j+1) + ":</label>";
+          }
+          else {
+            html += "<label for='id" + String(i) + "_" + String(j) + "'>ID" + String(j+1) + ":</label>";
+          }
+          html += "<input type='text' style='width:auto; margin-left: 4px;' id='id" + String(i) + "_" + String(j) + "' name='id" + String(i) + "_" + String(j) + "' value='" + rfids[i].id[j] + "'>";
         }
-        else {
-          html += "<label for='id" + String(i) + "_" + String(j) + "'>ID" + String(j+1) + ":</label>";
-        }
-        html += "<input type='text' style='width:auto; margin-left: 4px;' id='id" + String(i) + "_" + String(j) + "' name='id" + String(i) + "_" + String(j) + "' value='" + rfids[i].id[j] + "'>";
-      }
-      html += "</div>"; // Ende Container für horizontale IDs
-      html += "</div>";
+        html += "</div>"; // Ende Container für horizontale IDs
+        html += "</div>";
+    }
+    html += "</div>"; // Ende äußerer Grid-Container
   }
-  html += "</div>"; // Ende äußerer Grid-Container
   html += "</form>";
   html += "</body></html>";
   server.send(200, "text/html", html);
@@ -318,43 +318,46 @@ void handleConfig() {
       Serial.println("RFID: failed to stop ReadMulti.");
     }
     bool reConnectWifi = config_wifi_ssid != server.arg("config_wifi_ssid") || config_wifi_password != server.arg("config_wifi_password") || config_wifi_hostname != server.arg("config_wifi_hostname");
-    bool reConnectWebsocket = config_target_system != server.arg("config_target_system");
-
-    config_target_system = server.arg("config_target_system");
-    config_rfid_power_level = server.arg("config_rfid_power_level").toInt();
-    config_min_lap_time = server.arg("config_min_lap_time").toInt();
+    bool reConnectWebsocket = false;
 
     config_wifi_ssid = server.arg("config_wifi_ssid");
     config_wifi_password = server.arg("config_wifi_password");
     config_wifi_hostname = server.arg("config_wifi_hostname");
 
-    if (config_target_system == "smart_race") {
-      config_smart_race_websocket_server = server.arg("config_smart_race_websocket_server");
-      config_smart_race_websocket_ca_cert = server.arg("config_smart_race_websocket_ca_cert");
-      config_smart_race_websocket_ca_cert.replace("\r", "");
+    if(!wifi_ap_mode) {
+      reConnectWebsocket = config_target_system != server.arg("config_target_system");
 
-      websocket_server = config_smart_race_websocket_server;
-      websocket_ca_cert = config_smart_race_websocket_ca_cert;
-    }
+      config_target_system = server.arg("config_target_system");
+      config_rfid_power_level = server.arg("config_rfid_power_level").toInt();
+      config_min_lap_time = server.arg("config_min_lap_time").toInt();
+      if (config_target_system == "smart_race") {
+        config_smart_race_websocket_server = server.arg("config_smart_race_websocket_server");
+        config_smart_race_websocket_ca_cert = server.arg("config_smart_race_websocket_ca_cert");
+        config_smart_race_websocket_ca_cert.replace("\r", "");
 
-    if (config_target_system == "ch_racing_club") {
-      config_ch_racing_club_websocket_server = server.arg("config_ch_racing_club_websocket_server");
-      config_ch_racing_club_websocket_ca_cert = server.arg("config_ch_racing_club_websocket_ca_cert");
-      config_ch_racing_club_websocket_ca_cert.replace("\r", "");
-      config_ch_racing_club_api_key = server.arg("config_ch_racing_club_api_key");
+        websocket_server = config_smart_race_websocket_server;
+        websocket_ca_cert = config_smart_race_websocket_ca_cert;
+      }
 
-      websocket_server = config_ch_racing_club_websocket_server;
-      websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
-    }
+      if (config_target_system == "ch_racing_club") {
+        config_ch_racing_club_websocket_server = server.arg("config_ch_racing_club_websocket_server");
+        config_ch_racing_club_websocket_ca_cert = server.arg("config_ch_racing_club_websocket_ca_cert");
+        config_ch_racing_club_websocket_ca_cert.replace("\r", "");
+        config_ch_racing_club_api_key = server.arg("config_ch_racing_club_api_key");
 
-    char nameKey[12];
-    char idKey[16];
-    for (int i = 0; i < RFID_MAX_COUNT; i++) {
-      snprintf(nameKey, sizeof(nameKey), "name%d", i);
-      rfids[i].name = server.arg(nameKey);
-      for (int j = 0; j < RFID_STORAGE_COUNT; j++) {
-        snprintf(idKey, sizeof(idKey), "id%d_%d", i, j);
-        rfids[i].id[j] = server.arg(idKey);
+        websocket_server = config_ch_racing_club_websocket_server;
+        websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
+      }
+
+      char nameKey[12];
+      char idKey[16];
+      for (int i = 0; i < RFID_MAX_COUNT; i++) {
+        snprintf(nameKey, sizeof(nameKey), "name%d", i);
+        rfids[i].name = server.arg(nameKey);
+        for (int j = 0; j < RFID_STORAGE_COUNT; j++) {
+          snprintf(idKey, sizeof(idKey), "id%d_%d", i, j);
+          rfids[i].id[j] = server.arg(idKey);
+        }
       }
     }
 
@@ -909,6 +912,8 @@ void ledOff(int led_pin) {
 }
 
 void setup() {
+  preferences.begin(PREFERENCES_NAMESPACE, false);
+
   pinMode(RFID_LED_PIN, OUTPUT);
   ledOff(RFID_LED_PIN);
   
