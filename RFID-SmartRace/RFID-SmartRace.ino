@@ -372,6 +372,8 @@ void handleConfig() {
       wifi_reload();
     }
     rfid_set_power_level(config_rfid_power_level);
+    SerialRFID.write(ReadMulti,10);
+    Serial.println("RFID: started ReadMulti.");
   } else {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
   }
@@ -595,15 +597,6 @@ void rfid_set_power_level(int config_rfid_power_level) {
   bool ok;
   while(SerialRFID.available()) {
     SerialRFID.read();
-  }
-  if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
-    Serial.println("RFID: stopped ReadMulti.");
-  } else {
-    Serial.println("RFID: failed to stop ReadMulti.");
-  }
-
-  while(SerialRFID.available()) {
-    SerialRFID.read();
     delay(1);
   }
 
@@ -672,8 +665,6 @@ void rfid_set_power_level(int config_rfid_power_level) {
   } else {
     Serial.println("RFID: failed to set power level.");
   }
-  SerialRFID.write(ReadMulti,10);
-  Serial.println("RFID: started ReadMulti.");
 }
 
 void initRfid() {
@@ -719,7 +710,8 @@ void initRfid() {
 
   //set power level and start ReadMulti
   rfid_set_power_level(config_rfid_power_level);
-
+  SerialRFID.write(ReadMulti,10);
+  Serial.println("RFID: started ReadMulti.");
   Serial.println("RFID: running");
 }
 
