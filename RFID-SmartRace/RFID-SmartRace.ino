@@ -445,8 +445,24 @@ void connectWebsocket() {
 
   if(websocket_connected) {
     Serial.println("Websocket: connected.");
+
+    JsonDocument doc;
+    if(config_target_system == "smart_race") {
+      doc["type"] = "controller_set";
+      doc["data"]["controller_id"] = "Z";
+    }
+
+    if(config_target_system == "ch_racing_club") {
+      doc["command"] = "connect";
+      doc["data"]["api_key"] = config_ch_racing_club_api_key;
+      doc["data"]["ip"] = WiFi.localIP().toString();
+    }
+
+    char output[256];
+    serializeJson(doc, output);
     client.ping();
-    client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"Z\"}}");
+    client.send(output);
+
     websocket_backoff = 1000; // reset backoff time on successful connection
   } else {
     Serial.println("Websocket: connection failed.");
@@ -544,18 +560,18 @@ void onEventsCallback(WebsocketsEvent event, String data) {
       websocket_connected = true;
       ledOn(WEBSOCKET_LED_PIN);
   } else if(event == WebsocketsEvent::ConnectionClosed) {
-      Serial.println("Websocket: connection closed");
-      websocket_connected = false;
-      ledOff(WEBSOCKET_LED_PIN);
+    Serial.println("Websocket: connection closed");
+    websocket_connected = false;
+    ledOff(WEBSOCKET_LED_PIN);
   } else if(event == WebsocketsEvent::GotPing) {
-      #ifdef DEBUG
-        Serial.println("Got a Ping!");
-      #endif
-      client.pong();
+    #ifdef DEBUG
+      Serial.println("Websocket: got a ping!");
+    #endif
+    client.pong();
   } else if(event == WebsocketsEvent::GotPong) {
-      #ifdef DEBUG
-        Serial.println("Got a Pong!");
-      #endif
+    #ifdef DEBUG
+      Serial.println("Websocket: got a pong!");
+    #endif
   }
 }
 
