@@ -383,16 +383,26 @@ void handleConfig() {
 }
 
 void wifi_reload() {
-  if (WiFi.status() == WL_CONNECTED) {
-    WiFi.disconnect(true);
-    delay(100);
+  Serial.println("WiFi: Initiating reload...");
+  if (WiFi.getMode() != WIFI_OFF) {
+    Serial.println("WiFi: Disconnecting existing connections...");
+    if (WiFi.status() == WL_CONNECTED) {
+      WiFi.disconnect(true);
+      wait(500);
+    }
+    WiFi.softAPdisconnect(true);
+    wait(500);
   }
-  WiFi.softAPdisconnect(true);
   if(dnsServer.isUp()) {
     dnsServer.stop();
+    wait(100);
   }
 
   WiFi.setHostname(config_wifi_hostname.c_str());
+  Serial.print("WiFi: Attempting to connect to AP '");
+  Serial.print(config_wifi_ssid);
+  Serial.println("'...");
+  WiFi.mode(WIFI_STA);
   WiFi.begin(config_wifi_ssid.c_str(), config_wifi_password.c_str());
 
   int attempts = 0;
@@ -408,9 +418,13 @@ void wifi_reload() {
     wifi_ap_mode = false;
   } else {
     Serial.println("\nWiFi: connect failed, starting AP mode");
+    WiFi.disconnect(true);
+    wait(500);
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
     wifi_ap_mode = true;
+    Serial.print("\nWiFi: AP started, IP: ");
+    Serial.println(WiFi.softAPIP());
   }
 }
 
