@@ -24,7 +24,6 @@
 #define WIFI_CONNECT_DELAY_MS 500
 #define WEBSOCKET_PING_INTERVAL 5000
 
-bool activeLaunchControl = false;
 
 bool wifi_ap_mode = false;
 bool webserver_running = false;
@@ -38,9 +37,11 @@ unsigned long websocket_last_attempt = 0;
 unsigned long websocket_backoff = 1000; // Start mit 1 Sekunde
 const unsigned long websocket_max_backoff = 30000; // Maximal 30 Sekunden
 
-unsigned long lastJoystickUpdate = 0;
+bool activeLaunchControl = false;
 bool isBraking = false;
+bool isDriving = false;
 unsigned long brakeTime = 0;
+unsigned long lastJoystickUpdate = 0;
 
 WebsocketsClient client;
 
@@ -63,9 +64,7 @@ String config_ch_racing_club_api_key;
 
 int speed = DEFAULT_SPEED; // ghostcar speed %
 
-void configuration_save() {
-  preferences.begin(PREFERENCES_NAMESPACE);
-
+void configuration_save
   preferences.putString("target_system", config_target_system);
 
   preferences.putString("wifi_ssid", config_wifi_ssid);
@@ -83,8 +82,6 @@ void configuration_save() {
 }
 
 void configuration_load() {
-  preferences.begin(PREFERENCES_NAMESPACE);
-
   config_target_system = preferences.getString("target_system", "smart_race");
 
   config_wifi_ssid = preferences.getString("wifi_ssid", "");
@@ -137,33 +134,36 @@ void handleRoot() {
   html += "<label for='config_wifi_hostname'>Hostname:</label>";
   html += "<input type='text' id='config_wifi_hostname' name='config_wifi_hostname' value='" + config_wifi_hostname + "'><br>";
 
-  html += "<label for='config_target_system'>Target System:</label>";
-  html += "<select id='config_target_system' name='config_target_system' x-model='targetSystem'>";
-  html += "<option value='smart_race'" + String((config_target_system == "smart_race") ? " selected" : "") + ">SmartRace</option>";
-  html += "<option value='ch_racing_club'" + String((config_target_system == "ch_racing_club") ? " selected" : "") + ">CH Racing Club</option>";
-  html += "</select><br>";
+  if (!wifi_ap_mode) {
+    html += "<label for='config_target_system'>Target System:</label>";
+    html += "<select id='config_target_system' name='config_target_system' x-model='targetSystem'>";
+    html += "<option value='smart_race'" + String((config_target_system == "smart_race") ? " selected" : "") + ">SmartRace</option>";
+    html += "<option value='ch_racing_club'" + String((config_target_system == "ch_racing_club") ? " selected" : "") + ">CH Racing Club</option>";
+    html += "</select><br>";
 
-  html += "<div x-show=\"targetSystem == 'ch_racing_club'\">";
-  html += "  <label for='config_ch_racing_club_websocket_server'>Websocket Server:</label>";
-  html += "  <input type='text' id='config_ch_racing_club_websocket_server' name='config_ch_racing_club_websocket_server' placeholder='ws:// or wss://' x-model='racingClubWebsocketServer' value='" + config_ch_racing_club_websocket_server + "'><br>";
-  html += "  <div x-show=\"racingClubWebsocketServer.startsWith('wss')\">";
-  html += "    <label for='config_ch_racing_club_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
-  html += "    <textarea id='config_ch_racing_club_websocket_ca_cert' name='config_ch_racing_club_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_ch_racing_club_websocket_ca_cert + "</textarea><br>";
-  html += "  </div>";
-  html += "  <label for='config_ch_racing_club_api_key'>ApiKey:</label>";
-  html += "  <input type='number' id='config_ch_racing_club_api_key' name='config_ch_racing_club_api_key' value='" + config_ch_racing_club_api_key + "'><br>";
-  html += "</div>";
+    html += "<div x-show=\"targetSystem == 'ch_racing_club'\">";
+    html += "  <label for='config_ch_racing_club_websocket_server'>Websocket Server:</label>";
+    html += "  <input type='text' id='config_ch_racing_club_websocket_server' name='config_ch_racing_club_websocket_server' placeholder='ws:// or wss://' x-model='racingClubWebsocketServer' value='" + config_ch_racing_club_websocket_server + "'><br>";
+    html += "  <div x-show=\"racingClubWebsocketServer.startsWith('wss')\">";
+    html += "    <label for='config_ch_racing_club_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+    html += "    <textarea id='config_ch_racing_club_websocket_ca_cert' name='config_ch_racing_club_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_ch_racing_club_websocket_ca_cert + "</textarea><br>";
+    html += "  </div>";
+    html += "  <label for='config_ch_racing_club_api_key'>ApiKey:</label>";
+    html += "  <input type='text' id='config_ch_racing_club_api_key' name='config_ch_racing_club_api_key' value='" + config_ch_racing_club_api_key + "'><br>";
+    html += "</div>";
 
-  html += "<div x-show=\"targetSystem == 'smart_race'\">";
-  html += "  <label for='config_smart_race_websocket_server'>Websocket Server:</label>";
-  html += "  <input type='text' id='config_smart_race_websocket_server' name='config_smart_race_websocket_server' placeholder='ws:// or wss://' x-model='smartRaceWebsocketServer' value='" + config_smart_race_websocket_server + "'><br>";
-  html += "  <div x-show=\"smartRaceWebsocketServer.startsWith('wss')\">";
-  html += "    <label for='config_smart_race_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
-  html += "    <textarea id='config_smart_race_websocket_ca_cert' name='config_smart_race_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_smart_race_websocket_ca_cert + "</textarea><br>";
-  html += "  </div>";
-  html += "</div>";
-  html += "<label for='speed'>GhostCar speed (%):</label>";
-  html += "<input type='number' id='speed' name='speed' value='" + String(speed) + "'><br>";
+    html += "<div x-show=\"targetSystem == 'smart_race'\">";
+    html += "  <label for='config_smart_race_websocket_server'>Websocket Server:</label>";
+    html += "  <input type='text' id='config_smart_race_websocket_server' name='config_smart_race_websocket_server' placeholder='ws:// or wss://' x-model='smartRaceWebsocketServer' value='" + config_smart_race_websocket_server + "'><br>";
+    html += "  <div x-show=\"smartRaceWebsocketServer.startsWith('wss')\">";
+    html += "    <label for='config_smart_race_websocket_ca_cert'>Websocket SSL CA Certificate (PEM):</label>";
+    html += "    <textarea id='config_smart_race_websocket_ca_cert' name='config_smart_race_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_smart_race_websocket_ca_cert + "</textarea><br>";
+    html += "  </div>";
+    html += "</div>";
+    html += "<label for='speed'>GhostCar speed (%):</label>";
+    html += "<input type='number' id='speed' name='speed' value='" + String(speed) + "'><br>";
+  }
+
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
   html += "</form>";
   html += "</body></html>";
@@ -173,41 +173,46 @@ void handleRoot() {
 void handleConfig() {
   if (server.args() > 0) {
     bool reConnectWifi = config_wifi_ssid != server.arg("config_wifi_ssid") || config_wifi_password != server.arg("config_wifi_password") || config_wifi_hostname != server.arg("config_wifi_hostname");
-    bool reConnectWebsocket = config_target_system != server.arg("config_target_system");
-
-    config_target_system = server.arg("config_target_system");
+    bool reConnectWebsocket = false;
 
     config_wifi_ssid = server.arg("config_wifi_ssid");
     config_wifi_password = server.arg("config_wifi_password");
     config_wifi_hostname = server.arg("config_wifi_hostname");
 
-    if (config_target_system == "smart_race") {
-      config_smart_race_websocket_server = server.arg("config_smart_race_websocket_server");
-      config_smart_race_websocket_ca_cert = server.arg("config_smart_race_websocket_ca_cert");
-      config_smart_race_websocket_ca_cert.replace("\r", "");
+    if(!wifi_ap_mode) {
+      reConnectWebsocket = config_target_system != server.arg("config_target_system");
 
-      websocket_server = config_smart_race_websocket_server;
-      websocket_ca_cert = config_smart_race_websocket_ca_cert;
-    }
+      config_target_system = server.arg("config_target_system");
+      if (config_target_system == "smart_race") {
+        config_smart_race_websocket_server = server.arg("config_smart_race_websocket_server");
+        config_smart_race_websocket_ca_cert = server.arg("config_smart_race_websocket_ca_cert");
+        config_smart_race_websocket_ca_cert.replace("\r", "");
 
-    if (config_target_system == "ch_racing_club") {
-      config_ch_racing_club_websocket_server = server.arg("config_ch_racing_club_websocket_server");
-      config_ch_racing_club_websocket_ca_cert = server.arg("config_ch_racing_club_websocket_ca_cert");
-      config_ch_racing_club_websocket_ca_cert.replace("\r", "");
-      config_ch_racing_club_api_key = server.arg("config_ch_racing_club_api_key");
+        websocket_server = config_smart_race_websocket_server;
+        websocket_ca_cert = config_smart_race_websocket_ca_cert;
+      }
 
-      websocket_server = config_ch_racing_club_websocket_server;
-      websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
+      if (config_target_system == "ch_racing_club") {
+        config_ch_racing_club_websocket_server = server.arg("config_ch_racing_club_websocket_server");
+        config_ch_racing_club_websocket_ca_cert = server.arg("config_ch_racing_club_websocket_ca_cert");
+        config_ch_racing_club_websocket_ca_cert.replace("\r", "");
+        config_ch_racing_club_api_key = server.arg("config_ch_racing_club_api_key");
+
+        websocket_server = config_ch_racing_club_websocket_server;
+        websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
+      }
+      speed = server.arg("speed").toInt();
+      if (speed > 100) {
+        speed = 100;
+      }
+      else if (speed < 10) {
+        speed = 10;
+      }
+      if(isDriving) {
+        Joystick.setAccelerator(speed);
+        Joystick.sendState();
+      }
     }
-    speed = server.arg("speed").toInt();
-    if (speed > 100) {
-      speed = 100;
-    }
-    else if (speed < 0) {
-      speed = 0;
-    }
-    Joystick.setAccelerator(speed);
-    Joystick.sendState();
     configuration_save();
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>CH-GhostCar-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
     wait(500);
@@ -226,16 +231,32 @@ void handleConfig() {
 }
 
 void wifi_reload() {
-  if (WiFi.status() == WL_CONNECTED) {
-    WiFi.disconnect(true);
-    delay(100);
+  #ifdef ESP32_BLE
+    Serial.println("WiFi: Initiating reload...");
+  #endif
+  if (WiFi.getMode() != WIFI_OFF) {
+    #ifdef ESP32_BLE
+      Serial.println("WiFi: Disconnecting existing connections...");
+    #endif
+    if (WiFi.status() == WL_CONNECTED) {
+      WiFi.disconnect(true);
+      wait(500);
+    }
+    WiFi.softAPdisconnect(true);
+    wait(500);
   }
-  WiFi.softAPdisconnect(true);
   if(dnsServer.isUp()) {
     dnsServer.stop();
+    wait(100);
   }
 
   WiFi.setHostname(config_wifi_hostname.c_str());
+  #ifdef ESP32_BLE
+    Serial.print("WiFi: Attempting to connect to AP '");
+    Serial.print(config_wifi_ssid);
+    Serial.println("'...");
+  #endif
+  WiFi.mode(WIFI_STA);
   WiFi.begin(config_wifi_ssid.c_str(), config_wifi_password.c_str());
 
   int attempts = 0;
@@ -257,9 +278,15 @@ void wifi_reload() {
     #ifdef ESP32_BLE
       Serial.println("\nWiFi: connect failed, starting AP mode");
     #endif
+    WiFi.disconnect(true);
+    wait(500);
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
     wifi_ap_mode = true;
+    #ifdef ESP32_BLE
+      Serial.print("\nWiFi: AP started, IP: ");
+      Serial.println(WiFi.softAPIP());
+    #endif
   }
 }
 
@@ -281,11 +308,25 @@ void connectWebsocket() {
   websocket_connected = client.connect(websocket_server);
 
   if(websocket_connected) {
+    JsonDocument doc;
+    if(config_target_system == "smart_race") {
+      doc["type"] = "controller_set";
+      doc["data"]["controller_id"] = "1";
+    }
+
+    if(config_target_system == "ch_racing_club") {
+      //doc["command"] = "connect";
+      //doc["data"]["api_key"] = config_ch_racing_club_api_key;
+      //doc["data"]["ip"] = WiFi.localIP().toString();
+    }
+
+    char output[256];
+    serializeJson(doc, output);
+    client.ping();
+    client.send(output);
     #ifdef ESP32_BLE
       Serial.println("Websocket: connected.");
     #endif
-    client.ping();
-    client.send("{\"type\":\"controller_set\",\"data\":{\"controller_id\":\"1\"}}");
     websocket_backoff = 1000; // reset backoff time on successful connection
   } else {
     #ifdef ESP32_BLE
@@ -383,7 +424,7 @@ void onEventsCallback(WebsocketsEvent event, String data) {
     websocket_connected = true;
   } else if(event == WebsocketsEvent::ConnectionClosed) {
     #ifdef ESP32_BLE
-      Serial.println("Websocket: connnection closed");
+      Serial.println("Websocket: connection closed");
     #endif
     #ifdef RGB_LED
       rgbLedWrite(RGB_LED_PIN, 0, 0, 255);
@@ -416,6 +457,7 @@ void activateLaunchControl() {
    #if defined(DEBUG) && defined(ESP32_BLE)
     Serial.println("INFO - activate launch control");
   #endif
+  isDriving = false;
   activeLaunchControl = true;
   isBraking = false;
   resetJoystickPosition();
@@ -428,7 +470,7 @@ void activateLaunchControl() {
 }
 
 void drive() {
-   #if defined(DEBUG) && defined(ESP32_BLE)
+  #if defined(DEBUG) && defined(ESP32_BLE)
     Serial.println("INFO - ghostcar driving");
   #endif
   isBraking = false;
@@ -442,13 +484,15 @@ void drive() {
   }
   Joystick.sendState();
   activeLaunchControl = false;
+  isDriving = true;
   #ifdef RGB_LED
     rgbLedWrite(RGB_LED_PIN, 255, 0, 0);
   #endif
 }
 
 void stop() {
-   #if defined(DEBUG) && defined(ESP32_BLE)
+  isDriving = false;
+  #if defined(DEBUG) && defined(ESP32_BLE)
     Serial.println("INFO - ghostcar stopped");
   #endif
   resetJoystickPosition();
@@ -480,6 +524,7 @@ void initializeJoystickMode() {
 }
 
 void resetJoystickPosition() {
+  isDriving = false;
   Joystick.setXAxis(0L);
   Joystick.setAccelerator(0L);
   Joystick.setBrake(0L);
@@ -489,6 +534,7 @@ void resetJoystickPosition() {
 }
 
 void setup() {
+  preferences.begin(PREFERENCES_NAMESPACE, false);
   // Setup Callbacks
   client.onMessage(onMessageCallback);
   client.onEvent(onEventsCallback);
