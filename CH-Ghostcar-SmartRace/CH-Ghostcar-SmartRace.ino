@@ -64,7 +64,7 @@ String config_ch_racing_club_api_key;
 
 int speed = DEFAULT_SPEED; // ghostcar speed %
 
-void configuration_save
+void configuration_save() {
   preferences.putString("target_system", config_target_system);
 
   preferences.putString("wifi_ssid", config_wifi_ssid);
