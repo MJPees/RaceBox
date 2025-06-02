@@ -415,6 +415,8 @@ void wifi_reload() {
   if (WiFi.status() == WL_CONNECTED) {
     Serial.print("\nWiFi: connected ");
     Serial.println(WiFi.localIP());
+    Serial.print("WiFi: Hostname: ");
+    Serial.println(WiFi.getHostname());
     wifi_ap_mode = false;
   } else {
     Serial.println("\nWiFi: connect failed, starting AP mode");
@@ -987,6 +989,8 @@ void setup() {
     if (WiFi.status() == WL_CONNECTED) {
       Serial.print("\nWiFi: connected ");
       Serial.println(WiFi.localIP());
+      Serial.print("WiFi: Hostname: ");
+      Serial.println(WiFi.getHostname());
       wifi_ap_mode = false;
     } else {
       Serial.println("\nWiFi: connection failed!");
