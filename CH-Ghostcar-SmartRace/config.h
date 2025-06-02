@@ -10,7 +10,8 @@
 #define DEFAULT_BRAKING_TIME 5000 // ms
 #define JOYSTICK_UPDATE_INTERVAL 100 // ms
 
-//For ESP32C3 or ESP32S3_BLE use Tools -> Partition Scheme -> No OTA (2MB APP/2MB SPIFFS)
+// USB CDC on boot should be enabled in the Arduino IDE
+// For ESP32C3 or ESP32S3_BLE use Tools -> Partition Scheme -> No OTA (2MB APP/2MB SPIFFS)
 #define ESP32C3 // only Bluetooth
 //#define ESP32S3 // USB-Controller
 //#define ESP32S3_BLE // only Bluetooth

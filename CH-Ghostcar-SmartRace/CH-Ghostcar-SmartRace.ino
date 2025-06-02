@@ -272,6 +272,8 @@ void wifi_reload() {
     #ifdef ESP32_BLE
       Serial.print("\nWiFi: connected ");
       Serial.println(WiFi.localIP());
+      Serial.print("WiFi: Hostname: ");
+      Serial.println(WiFi.getHostname());
     #endif
     wifi_ap_mode = false;
   } else {
@@ -571,6 +573,8 @@ void setup() {
       #ifdef ESP32_BLE
         Serial.print("\nWiFi:  connected ");
         Serial.println(WiFi.localIP());
+        Serial.print("WiFi: Hostname: ");
+        Serial.println(WiFi.getHostname());
       #endif
       wifi_ap_mode = false;
     } else {
