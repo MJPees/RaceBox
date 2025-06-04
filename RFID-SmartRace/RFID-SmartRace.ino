@@ -933,9 +933,9 @@ void checkRfid(unsigned char epcBytes[]) {
   unsigned long now = millis();
   if (epcString != lastEpcString || (lastEpcRead + RFID_REPEAT_TIME) < now) {
     send_finish_line_event(epcString, now);
+    lastEpcString = epcString;
+    lastEpcRead = now;
   }
-  lastEpcString = epcString;
-  lastEpcRead = now;
 }
 
 bool isLedOn(int led_pin) {

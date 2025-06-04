@@ -419,6 +419,8 @@ void checkRfid(unsigned char epcBytes[]) {
     Serial.print("EPC: " + epcString + " RSSI: 0x");
     Serial.println(rssi, HEX);
     ledOn(RFID_LED_PIN);
+    lastEpcString = epcString;
+    lastEpcRead = now;
   }
   else {
     #if defined(PRINT_RSSI)
@@ -426,8 +428,6 @@ void checkRfid(unsigned char epcBytes[]) {
       Serial.println(rssi, HEX);
     #endif
   }
-  lastEpcString = epcString;
-  lastEpcRead = now;
 }
 
 bool isLedOn(int ledPin) {
