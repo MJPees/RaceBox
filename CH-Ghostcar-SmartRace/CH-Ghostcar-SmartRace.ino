@@ -526,12 +526,12 @@ void initializeJoystickMode() {
 }
 
 void resetJoystickPosition() {
-  isDriving = false;
   Joystick.setXAxis(0L);
   Joystick.setAccelerator(0L);
   Joystick.setBrake(0L);
   Joystick.setButton(KEY_TURBO, 0L);
   Joystick.sendState();
+  isDriving = false;
   isBraking = false;
 }
 
@@ -638,6 +638,9 @@ void loop() {
       isBraking = false;
       Joystick.setBrake(0);
       Joystick.sendState();
+      #ifdef RGB_LED
+        rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
+      #endif
     }
   }
   else {
