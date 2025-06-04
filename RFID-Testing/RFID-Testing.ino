@@ -54,7 +54,6 @@ const unsigned char NoModuleSleepTimeResponse[] = {0XAA,0X01,0X1D,0x00,0x01,0x00
 unsigned int rfidSerialByte = 0;
 bool startByte = false;
 bool gotMessageType = false;
-bool isReading = false;
 unsigned char messageType = 0;
 unsigned char command = 0;
 unsigned int rssi = 0;
@@ -106,7 +105,13 @@ bool checkResponse(const unsigned char expectedBuffer[], int length) {
 
 bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const unsigned char expectedResponseBuffer[], int expectedLength) {
   bool ok = false;
+  while(SerialRFID.available()) {
+    SerialRFID.read();
+  }
   stopMultiRead();
+  while(SerialRFID.available()) {
+    SerialRFID.read();
+  }
   int retries = 0;
   while (!ok && retries < 3) {
     SerialRFID.write(sendBuffer, sendLength);
@@ -118,20 +123,17 @@ bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const un
 
 void startMultiRead() {
   SerialRFID.write(ReadMulti,10);
-  isReading = true;
 }
 
 void stopMultiRead() {
-  if (isReading) {
-    while(SerialRFID.available()) {
-      SerialRFID.read();
-    }
-    if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
-      Serial.println("Stopped ReadMulti.");
-      isReading = false;
-    } else {
-      Serial.println("Failed to stop ReadMulti.");
-    }
+  bool ok = false;
+  int retries = 0;
+  while (!ok && retries < 3) {
+    SerialRFID.write(StopReadMulti, 7);
+    ok = checkResponse(StopReadMultiResponse, 8);
+  }
+  if(!ok) {
+    Serial.println("Failed to stop ReadMulti.");
   }
 }
 
@@ -358,15 +360,7 @@ void readRfid() {
         Serial.println("Restart ReadMulti");
       #endif
       //do not use StopMultiRead() here!
-      if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
-        #ifdef DEBUG
-          Serial.println("Stopped ReadMulti.");
-        #endif
-      } else {
-        #ifdef DEBUG
-          Serial.println("Failed to stop ReadMulti.");
-        #endif
-      }
+      SerialRFID.write(StopReadMulti, 7);
       startMultiRead();
     }
   }
