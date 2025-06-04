@@ -1,7 +1,7 @@
 #define VERSION "1.0.2"
 /* configuration */
 #define DEFAULT_POWER_LEVEL 26 // default power level
-#define LED_ON_TIME 200
+#define RFID_LED_ON_TIME 200
 #define RFID_REPEAT_TIME 3000
 #define RFID_RESTART_TIME 300000
 #define DENSE_READER_MODE
@@ -14,12 +14,12 @@
   #define SerialRFID Serial2
   #define RX_PIN 16
   #define TX_PIN 17
-  #define LAP_LED_PIN 2
+  #define RFID_LED_PIN 2
 #elif defined(ESP32C3)
   HardwareSerial SerialRFID(1);
   #define RX_PIN 5
   #define TX_PIN 6
-  #define LAP_LED_PIN 8
+  #define RFID_LED_PIN 8
 #endif
 
 const unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
@@ -66,7 +66,7 @@ unsigned char epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 String lastEpcString = "";
 unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
-unsigned long ledOnTime = 0;
+unsigned long rfidLedOnTimeMs = 0;
 int powerLevel = DEFAULT_POWER_LEVEL;
 
 void wait(unsigned long waitTime) {
@@ -105,36 +105,16 @@ bool checkResponse(const unsigned char expectedBuffer[], int length) {
 
 bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const unsigned char expectedResponseBuffer[], int expectedLength) {
   bool ok = false;
-  while(SerialRFID.available()) {
-    SerialRFID.read();
-  }
-  stopMultiRead();
-  while(SerialRFID.available()) {
-    SerialRFID.read();
-  }
   int retries = 0;
   while (!ok && retries < 3) {
+    while(SerialRFID.available()) {
+      SerialRFID.read();
+    }
     SerialRFID.write(sendBuffer, sendLength);
     ok = checkResponse(expectedResponseBuffer, expectedLength);
     retries++;
   }
   return ok;
-}
-
-void startMultiRead() {
-  SerialRFID.write(ReadMulti,10);
-}
-
-void stopMultiRead() {
-  bool ok = false;
-  int retries = 0;
-  while (!ok && retries < 3) {
-    SerialRFID.write(StopReadMulti, 7);
-    ok = checkResponse(StopReadMultiResponse, 8);
-  }
-  if(!ok) {
-    Serial.println("Failed to stop ReadMulti.");
-  }
 }
 
 void setPowerLevel(int powerLevel) {
@@ -196,65 +176,71 @@ void setPowerLevel(int powerLevel) {
   }
 
   if(ok) {
-    Serial.println("Set power level.");
-    ledOn();
-    delay(200);
-    ledOff();
-    delay(500);
+    Serial.print("RFID: set power level: ");
+    Serial.print(powerLevel);
+    Serial.println(" dBm");
+    ledOn(RFID_LED_PIN);
+    wait(200);
+    ledOff(RFID_LED_PIN);
+    wait(200);
   } else {
-    Serial.println("Failed to set power level.");
+    Serial.println("RFID: failed to set power level.");
   }
-  startMultiRead();
 }
 
 void initRfid() {
-  Serial.println("Starting RFID reader...");
+  Serial.println("RFID: starting...");
   SerialRFID.begin(115200,SERIAL_8N1, RX_PIN, TX_PIN);
   wait(500);
-  while(SerialRFID.available()) {
-    SerialRFID.read();
+  
+  if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
+    #ifdef DEBUG
+      Serial.println("RFID: Stopped ReadMulti.");
+    #endif
+  } else {
+    Serial.println("RFID: Failed to stop ReadMulti.");
   }
 
   //set region to Europe
-
   if(setReaderSetting(Europe, 8, RegionResponse, 8)) {
-    Serial.println("Set Europe region.");
-    ledOn();
-    delay(200);
-    ledOff();
-    delay(500);
+    Serial.println("RFID: set Europe region.");
+    ledOn(RFID_LED_PIN);
+    wait(200);
+    ledOff(RFID_LED_PIN);
+    wait(200);
   } else {
-    Serial.println("Failed to set Europe region.");
+    Serial.println("RFID: failed to set Europe region.");
   }
 
   //set dense reader
   #ifdef DENSE_READER_MODE
     if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
-      Serial.println("Set dense reader.");
-      ledOn();
-      delay(200);
-      ledOff();
-      delay(500);
+      Serial.println("RFID: set dense reader.");
+      ledOn(RFID_LED_PIN);
+      wait(200);
+      ledOff(RFID_LED_PIN);
+      wait(200);
     } else {
-      Serial.println("Failed to set dense reader.");
+      Serial.println("RFID: failed to set dense reader.");
     }
   #endif
 
   //no module sleep time
   if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
-    Serial.println("Disabled module sleep time.");
-    ledOn();
-    delay(200);
-    ledOff();
-    delay(500);
+    Serial.println("RFID: disabled module sleep time.");
+    ledOn(RFID_LED_PIN);
+    wait(200);
+    ledOff(RFID_LED_PIN);
+    wait(200);
   } else {
-    Serial.println("Failed to disable module sleep time.");
+    Serial.println("RFID: failed to disable module sleep time.");
   }
 
   //set power level and start ReadMulti
   setPowerLevel(powerLevel);
-
-  Serial.println("\nR200 RFID-reader started...");
+  SerialRFID.write(ReadMulti,10);
+  Serial.println("RFID: started ReadMulti.");
+  Serial.println("RFID: running");
 }
 
 int getParameterLength() {
@@ -359,9 +345,19 @@ void readRfid() {
       #ifdef DEBUG
         Serial.println("Restart ReadMulti");
       #endif
-      //do not use StopMultiRead() here!
-      SerialRFID.write(StopReadMulti, 7);
-      startMultiRead();
+      if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
+        #ifdef DEBUG
+          Serial.println("RFID: stopped ReadMulti.");
+        #endif
+      } else {
+        #ifdef DEBUG
+          Serial.println("RFID: failed to stop ReadMulti.");
+        #endif
+      }
+      SerialRFID.write(ReadMulti,10);
+      #ifdef DEBUG
+        Serial.println("RFID: started ReadMulti.");
+      #endif
     }
   }
 }
@@ -417,16 +413,12 @@ void checkRfid(unsigned char epcBytes[]) {
   }
   buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
   String epcString(buffer);
-  if(epcString != lastEpcString) {
+
+  unsigned long now = millis();
+  if(epcString != lastEpcString || (lastEpcRead + RFID_REPEAT_TIME) < now) {
     Serial.print("EPC: " + epcString + " RSSI: 0x");
     Serial.println(rssi, HEX);
-    lastEpcString = epcString;
-    ledOn();
-  }
-  else if ((lastEpcRead + RFID_REPEAT_TIME) < millis()) {
-    Serial.print("EPC: " + epcString + " RSSI: 0x");
-    Serial.println(rssi, HEX);
-    ledOn();
+    ledOn(RFID_LED_PIN);
   }
   else {
     #if defined(PRINT_RSSI)
@@ -434,40 +426,42 @@ void checkRfid(unsigned char epcBytes[]) {
       Serial.println(rssi, HEX);
     #endif
   }
-  lastEpcRead = millis();
+  lastEpcString = epcString;
+  lastEpcRead = now;
 }
 
-bool isLedOn() {
-  if (digitalRead(LAP_LED_PIN) == LOW) {
+bool isLedOn(int ledPin) {
+  if (digitalRead(ledPin) == LOW) {
     return true;
   }
   return false;
 }
 
-void ledOn() {
-  digitalWrite(LAP_LED_PIN, LOW);
-  ledOnTime = millis();
+void ledOn(int ledPin) {
+  digitalWrite(ledPin, LOW);
+  rfidLedOnTimeMs = millis();
 }
 
-void ledOff() {
-  digitalWrite(LAP_LED_PIN, HIGH);
+void ledOff(int ledPin) {
+  digitalWrite(ledPin, HIGH);
 }
 
 void setup() {
-  pinMode(LAP_LED_PIN, OUTPUT);
-  digitalWrite(LAP_LED_PIN, HIGH);
+  pinMode(RFID_LED_PIN, OUTPUT);
+  ledOff(RFID_LED_PIN);
   Serial.begin(115200);
   wait(2000);
-  initRfid();
+
   Serial.print("RFID-Testing Version: ");
   Serial.print(VERSION);
-  Serial.println(" started.");
   Serial.println("############################");
+  // Start RFID reader
+  initRfid();
 }
 
 void loop() {
   readRfid();
-  if(isLedOn() && (ledOnTime + LED_ON_TIME) < millis()) {
-    ledOff();
+  if(isLedOn(RFID_LED_PIN) && (rfidLedOnTimeMs + RFID_LED_ON_TIME) < millis()) {
+    ledOff(RFID_LED_PIN);
   }
 }
