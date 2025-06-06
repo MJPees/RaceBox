@@ -120,6 +120,7 @@ String config_ch_racing_club_websocket_ca_cert;
 String config_ch_racing_club_api_key;
 
 int config_rfid_power_level = RFID_DEFAULT_POWER_LEVEL;
+bool config_rfid_dense_mode = true;
 
 struct rfid_data {
   String id[RFID_STORAGE_COUNT];
@@ -136,6 +137,7 @@ unsigned long lastResetTime = 0;
 void configuration_save() {
   preferences.putString("target_system", config_target_system);
   preferences.putInt("power_level", config_rfid_power_level);
+  preferences.putBool("rfid_dense_mode", config_rfid_dense_mode);
   preferences.putInt("min_lap_time", config_min_lap_time);
 
   preferences.putString("wifi_ssid", config_wifi_ssid);
@@ -162,6 +164,7 @@ void configuration_save() {
 
 void configuration_load() {
   config_target_system = preferences.getString("target_system", "smart_race");
+  config_rfid_dense_mode = preferences.getBool("rfid_dense_mode", true);
   config_rfid_power_level = preferences.getInt("power_level", RFID_DEFAULT_POWER_LEVEL);
   config_min_lap_time = preferences.getInt("min_lap_time", DEFAULT_MIN_LAP_TIME);
 
@@ -211,7 +214,15 @@ void handleNotFound() {
 void handleRoot() {
   String html = "<!DOCTYPE html><html><head><title>RFID-SmartRace</title>";
   html += "<meta charset='UTF-8'>"; // Specify UTF-8 encoding
-  html += "<style>*, *::before, *::after {box-sizing: border-box;}body {min-height: 100vh;margin: 0;}form {max-width: 535px;margin: 0 auto;}label {margin-bottom: 5px;display:block;}input[type=text],input[type=password],input[type=number],select,textarea {width: 100%;padding: 8px;border: 1px solid #ccc;border-radius: 4px;display: block;}input[type=submit] {width: 100%;background-color: #4CAF50;color: white;padding: 10px 15px;border: none;border-radius: 4px;}</style>";
+  html += "<style>";
+  html += "*, *::before, *::after {box-sizing: border-box;}";
+  html += "body {min-height: 100vh;margin: 0;}";
+  html += "form {max-width: 535px;margin: 0 auto;}";
+  html += "label {margin-bottom: 5px;display:block;}";
+  html += "input[type=text],input[type=password],input[type=number],select,textarea {width: 100%;padding: 8px;border: 1px solid #ccc;border-radius: 4px;display: block;}";
+  html += "input[type=submit] {width: 100%;background-color: #4CAF50;color: white;padding: 10px 15px;border: none;border-radius: 4px;}";
+  html += ".checkbox-container { display: flex; align-items: center; gap: 5px; }";
+  html += "</style>";
   html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
   html += "<form x-data=\"{ targetSystem: '" + config_target_system + "', smartRaceWebsocketServer: '" + config_smart_race_websocket_server + "', racingClubWebsocketServer: '" + config_ch_racing_club_websocket_server + "' }\" action='/config' method='POST'>";
@@ -276,6 +287,14 @@ void handleRoot() {
     html += "<option value='25'" + String((config_rfid_power_level == 25) ? " selected" : "") + ">25 dBm</option>";
     html += "<option value='26'" + String((config_rfid_power_level == 26) ? " selected" : "") + ">26 dBm</option>";
     html += "</select><br>";
+    html += "<div class='checkbox-container'>";
+    html += "<label for='config_dense_mode'>Use RFID-Dense-Mode (power off required!):</label>";
+    if (config_rfid_dense_mode) {
+      html += "<input type='checkbox' id='config_dense_mode' name='config_dense_mode' checked>";
+    } else {
+      html += "<input type='checkbox' id='config_dense_mode' name='config_dense_mode'>";
+    }
+    html += "</div><br>";
   }
 
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
@@ -320,6 +339,12 @@ void handleConfig() {
     config_wifi_ssid = server.arg("config_wifi_ssid");
     config_wifi_password = server.arg("config_wifi_password");
     config_wifi_hostname = server.arg("config_wifi_hostname");
+
+    if (server.hasArg("config_dense_mode")) {
+        config_rfid_dense_mode = true;
+    } else {
+        config_rfid_dense_mode = false;
+    }
 
     if(!wifi_ap_mode) {
       reConnectWebsocket = config_target_system != server.arg("config_target_system");
@@ -731,14 +756,16 @@ void initRfid() {
   }
 
   //set dense reader
-  if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
-    Serial.println("RFID: set dense reader.");
-    ledOn(RFID_LED_PIN);
-    wait(200);
-    ledOff(RFID_LED_PIN);
-    wait(200);
-  } else {
-    Serial.println("RFID: failed to set dense reader.");
+  if(config_rfid_dense_mode == true) {
+    if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
+      Serial.println("RFID: set dense reader.");
+      ledOn(RFID_LED_PIN);
+      wait(200);
+      ledOff(RFID_LED_PIN);
+      wait(200);
+    } else {
+      Serial.println("RFID: failed to set dense reader.");
+    }
   }
 
   //no module sleep time
