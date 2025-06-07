@@ -1,4 +1,3 @@
-#include "../../config.h"
 #ifndef JOYSTICK_BLE_H
 #define JOYSTICK_BLE_H
 
@@ -8,7 +7,7 @@
 #include <BleCompositeHID.h>
 #include <XboxGamepadDevice.h>
 
-class Joystick_ {
+class Joystick_BLE_ {
   private:
     BleCompositeHID *_compositeHID;
     XboxGamepadDevice *_gamepad;
@@ -39,7 +38,7 @@ class Joystick_ {
     };
 
   public:
-    Joystick_();
+    Joystick_BLE_();
     void begin(bool initAutoSendState = false);
     void setXAxis(int32_t value);
     void setAccelerator(int32_t value);
