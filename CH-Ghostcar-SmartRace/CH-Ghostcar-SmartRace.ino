@@ -9,8 +9,8 @@
 #include "src/Joystick_BLE/Joystick_BLE.h"
 
 /* configuration */
-#define WIFI_AP_SSID "CH-GhostCar-SmartRace-Config"
-#define PREFERENCES_NAMESPACE "smartRace"
+#define WIFI_AP_SSID "RaceBox-GhostCar-Config"
+#define PREFERENCES_NAMESPACE "racebox"
 
 Joystick_BLE_ Joystick_BLE;
 
@@ -119,13 +119,13 @@ void handleNotFound() {
 }
 
 void handleRoot() {
-  String html = "<!DOCTYPE html><html><head><title>CH-GhostCar-SmartRace</title>";
+  String html = "<!DOCTYPE html><html><head><title>RaceBox-GhostCar</title>";
   html += "<meta charset='UTF-8'>"; // Specify UTF-8 encoding
   html += "<style>*, *::before, *::after {box-sizing: border-box;}body {min-height: 100vh;margin: 0;}form {max-width: 535px;margin: 0 auto;}label {margin-bottom: 5px;display:block;}input[type=text],input[type=password],input[type=number],select,textarea {width: 100%;padding: 8px;border: 1px solid #ccc;border-radius: 4px;display: block;}input[type=submit] {width: 100%;background-color: #4CAF50;color: white;padding: 10px 15px;border: none;border-radius: 4px;}</style>";
   html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
   html += "<form x-data=\"{ targetSystem: '" + config_target_system + "', smartRaceWebsocketServer: '" + config_smart_race_websocket_server + "', racingClubWebsocketServer: '" + config_ch_racing_club_websocket_server + "' }\" action='/config' method='POST'>";
-  html += "<h1 align=center>CH-GhostCar-SmartRace</h1>";
+  html += "<h1 align=center>RaceBox-GhostCar</h1>";
 
   html += "<label for='config_wifi_ssid'>SSID:</label>";
   html += "<input type='text' id='config_wifi_ssid' name='config_wifi_ssid' value='" + config_wifi_ssid + "'><br>";
@@ -228,7 +228,7 @@ void handleConfig() {
       }
     }
     configuration_save();
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>CH-GhostCar-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RaceBox-GhostCar</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
     wait(500);
     if (reConnectWebsocket) {
       if(websocket_connected) {
@@ -243,7 +243,7 @@ void handleConfig() {
       wifi_reload();
     }
   } else {
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>CH-GhostCar-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RaceBox-GhostCar</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
   }
 }
 
@@ -382,7 +382,14 @@ void onMessageCallback(WebsocketsMessage message) {
     Serial.println();
   #endif
   if (config_target_system == "ch_racing_club") {
-    //handleCHRacingClubUpdateEvent(doc);
+    //uses samge message format as SmartRace so far...
+    if (doc.containsKey("type")) {
+      handleSmartRaceUpdateEvent(doc["type"].as<String>(), doc);
+    } else {
+      #ifdef ESP32C3
+        Serial.println("Received message without 'type' key: " + message.data());
+      #endif
+    }
   } else {
     if (doc.containsKey("type")) {
       handleSmartRaceUpdateEvent(doc["type"].as<String>(), doc);
@@ -558,7 +565,7 @@ void initializeJoystickMode() {
   #ifdef ESP32S3
     USB.PID(0x8211);
     USB.VID(0x303b);
-    USB.productName("CH-GhostCar-SmartRace");
+    USB.productName("RaceBox-GhostCar");
     USB.manufacturerName("CH-Community");
     USB.begin();
     delay(100);
@@ -600,7 +607,7 @@ void setup() {
   #ifdef ESP32C3
     Serial.begin(115200);
     wait(2000);
-    Serial.print("CH-GhostCar-SmartRace Version: ");
+    Serial.print("RaceBox-GhostCar Version: ");
     Serial.print(VERSION);
     Serial.println(" started.");
     Serial.println("############################");

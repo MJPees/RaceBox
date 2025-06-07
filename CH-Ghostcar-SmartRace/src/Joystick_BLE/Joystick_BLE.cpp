@@ -8,7 +8,7 @@ Joystick_BLE_::Joystick_BLE_() {
   _gamepad = new XboxGamepadDevice(_config);
   //_gamepad = new XboxGamepadDevice(_config);
   
-  _compositeHID = new BleCompositeHID((String("CH-GhostCar-SmartRace ") + String(ESP.getEfuseMac())).c_str(), "MJPees", 100);
+  _compositeHID = new BleCompositeHID((String("RaceBox-GhostCar ") + String(ESP.getEfuseMac())).c_str(), "MJPees", 100);
   _compositeHID->addDevice(_gamepad);
   _compositeHID->begin(_hostConfig);
 }
