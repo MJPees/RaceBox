@@ -73,13 +73,13 @@ WEBSOCKET LED (5V oder mit Vorwiderstand) - <--> ESP32 GPIO 4 (ESP32-DEV) / GPIO
 <img src="./images/ESP32C3_2.jpg"/>
 <br><br>
 
-# CH-GhostCar-SmartRace
-Automatisches Starten/Stoppen des CH-Racers über SmartRace.
-Es wird ein Game-Controller simuliert, der auf Events von SmartRace reagiert. Die eingebaute RGB-LED des ESP32-S3 zeigt den aktiven Modus an.<br> Während der Startphase wird launch-control automatisch aktiviert.<br><br>Der genutzte ESP32-S3 mini kann bei Android Phones direkt als USB-GameController verwendet werden (#define ESP32S3) oder als Bluetooth GameController (#define ESP32S3_BLE) für Android und IOs.<br>
+# RaceBox-GhostCar
+Automatisches Starten/Stoppen des CH-Racers über SmartRace oder CH-Racing-Club.
+Es wird ein Game-Controller simuliert, der auf Events von SmartRace oder CH-Racing-Club reagiert. Die eingebaute RGB-LED des ESP32-S3 zeigt den aktiven Modus an.<br> Während der Startphase wird launch-control automatisch aktiviert.<br><br>Der genutzte ESP32-S3 mini kann bei Android Phones direkt als USB-GameController verwendet werden (#define ESP32S3) sowie als Bluetooth GameController für Android und IOs.<br>
 Wird ein ESP32-C3 genutzt so ist nur Bluetooth möglich!<br>
 Die defines können in der config.h entsprechend gesetzt werden.<br>
 
-Die Konfiguration des GhostCars erfolgt über das Webinterface <a href="http://CH-GhostCar-SmartRace">http://CH-GhostCar-SmartRace</a>
+Die Konfiguration des GhostCars erfolgt über das Webinterface <a href="http://RaceBox-GhostCar">http://racebox-ghostcar</a>
 <br><br>
 ## Benötigte Hardware
 

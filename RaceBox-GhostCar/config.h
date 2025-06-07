@@ -3,7 +3,7 @@
 
 #define VERSION "1.1.0"
 
-#define WIFI_DEFAULT_HOSTNAME "RaceBox-GhostCar"
+#define WIFI_DEFAULT_HOSTNAME "racebox-ghostcar"
 
 #define KEY_TURBO 3 // Turbo-Button at gamepad
 #define DEFAULT_SPEED 100 // ghostcar speed %
