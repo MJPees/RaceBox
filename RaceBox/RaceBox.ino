@@ -7,7 +7,7 @@
 #include <ArduinoJson.h>
 
 /* configuration */
-#define RFID_DEFAULT_POWER_LEVEL 12 // default power level
+#define RFID_DEFAULT_POWER_LEVEL 26 // default power level
 #define DEFAULT_MIN_LAP_TIME 3000 //min time between laps in ms
 #define WIFI_AP_SSID "RaceBox-Config"
 #define WIFI_DEFAULT_HOSTNAME "racebox"
@@ -352,15 +352,15 @@ void handleConfig() {
     config_wifi_password = server.arg("config_wifi_password");
     config_wifi_hostname = server.arg("config_wifi_hostname");
 
-    if (server.hasArg("config_dense_mode")) {
-        config_rfid_dense_mode = true;
-    } else {
-        config_rfid_dense_mode = false;
-    }
 
     if(!wifi_ap_mode) {
       reConnectWebsocket = config_target_system != server.arg("config_target_system");
 
+      if (server.hasArg("config_dense_mode")) {
+        config_rfid_dense_mode = true;
+      } else {
+          config_rfid_dense_mode = false;
+      }
       config_target_system = server.arg("config_target_system");
       config_rfid_power_level = server.arg("config_rfid_power_level").toInt();
       config_min_lap_time = server.arg("config_min_lap_time").toInt();
