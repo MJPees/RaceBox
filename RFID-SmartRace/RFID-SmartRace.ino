@@ -353,6 +353,9 @@ void handleConfig() {
       config_rfid_power_level = server.arg("config_rfid_power_level").toInt();
       config_min_lap_time = server.arg("config_min_lap_time").toInt();
       if (config_target_system == "smart_race") {
+        if (config_smart_race_websocket_server != server.arg("config_smart_race_websocket_server")) {
+          reConnectWebsocket = true; // Reconnect if the server has changed
+        }
         config_smart_race_websocket_server = server.arg("config_smart_race_websocket_server");
         config_smart_race_websocket_ca_cert = server.arg("config_smart_race_websocket_ca_cert");
         config_smart_race_websocket_ca_cert.replace("\r", "");
@@ -362,6 +365,9 @@ void handleConfig() {
       }
 
       if (config_target_system == "ch_racing_club") {
+        if (config_ch_racing_club_websocket_server != server.arg("config_ch_racing_club_websocket_server")) {
+          reConnectWebsocket = true; // Reconnect if the server has changed
+        }
         config_ch_racing_club_websocket_server = server.arg("config_ch_racing_club_websocket_server");
         config_ch_racing_club_websocket_ca_cert = server.arg("config_ch_racing_club_websocket_ca_cert");
         config_ch_racing_club_websocket_ca_cert.replace("\r", "");
@@ -388,7 +394,10 @@ void handleConfig() {
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
     wait(500);
     if (reConnectWebsocket) {
-      websocket_connected = false;
+      if(websocket_connected) {
+        client.close();
+        wait(500);
+      }
       websocket_last_attempt = 0;
       connectWebsocket();
     }
@@ -458,6 +467,11 @@ void connectWebsocket() {
   }
   websocket_last_attempt = millis();
 
+  client = WebsocketsClient(); // Überschreibt das alte Objekt
+
+  client.onMessage(onMessageCallback);
+  client.onEvent(onEventsCallback);
+
   websocket_server = String(websocket_server);
   Serial.print("Websocket: connecting ... ");
   Serial.println(websocket_server);
@@ -468,8 +482,6 @@ void connectWebsocket() {
   websocket_connected = client.connect(websocket_server);
 
   if(websocket_connected) {
-    Serial.println("Websocket: connected.");
-
     JsonDocument doc;
     if(config_target_system == "smart_race") {
       doc["type"] = "controller_set";
@@ -580,7 +592,7 @@ void onMessageCallback(WebsocketsMessage message) {
 
 void onEventsCallback(WebsocketsEvent event, String data) {
   if(event == WebsocketsEvent::ConnectionOpened) {
-      Serial.println("Websocket: connection opened");
+      Serial.println("Websocket: connected");
       websocket_connected = true;
       ledOn(WEBSOCKET_LED_PIN);
   } else if(event == WebsocketsEvent::ConnectionClosed) {
@@ -604,6 +616,7 @@ void wait(unsigned long waitTime) {
   while((millis() - startWaitTime) < waitTime) {
     if (webserver_running) server.handleClient();
     else delay(1);
+    client.poll();
   }
 }
 
@@ -994,10 +1007,6 @@ void setup() {
   resetRfidStorage();
   delay(2000);
 
-  // Setup Callbacks
-  client.onMessage(onMessageCallback);
-  client.onEvent(onEventsCallback);
-
   Serial.begin(115200);
   wait(2000);
 
@@ -1057,8 +1066,8 @@ void setup() {
 void loop() {
   server.handleClient();
   readRfid();
+  client.poll();
   if(websocket_connected) {
-    client.poll();
     if(millis() > (websocket_last_ping + WEBSOCKET_PING_INTERVAL)) {
       websocket_last_ping = millis();
       client.ping();
