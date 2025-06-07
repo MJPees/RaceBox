@@ -9,26 +9,38 @@
 /* configuration */
 #define RFID_DEFAULT_POWER_LEVEL 12 // default power level
 #define DEFAULT_MIN_LAP_TIME 3000 //min time between laps in ms
-#define WIFI_AP_SSID "RFID-SmartRace-Config"
-#define WIFI_DEFAULT_HOSTNAME "RFID-SmartRace"
-#define PREFERENCES_NAMESPACE "smartRace"
+#define WIFI_AP_SSID "RaceBox-GhostCar-Config"
+#define WIFI_DEFAULT_HOSTNAME "racebox"
+#define PREFERENCES_NAMESPACE "racebox"
 
 #define VERSION "1.2.0"
 //#define DEBUG
+
 //#define ESP32C3
 #define ESP32DEV
+
+//#define INVERT_LEDS
+
 #ifdef ESP32DEV
   #define SerialRFID Serial2
   #define RX_PIN 16
   #define TX_PIN 17
-  #define RFID_LED_PIN 2
-  #define WEBSOCKET_LED_PIN 4
+  #ifdef INVERT_LEDS
+    #define RFID_LED_PIN 32
+    #define WEBSOCKET_LED_PIN 33
+    #define WIFI_AP_LED_PIN 25
+  #else
+    #define RFID_LED_PIN 2
+    #define WEBSOCKET_LED_PIN 4
+    #define WIFI_AP_LED_PIN 25
+  #endif
 #elif defined(ESP32C3)
   HardwareSerial SerialRFID(1);
   #define RX_PIN 5
   #define TX_PIN 6
   #define RFID_LED_PIN 8
   #define WEBSOCKET_LED_PIN 9
+  #define WIFI_AP_LED_PIN 10
 #endif
 
 #define WIFI_CONNECT_ATTEMPTS 20
@@ -212,7 +224,7 @@ void handleNotFound() {
 }
 
 void handleRoot() {
-  String html = "<!DOCTYPE html><html><head><title>RFID-SmartRace</title>";
+  String html = "<!DOCTYPE html><html><head><title>RaceBox</title>";
   html += "<meta charset='UTF-8'>"; // Specify UTF-8 encoding
   html += "<style>";
   html += "*, *::before, *::after {box-sizing: border-box;}";
@@ -226,7 +238,7 @@ void handleRoot() {
   html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
   html += "<form x-data=\"{ targetSystem: '" + config_target_system + "', smartRaceWebsocketServer: '" + config_smart_race_websocket_server + "', racingClubWebsocketServer: '" + config_ch_racing_club_websocket_server + "' }\" action='/config' method='POST'>";
-  html += "<h1 align=center>RFID-SmartRace</h1>";
+  html += "<h1 align=center>RaceBox</h1>";
 
   html += "<label for='config_wifi_ssid'>SSID:</label>";
   html += "<input type='text' id='config_wifi_ssid' name='config_wifi_ssid' value='" + config_wifi_ssid + "'><br>";
@@ -391,7 +403,7 @@ void handleConfig() {
 
     configuration_save();
 
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RaceBox</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
     wait(500);
     if (reConnectWebsocket) {
       if(websocket_connected) {
@@ -409,7 +421,7 @@ void handleConfig() {
     SerialRFID.write(ReadMulti,10);
     Serial.println("RFID: started ReadMulti.");
   } else {
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RFID-SmartRace</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RaceBox</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
   }
 }
 
@@ -449,6 +461,7 @@ void wifi_reload() {
     Serial.print("WiFi: Hostname: ");
     Serial.println(WiFi.getHostname());
     wifi_ap_mode = false;
+    ledOff(WIFI_AP_LED_PIN);
   } else {
     Serial.println("\nWiFi: connect failed, starting AP mode");
     WiFi.disconnect(true);
@@ -456,6 +469,7 @@ void wifi_reload() {
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
     wifi_ap_mode = true;
+    ledOn(WIFI_AP_LED_PIN);
     Serial.print("\nWiFi: AP started, IP: ");
     Serial.println(WiFi.softAPIP());
   }
@@ -979,19 +993,33 @@ void checkRfid(unsigned char epcBytes[]) {
 }
 
 bool isLedOn(int led_pin) {
-  if (digitalRead(led_pin) == LOW) {
-    return true;
-  }
+  #ifdef INVERTED_LED
+    if (digitalRead(led_pin) == HIGH) {
+      return true;
+    }
+  #else
+    if (digitalRead(led_pin) == LOW) {
+      return true;
+    }
+  #endif
   return false;
 }
 
 void ledOn(int led_pin) {
-  digitalWrite(led_pin, LOW);
+  #ifdef INVERTED_LED
+    digitalWrite(led_pin, HIGH);
+  #else
+    digitalWrite(led_pin, LOW);
+  #endif
   rfid_led_on_ms = millis();
 }
 
 void ledOff(int led_pin) {
-  digitalWrite(led_pin, HIGH);
+  #ifdef INVERTED_LED
+    digitalWrite(led_pin, LOW);
+  #else
+    digitalWrite(led_pin, HIGH);
+  #endif
 }
 
 void setup() {
@@ -1010,7 +1038,7 @@ void setup() {
   Serial.begin(115200);
   wait(2000);
 
-  Serial.print("RFID-SmartRace Version: ");
+  Serial.print("RaceBox Version: ");
   Serial.println(VERSION);
   Serial.println("############################");
 
@@ -1036,18 +1064,21 @@ void setup() {
       Serial.print("WiFi: Hostname: ");
       Serial.println(WiFi.getHostname());
       wifi_ap_mode = false;
+      ledOff(WIFI_AP_LED_PIN);
     } else {
       Serial.println("\nWiFi: connection failed!");
       WiFi.softAP(WIFI_AP_SSID);
       dnsServer.start();
       Serial.println("WiFi: started AP mode");
       wifi_ap_mode = true;
+      ledOn(WIFI_AP_LED_PIN);
     }
   } else {
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
     Serial.println("WiFi: started AP mode");
     wifi_ap_mode = true;
+    ledOn(WIFI_AP_LED_PIN);
   }
 
   server.on("/", handleRoot);

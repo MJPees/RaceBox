@@ -1,21 +1,21 @@
-# RFID-SmartRace
+# RaceBox
 
-RFID-SmartRace ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a>. Hierzu wird der analoge Sensormodus von SmartRace genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 8 Autos möglich (8 Controller in SmartRace).<br>
+RaceBox ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a> oder CH-Racing-Club. Hierzu wird bei SmartRace der analoge Sensormodus genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 8 Autos möglich (8 Controller in SmartRace).<br>
 Des Weiteren können 2 RFID-Ids für einen Controller definiert werden. Somit sind auch Langstreckenrennen mit jeweils zwei Fahrzeugen pro Team möglich.
 Der ESP32 geht bei fehlender WLAN-Konfiguration automatisch in einen Accesspoint-Modus.
-Über das Webinterface <a href="http://RFID-SmartRace">http://RFID-SmartRace</a> kann RFID-SmartRace konfiguriert werden.
+Über das Webinterface <a href="http://RaceBox">http://RaceBox</a> kann RaceBox konfiguriert werden.
 Neben SSID und Passwort des zu verwendenden Routers muss die IP-Addresse und der Port des SmartRace-Servers für den analogen Sensorbetrieb gesetzt werden.
 Der Power Level für den RFID-Empfang kann von 10dbm bis 26dbm eingestellt werden.
 Die Ids der RFID-Chips für Controller 1-8 werden bei neu erkannten IDs automatisch gefüllt, wenn sie im Webinterface zuvor "leer" sind.
 Die optionale ID2 pro Controller muss für Team-Rennen im Webinterface ausgefüllt werden.<br><br>
-Die optionale LAP LED wird mit Anode (+) an 3,3V und Kathode (-) an Pin D2 (ESP32-DEV) bzw. Pin D8 (ESP32-C3) angeschlossen.<br>
+Die optionale RFID LED wird mit Anode (+) an 3,3V und Kathode (-) an Pin D2 (ESP32-DEV) bzw. Pin D8 (ESP32-C3) angeschlossen.<br>
 Die optionale WEBSOCKET LED wird mit Anode (+) an 3,3V und Kathode (-) an Pin D4 (ESP32-DEV) bzw. Pin D9 (ESP32-C3) angeschlossen. (Vorwiderstand nicht vergessen oder LED mit eingebautem Widerstand verwenden!)<br><br>
 Im Quellcode kann die ESP32 Version für den ESP32-C3 über einen define
 aktiviert werden.<br>
 Standard ist der ESP32-Dev mit externer Antenne.
 
 ## Konfiguration über Web-Interface:
-<a href="http://RFID-SmartRace">http://RFID-SmartRace</a><br><br>
+<a href="http://RaceBox">http://RaceBox</a><br><br>
 <img src="./images/Webinterface.png"/>
 <br><br>
 
