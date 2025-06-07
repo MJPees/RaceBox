@@ -16,7 +16,9 @@ Standard ist der ESP32-Dev mit externer Antenne.
 
 ## Konfiguration über Web-Interface:
 <a href="http://RaceBox">http://RaceBox</a><br><br>
-<img src="./images/Webinterface.png"/>
+<img src="./images/racebox-wifi-config.png"/><br>
+<img src="./images/racebox-smartrace-config.png"/><br>
+<img src="./images/racebox-ch-racing-club-config.png"/>
 <br><br>
 
 Als RFID-Leser wird ein R200 der Firma Inveton verwendet. Dieser kann z.B. über AliExpress bezogen werden und liegt inklusive einer 1dbi Antenne mit Versand aktuell bei ca. 50 Euro. 
