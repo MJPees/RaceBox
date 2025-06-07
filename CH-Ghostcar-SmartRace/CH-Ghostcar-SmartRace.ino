@@ -4,17 +4,17 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 #include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
-#include <ArduinoJson.h>
+#include <ArduinoJson.h> // Tested V0.9.5 https://github.com/schnoog/Joystick_ESP32S2
+#include <Joystick_ESP32S2.h> 
+#include "src/Joystick_BLE/Joystick_BLE.h"
 
 /* configuration */
 #define WIFI_AP_SSID "CH-GhostCar-SmartRace-Config"
 #define PREFERENCES_NAMESPACE "smartRace"
 
-#if defined(ESP32_BLE)
-  #include "src/Joystick_BLE/Joystick_BLE.h"
-  Joystick_ Joystick;
-#else
-  #include <Joystick_ESP32S2.h> // Tested V0.9.5 https://github.com/schnoog/Joystick_ESP32S2
+Joystick_BLE_ Joystick_BLE;
+
+#if !defined(ESP32C3)
   Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD, 
                    14, 2,true, false, false, false, false, 
                    false,false, false, true, true, false);
@@ -99,15 +99,17 @@ void configuration_load() {
   if (config_target_system == "smart_race") {
     websocket_server = config_smart_race_websocket_server;
     websocket_ca_cert = config_smart_race_websocket_ca_cert;
-
-    Serial.println("\nConfiguration: SmartRace loaded");
+    #ifdef ESP32C3
+      Serial.println("\nConfiguration: SmartRace loaded");
+    #endif
   }
 
   if (config_target_system == "ch_racing_club") {
     websocket_server = config_ch_racing_club_websocket_server;
     websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
-
-    Serial.println("\nConfiguration: CH Racing Club loaded");
+    #ifdef ESP32C3
+      Serial.println("\nConfiguration: CH Racing Club loaded");
+    #endif
   }
 }
 
@@ -184,6 +186,9 @@ void handleConfig() {
 
       config_target_system = server.arg("config_target_system");
       if (config_target_system == "smart_race") {
+        if (config_smart_race_websocket_server != server.arg("config_smart_race_websocket_server")) {
+          reConnectWebsocket = true; // Reconnect if the server has changed
+        }
         config_smart_race_websocket_server = server.arg("config_smart_race_websocket_server");
         config_smart_race_websocket_ca_cert = server.arg("config_smart_race_websocket_ca_cert");
         config_smart_race_websocket_ca_cert.replace("\r", "");
@@ -193,6 +198,9 @@ void handleConfig() {
       }
 
       if (config_target_system == "ch_racing_club") {
+        if (config_ch_racing_club_websocket_server != server.arg("config_ch_racing_club_websocket_server")) {
+          reConnectWebsocket = true; // Reconnect if the server has changed
+        }
         config_ch_racing_club_websocket_server = server.arg("config_ch_racing_club_websocket_server");
         config_ch_racing_club_websocket_ca_cert = server.arg("config_ch_racing_club_websocket_ca_cert");
         config_ch_racing_club_websocket_ca_cert.replace("\r", "");
@@ -209,15 +217,24 @@ void handleConfig() {
         speed = 10;
       }
       if(isDriving) {
-        Joystick.setAccelerator(speed);
-        Joystick.sendState();
+        Joystick_BLE.setAccelerator(speed);
+        Joystick_BLE.setAccelerator(speed);
+        Joystick_BLE.sendState();
+        #ifndef ESP32C3
+          Joystick.setAccelerator(speed);
+          Joystick.setAccelerator(speed);
+          Joystick.sendState();
+        #endif
       }
     }
     configuration_save();
     server.send(200, "text/html", "<!DOCTYPE html><html><head><title>CH-GhostCar-SmartRace</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
     wait(500);
     if (reConnectWebsocket) {
-      websocket_connected = false;
+      if(websocket_connected) {
+        client.close();
+        wait(500);
+      }
       websocket_last_attempt = 0;
       connectWebsocket();
     }
@@ -231,11 +248,11 @@ void handleConfig() {
 }
 
 void wifi_reload() {
-  #ifdef ESP32_BLE
+  #ifdef ESP32C3
     Serial.println("WiFi: Initiating reload...");
   #endif
   if (WiFi.getMode() != WIFI_OFF) {
-    #ifdef ESP32_BLE
+    #ifdef ESP32C3
       Serial.println("WiFi: Disconnecting existing connections...");
     #endif
     if (WiFi.status() == WL_CONNECTED) {
@@ -251,7 +268,7 @@ void wifi_reload() {
   }
 
   WiFi.setHostname(config_wifi_hostname.c_str());
-  #ifdef ESP32_BLE
+  #ifdef ESP32C3
     Serial.print("WiFi: Attempting to connect to AP '");
     Serial.print(config_wifi_ssid);
     Serial.println("'...");
@@ -262,14 +279,14 @@ void wifi_reload() {
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
     wait(WIFI_CONNECT_DELAY_MS);
-    #ifdef ESP32_BLE
+    #ifdef ESP32C3
       Serial.print(".");
     #endif
     attempts++;
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    #ifdef ESP32_BLE
+    #ifdef ESP32C3
       Serial.print("\nWiFi: connected ");
       Serial.println(WiFi.localIP());
       Serial.print("WiFi: Hostname: ");
@@ -277,7 +294,7 @@ void wifi_reload() {
     #endif
     wifi_ap_mode = false;
   } else {
-    #ifdef ESP32_BLE
+    #ifdef ESP32C3
       Serial.println("\nWiFi: connect failed, starting AP mode");
     #endif
     WiFi.disconnect(true);
@@ -285,7 +302,7 @@ void wifi_reload() {
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
     wifi_ap_mode = true;
-    #ifdef ESP32_BLE
+    #ifdef ESP32C3
       Serial.print("\nWiFi: AP started, IP: ");
       Serial.println(WiFi.softAPIP());
     #endif
@@ -298,8 +315,13 @@ void connectWebsocket() {
   }
   websocket_last_attempt = millis();
 
+  client = WebsocketsClient(); // Überschreibt das alte Objekt
+
+  client.onMessage(onMessageCallback);
+  client.onEvent(onEventsCallback);
+
   websocket_server = String(websocket_server);
-  #ifdef ESP32_BLE
+  #ifdef ESP32C3
     Serial.print("Websocket: connecting ... ");
     Serial.println(websocket_server);
   #endif
@@ -326,12 +348,12 @@ void connectWebsocket() {
     serializeJson(doc, output);
     client.ping();
     client.send(output);
-    #ifdef ESP32_BLE
+    #ifdef ESP32C3
       Serial.println("Websocket: connected.");
     #endif
     websocket_backoff = 1000; // reset backoff time on successful connection
   } else {
-    #ifdef ESP32_BLE
+    #ifdef ESP32C3
       Serial.println("Websocket: connection failed.");
     #endif
     if (config_target_system == "ch_racing_club") {
@@ -347,12 +369,14 @@ void onMessageCallback(WebsocketsMessage message) {
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, message.data());
   if (error) {
-    Serial.print("Websocket: JSON deserialization failed: ");
-    Serial.println(error.c_str());
+    #ifdef ESP32C3
+      Serial.print("Websocket: JSON deserialization failed: ");
+      Serial.println(error.c_str());
+    #endif
     return;
   }
 
-  #ifdef DEBUG
+  #if defined(DEBUG) && defined(ESP32C3)
     Serial.print("Websocket: received message: ");
     serializeJsonPretty(doc, Serial);
     Serial.println();
@@ -363,7 +387,9 @@ void onMessageCallback(WebsocketsMessage message) {
     if (doc.containsKey("type")) {
       handleSmartRaceUpdateEvent(doc["type"].as<String>(), doc);
     } else {
-      Serial.println("Received message without 'type' key: " + message.data());
+      #ifdef ESP32C3
+        Serial.println("Received message without 'type' key: " + message.data());
+      #endif
     }
   }
 }
@@ -372,41 +398,41 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
   if (type == "update_event_status" && doc.containsKey("data")) {
     String data = doc["data"].as<String>();
     if (data == "prepare_for_start") {
-      #if defined(DEBUG) && defined(ESP32_BLE)
+      #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - prepare_for_start");
       #endif
     } else if (data == "starting") {
-      #if defined(DEBUG) && defined(ESP32_BLE)
+      #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - starting");
       #endif
       activateLaunchControl();
     } else if (data == "running") {
-      #if defined(DEBUG) && defined(ESP32_BLE)
+      #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - running");
       #endif
       drive();
     } else if (data == "suspended") {
-      #if defined(DEBUG) && defined(ESP32_BLE)
+      #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - suspended");
       #endif
       stop();
     } else if (data == "ended") {
-      #if defined(DEBUG) && defined(ESP32_BLE)
+      #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - ended");
       #endif
       stop();
     } else {
-      #if defined(DEBUG) && defined(ESP32_BLE)
+      #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("Unknown message type: " + type);
       #endif
     }
   } else if (type == "reset") {
-    #if defined(DEBUG) && defined(ESP32_BLE)
+    #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("INFO - reset");
     #endif
     stop();
   } else {
-    #if defined(DEBUG) && defined(ESP32_BLE)
+    #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("Unknown message type: " + type);
     #endif
   }
@@ -414,8 +440,8 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
 
 void onEventsCallback(WebsocketsEvent event, String data) {
   if(event == WebsocketsEvent::ConnectionOpened) {
-    #ifdef ESP32_BLE
-      Serial.println("Websocket: connnection opened");
+    #ifdef ESP32C3
+      Serial.println("Websocket: connnected");
     #endif
     #ifdef RGB_LED
       rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
@@ -425,7 +451,7 @@ void onEventsCallback(WebsocketsEvent event, String data) {
     #endif
     websocket_connected = true;
   } else if(event == WebsocketsEvent::ConnectionClosed) {
-    #ifdef ESP32_BLE
+    #ifdef ESP32C3
       Serial.println("Websocket: connection closed");
     #endif
     #ifdef RGB_LED
@@ -436,12 +462,12 @@ void onEventsCallback(WebsocketsEvent event, String data) {
     #endif
     websocket_connected = false;
   } else if(event == WebsocketsEvent::GotPing) {
-     #if defined(DEBUG) && defined(ESP32_BLE)
+     #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("Websocket: got a ping!");
     #endif
     client.pong();
   } else if(event == WebsocketsEvent::GotPong) {
-     #if defined(DEBUG) && defined(ESP32_BLE)
+     #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("Websocket: got a pong!");
     #endif
   }
@@ -452,39 +478,55 @@ void wait(unsigned long waitTime) {
   while((millis() - startWaitTime) < waitTime) {
     if (webserver_running) server.handleClient();
     else delay(1);
+    client.poll();
   }
 }
 
 void activateLaunchControl() {
-   #if defined(DEBUG) && defined(ESP32_BLE)
+   #if defined(DEBUG) && defined(ESP32C3)
     Serial.println("INFO - activate launch control");
   #endif
   isDriving = false;
   activeLaunchControl = true;
   isBraking = false;
   resetJoystickPosition();
-  Joystick.setButton(KEY_TURBO, 1);
-  Joystick.setAccelerator(speed);
-  Joystick.sendState();
+  Joystick_BLE.setButton(KEY_TURBO, 1);
+  Joystick_BLE.setAccelerator(speed);
+  Joystick_BLE.sendState();
+  #ifndef ESP32C3
+    Joystick.setButton(KEY_TURBO, 1);
+    Joystick.setAccelerator(speed);
+    Joystick.sendState();
+  #endif
   #ifdef RGB_LED
     rgbLedWrite(RGB_LED_PIN, 255, 255, 0);
   #endif
 }
 
 void drive() {
-  #if defined(DEBUG) && defined(ESP32_BLE)
+  #if defined(DEBUG) && defined(ESP32C3)
     Serial.println("INFO - ghostcar driving");
   #endif
   isBraking = false;
   if(activeLaunchControl) {
-    Joystick.setBrake(0);
-    Joystick.setButton(KEY_TURBO, 0);
+    Joystick_BLE.setBrake(0);
+    Joystick_BLE.setButton(KEY_TURBO, 0);
+    #ifndef ESP32C3
+      Joystick.setBrake(0);
+      Joystick.setButton(KEY_TURBO, 0);
+    #endif
   }
   else {
     resetJoystickPosition();
-    Joystick.setAccelerator(speed);
+    Joystick_BLE.setAccelerator(speed);
+    #ifndef ESP32C3
+      Joystick.setAccelerator(speed);
+    #endif
   }
-  Joystick.sendState();
+  Joystick_BLE.sendState();
+  #ifndef ESP32C3
+    Joystick.sendState();
+  #endif
   activeLaunchControl = false;
   isDriving = true;
   #ifdef RGB_LED
@@ -494,12 +536,16 @@ void drive() {
 
 void stop() {
   isDriving = false;
-  #if defined(DEBUG) && defined(ESP32_BLE)
+  #if defined(DEBUG) && defined(ESP32C3)
     Serial.println("INFO - ghostcar stopped");
   #endif
   resetJoystickPosition();
-  Joystick.setBrake(100);
-  Joystick.sendState();
+  Joystick_BLE.setBrake(100);
+  Joystick_BLE.sendState();
+  #ifndef ESP32C3
+    Joystick.setBrake(100);
+    Joystick.sendState();
+  #endif
   brakeTime = millis();
   isBraking = true;
   activeLaunchControl = false;
@@ -517,31 +563,41 @@ void initializeJoystickMode() {
     USB.begin();
     delay(100);
   #endif
-  Joystick.setXAxisRange(-100, 100);
-  Joystick.setAcceleratorRange(0, 100);
-  Joystick.setBrakeRange(0, 100);
-  Joystick.begin(false);
+  Joystick_BLE.setXAxisRange(-100, 100);
+  Joystick_BLE.setAcceleratorRange(0, 100);
+  Joystick_BLE.setBrakeRange(0, 100);
+  Joystick_BLE.begin(false);
+  #ifndef ESP32C3
+    Joystick.setXAxisRange(-100, 100);
+    Joystick.setAcceleratorRange(0, 100);
+    Joystick.setBrakeRange(0, 100);
+    Joystick.begin(false);
+  #endif
   wait(500);
   resetJoystickPosition();
 }
 
 void resetJoystickPosition() {
-  Joystick.setXAxis(0L);
-  Joystick.setAccelerator(0L);
-  Joystick.setBrake(0L);
-  Joystick.setButton(KEY_TURBO, 0L);
-  Joystick.sendState();
+  Joystick_BLE.setXAxis(0L);
+  Joystick_BLE.setAccelerator(0L);
+  Joystick_BLE.setBrake(0L);
+  Joystick_BLE.setButton(KEY_TURBO, 0L);
+  Joystick_BLE.sendState();
+  #ifndef ESP32C3
+    Joystick.setXAxis(0L);
+    Joystick.setAccelerator(0L);
+    Joystick.setBrake(0L);
+    Joystick.setButton(KEY_TURBO, 0L);
+    Joystick.sendState();
+  #endif
   isDriving = false;
   isBraking = false;
 }
 
 void setup() {
   preferences.begin(PREFERENCES_NAMESPACE, false);
-  // Setup Callbacks
-  client.onMessage(onMessageCallback);
-  client.onEvent(onEventsCallback);
 
-  #ifdef ESP32_BLE
+  #ifdef ESP32C3
     Serial.begin(115200);
     wait(2000);
     Serial.print("CH-GhostCar-SmartRace Version: ");
@@ -551,7 +607,7 @@ void setup() {
   #endif
   configuration_load();
 
-  #ifdef ESP32_BLE
+  #ifdef ESP32C3
     Serial.println();
     Serial.print("Starting ...");
   #endif
@@ -563,14 +619,14 @@ void setup() {
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
       wait(WIFI_CONNECT_DELAY_MS);
-      #ifdef ESP32_BLE
+      #ifdef ESP32C3
         Serial.print(".");
       #endif
       attempts++;
     }
 
     if (WiFi.status() == WL_CONNECTED) {
-      #ifdef ESP32_BLE
+      #ifdef ESP32C3
         Serial.print("\nWiFi:  connected ");
         Serial.println(WiFi.localIP());
         Serial.print("WiFi: Hostname: ");
@@ -578,12 +634,12 @@ void setup() {
       #endif
       wifi_ap_mode = false;
     } else {
-      #ifdef ESP32_BLE
+      #ifdef ESP32C3
         Serial.println("\nWiFi:  connection failed!");
       #endif
       WiFi.softAP(WIFI_AP_SSID);
       dnsServer.start();
-      #ifdef ESP32_BLE
+      #ifdef ESP32C3
         Serial.println("WiFi: started AP mode");
       #endif
       wifi_ap_mode = true;
@@ -591,7 +647,7 @@ void setup() {
   } else {
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
-    #ifdef ESP32_BLE
+    #ifdef ESP32C3
       Serial.println("WiFi: started AP mod");
     #endif
     wifi_ap_mode = true;
@@ -616,7 +672,7 @@ void setup() {
   server.onNotFound(handleNotFound);
 
   server.begin();
-  #ifdef ESP32_BLE
+  #ifdef ESP32C3
     Serial.println("Webserver: running");
   #endif
   webserver_running = true;
@@ -624,20 +680,27 @@ void setup() {
 
 void loop() {
   server.handleClient();
+  client.poll();
   if(websocket_connected) {
-    client.poll();
     if(millis() > (websocket_last_ping + WEBSOCKET_PING_INTERVAL)) {
       websocket_last_ping = millis();
       client.ping();
     }
     if(millis() > (lastJoystickUpdate + JOYSTICK_UPDATE_INTERVAL)) {
       lastJoystickUpdate = millis();
-      Joystick.sendState();
+      Joystick_BLE.sendState();
+      #ifndef ESP32C3
+        Joystick.sendState();
+      #endif
     }
     if(isBraking && (millis() > (brakeTime + DEFAULT_BRAKING_TIME))) {
       isBraking = false;
-      Joystick.setBrake(0);
-      Joystick.sendState();
+      Joystick_BLE.setBrake(0);
+      Joystick_BLE.sendState();
+      #ifndef ESP32C3
+        Joystick.setBrake(0);
+        Joystick.sendState();
+      #endif
       #ifdef RGB_LED
         rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
       #endif
