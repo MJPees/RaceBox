@@ -9,7 +9,7 @@
 /* configuration */
 #define RFID_DEFAULT_POWER_LEVEL 12 // default power level
 #define DEFAULT_MIN_LAP_TIME 3000 //min time between laps in ms
-#define WIFI_AP_SSID "RaceBox-GhostCar-Config"
+#define WIFI_AP_SSID "RaceBox-Config"
 #define WIFI_DEFAULT_HOSTNAME "racebox"
 #define PREFERENCES_NAMESPACE "racebox"
 
