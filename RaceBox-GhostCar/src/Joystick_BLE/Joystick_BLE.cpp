@@ -15,6 +15,11 @@ Joystick_BLE_::Joystick_BLE_() {
 
 void Joystick_BLE_::begin(bool initAutoSendState) {
   _autoSend = initAutoSendState;
+  _gamepad->setLeftThumb(1,1);
+  _gamepad->setLeftThumb(0, 0);
+  _gamepad->setRightThumb(1,1);
+  _gamepad->setRightThumb(0,0);
+  _gamepad->sendGamepadReport();
 }
 
 void Joystick_BLE_::setXAxis(int32_t value) {
