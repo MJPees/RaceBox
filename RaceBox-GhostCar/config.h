@@ -12,6 +12,9 @@
 
 // USB CDC on boot should be enabled in the Arduino IDE
 // For ESP32C3 or ESP32S3_BLE use Tools -> Partition Scheme -> No OTA (2MB APP/2MB SPIFFS)
+// Additional board managers (current ESP32 version) => https://espressif.github.io/arduino-esp32/package_esp32_index.json
+// Include libraries from the libs folder via Arduino IDE (Zip)
+
 //#define ESP32C3 // only Bluetooth
 #define ESP32S3 // Bluetooth and USB-Joystik
 
