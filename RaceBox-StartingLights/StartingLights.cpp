@@ -1,9 +1,11 @@
 #include "StartingLights.h"
 #include <FastLED.h>
+#include <array>
 
 StartingLights::StartingLights(const int numLeds, int ledRows)
-  : numLeds(numLeds), ledRows(ledRows) {
+  : numLeds(numLeds), ledRows(ledRows), ledsPerRow(numLeds / ledRows) {
   leds = new CRGB[numLeds];
+  sequenceIsRunning = false;
 }
 
 StartingLights::~StartingLights() {
@@ -29,26 +31,66 @@ void StartingLights::setAllLights(CRGB color) {
   FastLED.show();
 }
 
-void StartingLights::setRowLights(int row, CRGB color) {
-  row -= 1; // Adjust for zero-based index
-  if (row < 0 || row >= ledRows) return;
-  int start = row * (numLeds / ledRows);
-  int end = start + (numLeds / ledRows);
-  
-  for (int i = start; i < end; i++) {
-    leds[i] = color;
+void StartingLights::setRowLights(const int* rows, int numRows, CRGB color) {
+  for (int r = 0; r < numRows; r++) {
+    int row = rows[r] - 1;
+    if (row >= 0 && row < ledRows) {
+      int start = row * ledsPerRow;
+      int end = start + ledsPerRow;
+      for (int i = start; i < end; i++) {
+        leds[i] = color;
+      }
+    }
   }
   FastLED.show();
 }
 
-void StartingLights::countDownLights(unsigned long countDownTime) {
-  for (int i = 0; i < (numLeds / ledRows); i++) {
-    wait(countDownTime / (numLeds / ledRows));
-    for(int j = 0; j < ledRows; j++) {
-      leds[i + j * (numLeds / ledRows)] = CRGB::Black;
+void StartingLights::runCountDownLights(const int* rows, int numRows, unsigned int countDownTime) {
+  setAllLightsOff();
+  sequenceIsRunning = true;
+  for(int i = 0; i < ledsPerRow; i++) {
+    if(!sequenceIsRunning) {
+      setAllLightsOff();
+      return;
+    }
+    for(int r = 0; r < numRows; r++) {
+      int row = rows[r] - 1;
+      if(row >= 0 && row < ledRows) {
+        leds[i + row * ledsPerRow] = CRGB::Red;
+      }
     }
     FastLED.show();
+    wait(countDownTime / ledsPerRow);
   }
+  setAllLightsOff();
+  sequenceIsRunning = false;
+}
+
+void StartingLights::runFlashLights(const int* rows, int numRows, unsigned int interval, CRGB color, int maxFlashCount) {
+  setAllLightsOff();
+  sequenceIsRunning = true;
+  bool ledIsOn = true;
+  int flashCount = 0;
+  while(sequenceIsRunning && (maxFlashCount <= 0 || flashCount < maxFlashCount)) {
+    for(int r = 0; r < numRows; r++) {
+      int row = rows[r] - 1;
+      if(row >= 0 && row < ledRows) {
+        for(int i = 0; i < ledsPerRow; i++) {
+          leds[i + row * ledsPerRow] = ledIsOn ? color : CRGB::Black;
+        }
+      }
+    }
+    FastLED.show();
+    if(ledIsOn) flashCount++;
+    ledIsOn = !ledIsOn;
+    wait(interval);
+  }
+  setAllLightsOff();
+  sequenceIsRunning = false;
+}
+
+void StartingLights::stopRunningSequence() {
+  sequenceIsRunning = false;
 }
 
 void StartingLights::wait(unsigned long milliseconds) {
