@@ -12,8 +12,8 @@ StartingLights startingLights(NUM_LEDS, LED_ROWS);
 const int row1[] = {1};
 const int row2[] = {2};
 const int row3[] = {3};
-const int row1_2[] = {1, 2};
-const int row3_4[] = {3, 4};
+const int row1And2[] = {1, 2};
+const int row3And4[] = {3, 4};
 
 void setup() {
   startingLights.begin();
@@ -38,10 +38,10 @@ void loop() {
   delay(LONG_DELAY);
   startingLights.setAllLightsOff();
   delay(LONG_DELAY);
-  startingLights.runCountDownLights(row3_4, 2, COUNTDOWN_TIME);
-  startingLights.setRowLights(row3_4, 2, CRGB::Green);
+  startingLights.runCountDownLights(row3And4, 2, COUNTDOWN_TIME);
+  startingLights.setRowLights(row3And4, 2, CRGB::Green);
   delay(LONG_DELAY);
-  startingLights.runFlashLights(row1_2, 2, FLASH_INTERVAL, CRGB::Red, 10);
+  startingLights.runFlashLights(row1And2, 2, FLASH_INTERVAL, CRGB::Red, 10);
   startingLights.setAllLightsOff();
   delay(SHORT_DELAY);
 }
