@@ -5,7 +5,7 @@
 #include <Preferences.h>
 #include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
 #include <ArduinoJson.h> // Tested V0.9.5 https://github.com/schnoog/Joystick_ESP32S2
-#include <Joystick_ESP32S2.h> 
+#include <Joystick_ESP32S2.h>
 #include "src/Joystick_BLE/Joystick_BLE.h"
 
 /* configuration */
@@ -15,8 +15,8 @@
 Joystick_BLE_ Joystick_BLE;
 
 #if !defined(ESP32C3)
-  Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD, 
-                   14, 2,true, false, false, false, false, 
+  Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
+                   14, 2,true, false, false, false, false,
                    false,false, false, true, true, false);
 #endif
 
@@ -339,9 +339,10 @@ void connectWebsocket() {
     }
 
     if(config_target_system == "ch_racing_club") {
-      //doc["command"] = "connect";
-      //doc["data"]["api_key"] = config_ch_racing_club_api_key;
-      //doc["data"]["ip"] = WiFi.localIP().toString();
+      doc["command"] = "ghostcar_connect";
+      doc["data"]["api_key"] = config_ch_racing_club_api_key;
+      doc["data"]["ip"] = WiFi.localIP().toString();
+      // doc["data"]["version"] = VERSION;
     }
 
     char output[256];
@@ -382,12 +383,15 @@ void onMessageCallback(WebsocketsMessage message) {
     Serial.println();
   #endif
   if (config_target_system == "ch_racing_club") {
+    JsonDocument payload;
+    DeserializationError error = deserializeJson(payload, doc["message"].as<String>());
+
     //uses samge message format as SmartRace so far...
-    if (doc.containsKey("type")) {
-      handleSmartRaceUpdateEvent(doc["type"].as<String>(), doc);
+    if (payload.containsKey("command")) {
+      handleRacingClubUpdateEvent(payload["command"].as<String>(), payload);
     } else {
       #ifdef ESP32C3
-        Serial.println("Received message without 'type' key: " + message.data());
+        Serial.println("Received message without 'command' key: " + payload.as<String>());
       #endif
     }
   } else {
@@ -398,6 +402,33 @@ void onMessageCallback(WebsocketsMessage message) {
         Serial.println("Received message without 'type' key: " + message.data());
       #endif
     }
+  }
+}
+
+void handleRacingClubUpdateEvent(String command, JsonDocument doc) {
+  if (doc["api_key"].as<String>() != config_ch_racing_club_api_key) {
+    #if defined(DEBUG) && defined(ESP32C3)
+      Serial.println("INFO - received message with invalid API key: " + api_key);
+    #endif
+
+    return;
+  }
+
+  if (command == "launchcontrol") {
+    #if defined(DEBUG) && defined(ESP32C3)
+      Serial.println("INFO - starting");
+    #endif
+    activateLaunchControl();
+  } else if (command == "drive") {
+    #if defined(DEBUG) && defined(ESP32C3)
+      Serial.println("INFO - running");
+    #endif
+    drive();
+  } else if (command == "stop") {
+    #if defined(DEBUG) && defined(ESP32C3)
+      Serial.println("INFO - stop");
+    #endif
+    stop();
   }
 }
 
