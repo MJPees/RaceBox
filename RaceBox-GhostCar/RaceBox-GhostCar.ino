@@ -4,7 +4,11 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 #include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
-#include <ArduinoJson.h> // Tested V0.9.5 https://github.com/schnoog/Joystick_ESP32S2
+#include <ArduinoJson.h> // Tested V0.9.5
+
+#ifndef ESP32C3
+  #include <Joystick_ESP32S2.h> //https://github.com/schnoog/Joystick_ESP32S2
+#endif
 #include "src/Joystick_BLE/Joystick_BLE.h"
 
 /* configuration */
@@ -14,7 +18,6 @@
 Joystick_BLE_ Joystick_BLE;
 
 #ifndef ESP32C3
-  #include <Joystick_ESP32S2.h>
   Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
                    14, 2,true, false, false, false, false,
                    false,false, false, true, true, false);
@@ -702,6 +705,7 @@ void setup() {
     digitalWrite(LED_PIN, HIGH);
   #endif
 
+  wait(2000);
   initializeJoystickMode();
 
   server.on("/", handleRoot);
