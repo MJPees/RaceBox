@@ -993,7 +993,7 @@ void checkRfid(unsigned char epcBytes[]) {
 }
 
 bool isLedOn(int led_pin) {
-  #ifdef INVERTED_LED
+  #ifdef INVERT_LEDS
     if (digitalRead(led_pin) == HIGH) {
       return true;
     }
@@ -1006,7 +1006,7 @@ bool isLedOn(int led_pin) {
 }
 
 void ledOn(int led_pin) {
-  #ifdef INVERTED_LED
+  #ifdef INVERT_LEDS
     digitalWrite(led_pin, HIGH);
   #else
     digitalWrite(led_pin, LOW);
@@ -1015,7 +1015,7 @@ void ledOn(int led_pin) {
 }
 
 void ledOff(int led_pin) {
-  #ifdef INVERTED_LED
+  #ifdef INVERT_LEDS
     digitalWrite(led_pin, LOW);
   #else
     digitalWrite(led_pin, HIGH);
@@ -1027,10 +1027,10 @@ void setup() {
 
   pinMode(RFID_LED_PIN, OUTPUT);
   ledOff(RFID_LED_PIN);
-  
+
   pinMode(WEBSOCKET_LED_PIN, OUTPUT);
   ledOff(WEBSOCKET_LED_PIN);
-  
+
   //init rfid storage
   resetRfidStorage();
   delay(2000);
