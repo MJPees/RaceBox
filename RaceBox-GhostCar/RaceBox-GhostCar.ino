@@ -5,7 +5,6 @@
 #include <Preferences.h>
 #include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
 #include <ArduinoJson.h> // Tested V0.9.5 https://github.com/schnoog/Joystick_ESP32S2
-#include <Joystick_ESP32S2.h>
 #include "src/Joystick_BLE/Joystick_BLE.h"
 
 /* configuration */
@@ -14,7 +13,8 @@
 
 Joystick_BLE_ Joystick_BLE;
 
-#if !defined(ESP32C3)
+#ifndef ESP32C3
+  #include <Joystick_ESP32S2.h>
   Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
                    14, 2,true, false, false, false, false,
                    false,false, false, true, true, false);
