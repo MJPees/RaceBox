@@ -8,7 +8,8 @@ Joystick_BLE_::Joystick_BLE_() {
   _gamepad = new XboxGamepadDevice(_config);
   //_gamepad = new XboxGamepadDevice(_config);
   
-  _compositeHID = new BleCompositeHID((String("RaceBox-GhostCar ") + String(ESP.getEfuseMac())).c_str(), "MJPees", 100);
+  _deviceName = String("RaceBox-GhostCar ") + String(ESP.getEfuseMac());
+  _compositeHID = new BleCompositeHID(_deviceName.c_str(), "MJPees", 100);
   _compositeHID->addDevice(_gamepad);
   _compositeHID->begin(_hostConfig);
 }
@@ -20,6 +21,10 @@ void Joystick_BLE_::begin(bool initAutoSendState) {
   _gamepad->setRightThumb(1,1);
   _gamepad->setRightThumb(0,0);
   _gamepad->sendGamepadReport();
+}
+
+String Joystick_BLE_::getDeviceName() {
+  return _deviceName;;
 }
 
 void Joystick_BLE_::setXAxis(int32_t value) {
