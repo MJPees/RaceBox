@@ -1031,6 +1031,9 @@ void setup() {
   pinMode(WEBSOCKET_LED_PIN, OUTPUT);
   ledOff(WEBSOCKET_LED_PIN);
 
+  pinMode(WIFI_AP_LED_PIN, OUTPUT);
+  ledOff(WIFI_AP_LED_PIN);
+
   //init rfid storage
   resetRfidStorage();
   delay(2000);
