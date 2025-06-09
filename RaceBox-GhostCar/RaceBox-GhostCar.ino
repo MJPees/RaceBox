@@ -344,8 +344,9 @@ void connectWebsocket() {
     if(config_target_system == "ch_racing_club") {
       doc["command"] = "ghostcar_connect";
       doc["data"]["api_key"] = config_ch_racing_club_api_key;
+      doc["data"]["ble_name"] = Joystick_BLE.getDeviceName();
       doc["data"]["ip"] = WiFi.localIP().toString();
-      // doc["data"]["version"] = VERSION;
+      doc["data"]["version"] = VERSION;
     }
 
     char output[256];
@@ -650,7 +651,7 @@ void setup() {
 
   #ifdef ESP32C3
     Serial.println();
-    Serial.print("Starting ...");
+    Serial.println("Starting ...");
   #endif
 
   if (config_wifi_ssid != "") {
@@ -716,6 +717,8 @@ void setup() {
   server.begin();
   #ifdef ESP32C3
     Serial.println("Webserver: running");
+    Serial.print("BLE device name: ");
+    Serial.println(Joystick_BLE.getDeviceName());
   #endif
   webserver_running = true;
 }

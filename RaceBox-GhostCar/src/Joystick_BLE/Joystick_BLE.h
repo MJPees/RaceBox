@@ -14,6 +14,7 @@ class Joystick_BLE_ {
     XboxOneSControllerDeviceConfiguration *_config;
     BLEHostConfiguration _hostConfig;
 
+    String _deviceName;
     bool _autoSend = true;
 
     int32_t _minSteeringDigit = 0;
@@ -40,6 +41,7 @@ class Joystick_BLE_ {
   public:
     Joystick_BLE_();
     void begin(bool initAutoSendState = false);
+    String getDeviceName();
     void setXAxis(int32_t value);
     void setAccelerator(int32_t value);
     void setBrake(int32_t value);
