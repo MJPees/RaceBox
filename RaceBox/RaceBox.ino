@@ -1048,7 +1048,7 @@ void setup() {
   configuration_load();
 
   Serial.println();
-  Serial.print("Starting ...");
+  Serial.println("Starting ...");
 
   if (config_wifi_ssid != "") {
     WiFi.setHostname(config_wifi_hostname.c_str());
