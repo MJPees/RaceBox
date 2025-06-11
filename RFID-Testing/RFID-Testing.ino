@@ -4,7 +4,7 @@
 #define RFID_LED_ON_TIME 200
 #define RFID_REPEAT_TIME 3000
 #define RFID_RESTART_TIME 300000
-#define DENSE_READER_MODE
+#define DENSE_SWITCH_PIN 10
 
 //#define DEBUG
 #define PRINT_RSSI
@@ -61,6 +61,7 @@ unsigned int pc = 0;
 unsigned int parameterLength = 0;
 unsigned int crc = 0;
 unsigned int dataCheckSum = 0;
+int lastDenseSwitchValue = 0;
 
 unsigned char epcBytes[12] = {0,0,0,0,0,0,0,0,0,0,0,0};
 String lastEpcString = "";
@@ -213,17 +214,19 @@ void initRfid() {
   }
 
   //set dense reader
-  #ifdef DENSE_READER_MODE
+  if(digitalRead(DENSE_SWITCH_PIN) == LOW) {
     if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
-      Serial.println("RFID: set dense reader.");
+      Serial.println("RFID: set dense reader (runtime switch LOW).");
       ledOn(RFID_LED_PIN);
       wait(200);
       ledOff(RFID_LED_PIN);
       wait(200);
     } else {
-      Serial.println("RFID: failed to set dense reader.");
+      Serial.println("RFID: failed to set dense reader (runtime switch LOW).");
     }
-  #endif
+  } else {
+    Serial.println("RFID: no dense reader mode set (switch not LOW).");
+  }
 
   //no module sleep time
   if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
@@ -449,6 +452,10 @@ void ledOff(int ledPin) {
 void setup() {
   pinMode(RFID_LED_PIN, OUTPUT);
   ledOff(RFID_LED_PIN);
+
+  pinMode(DENSE_SWITCH_PIN, INPUT_PULLUP);
+  lastDenseSwitchValue = digitalRead(DENSE_SWITCH_PIN);
+  
   Serial.begin(115200);
   wait(2000);
 
@@ -463,5 +470,9 @@ void loop() {
   readRfid();
   if(isLedOn(RFID_LED_PIN) && (rfidLedOnTimeMs + RFID_LED_ON_TIME) < millis()) {
     ledOff(RFID_LED_PIN);
+  }
+  if(digitalRead(DENSE_SWITCH_PIN) != lastDenseSwitchValue) {
+    ESP.restart();
+    lastDenseSwitchValue = digitalRead(DENSE_SWITCH_PIN);
   }
 }
