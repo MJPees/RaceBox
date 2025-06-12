@@ -45,7 +45,8 @@ const unsigned char Power26dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X0A,0X28,0XEA,0XD
 const unsigned char PowerLevelResponse[] = {0xAA,0x01,0xB6,0x00,0x01,0x00,0xB8,0xDD};
 const unsigned char Europe[8] = {0XAA,0X00,0X07,0X00,0X01,0X03,0X0B,0XDD};
 const unsigned char RegionResponse[] = {0xAA,0x01,0x07,0x00,0x01,0x00,0x09,0xDD};
-const unsigned char HighDensitiy[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
+const unsigned char HighSensitivity[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
+const unsigned char HighSensitivityResponse[8] = {0XAA,0X01,0XF5,0X00,0X01,0X00,0XF7,0XDD};
 const unsigned char DenseReader[8] = {0XAA,0X00,0XF5,0X00,0X01,0X01,0XF7,0XDD};
 const unsigned char DenseReaderResponse[8] = {0XAA,0X01,0XF5,0X00,0X01,0X00,0XF7,0XDD};
 const unsigned char NoModuleSleepTime[8] = {0XAA,0X00,0X1D,0x00,0x01,0x00,0x1E,0xDD};
@@ -116,6 +117,35 @@ bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const un
     retries++;
   }
   return ok;
+}
+
+void rfid_set_densitivity_mode(bool dense_mode) {
+  // Set reader mode based on loaded configuration
+  bool ok;
+
+  if(dense_mode) {
+    ok = setReaderSetting(DenseReader, 8, DenseReaderResponse, 8);
+    if(ok) {
+      Serial.println("RFID: set dense reader mode.");
+      ledOn(RFID_LED_PIN);
+      wait(200);
+      ledOff(RFID_LED_PIN);
+      wait(200);
+    } else {
+      Serial.println("RFID: failed to set dense reader mode.");
+    }
+  } else {
+    ok = setReaderSetting(HighSensitivity, 8, HighSensitivityResponse, 8);
+    if(ok) {
+      Serial.println("RFID: set high sensitivity reader mode.");
+      ledOn(RFID_LED_PIN);
+      wait(200);
+      ledOff(RFID_LED_PIN);
+      wait(200);
+    } else {
+      Serial.println("RFID: failed to set high sensitivity reader mode.");
+    }
+  }
 }
 
 void setPowerLevel(int powerLevel) {
@@ -213,21 +243,6 @@ void initRfid() {
     Serial.println("RFID: failed to set Europe region.");
   }
 
-  //set dense reader
-  if(digitalRead(DENSE_SWITCH_PIN) == LOW) {
-    if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
-      Serial.println("RFID: set dense reader (runtime switch LOW).");
-      ledOn(RFID_LED_PIN);
-      wait(200);
-      ledOff(RFID_LED_PIN);
-      wait(200);
-    } else {
-      Serial.println("RFID: failed to set dense reader (runtime switch LOW).");
-    }
-  } else {
-    Serial.println("RFID: no dense reader mode set (switch not LOW).");
-  }
-
   //no module sleep time
   if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
     Serial.println("RFID: disabled module sleep time.");
@@ -238,6 +253,9 @@ void initRfid() {
   } else {
     Serial.println("RFID: failed to disable module sleep time.");
   }
+
+  //set sensitivity mode
+  rfid_set_densitivity_mode(digitalRead(DENSE_SWITCH_PIN) == LOW);
 
   //set power level and start ReadMulti
   setPowerLevel(powerLevel);
@@ -472,7 +490,7 @@ void loop() {
     ledOff(RFID_LED_PIN);
   }
   if(digitalRead(DENSE_SWITCH_PIN) != lastDenseSwitchValue) {
-    ESP.restart();
+    rfid_set_densitivity_mode(digitalRead(DENSE_SWITCH_PIN) == LOW);
     lastDenseSwitchValue = digitalRead(DENSE_SWITCH_PIN);
   }
 }

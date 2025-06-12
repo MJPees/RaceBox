@@ -76,7 +76,8 @@ const unsigned char Power26dbm[9] = {0XAA,0X00,0XB6,0X00,0X02,0X0A,0X28,0XEA,0XD
 const unsigned char PowerLevelResponse[] = {0xAA,0x01,0xB6,0x00,0x01,0x00,0xB8,0xDD};
 const unsigned char Europe[8] = {0XAA,0X00,0X07,0X00,0X01,0X03,0X0B,0XDD};
 const unsigned char RegionResponse[] = {0xAA,0x01,0x07,0x00,0x01,0x00,0x09,0xDD};
-const unsigned char HighDensitiy[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
+const unsigned char HighSensitivity[8] = {0XAA,0X00,0XF5,0X00,0X01,0X00,0XF6,0XDD};
+const unsigned char HighSensitivityResponse[8] = {0XAA,0X01,0XF5,0X00,0X01,0X00,0XF7,0XDD};
 const unsigned char DenseReader[8] = {0XAA,0X00,0XF5,0X00,0X01,0X01,0XF7,0XDD};
 const unsigned char DenseReaderResponse[8] = {0XAA,0X01,0XF5,0X00,0X01,0X00,0XF7,0XDD};
 const unsigned char NoModuleSleepTime[8] = {0XAA,0X00,0X1D,0x00,0x01,0x00,0x1E,0xDD};
@@ -195,7 +196,7 @@ void configuration_load() {
     websocket_server = config_smart_race_websocket_server;
     websocket_ca_cert = config_smart_race_websocket_ca_cert;
 
-    Serial.println("\nConfiguration: SmartRace loaded");
+    Serial.println("\nConfiguration: RaceBox loaded");
   }
 
   if (config_target_system == "ch_racing_club") {
@@ -300,7 +301,7 @@ void handleRoot() {
     html += "<option value='26'" + String((config_rfid_power_level == 26) ? " selected" : "") + ">26 dBm</option>";
     html += "</select><br>";
     html += "<div class='checkbox-container'>";
-    html += "<label for='config_dense_mode'>Use RFID-Dense-Mode (power off required!):</label>";
+    html += "<label for='config_dense_mode'>Use RFID-Dense-Mode:</label>";
     if (config_rfid_dense_mode) {
       html += "<input type='checkbox' id='config_dense_mode' name='config_dense_mode' checked>";
     } else {
@@ -417,6 +418,7 @@ void handleConfig() {
     if(reConnectWifi) {
       wifi_reload();
     }
+    rfid_set_densitivity_mode(config_rfid_dense_mode);
     rfid_set_power_level(config_rfid_power_level);
     SerialRFID.write(ReadMulti,10);
     Serial.println("RFID: started ReadMulti.");
@@ -690,6 +692,35 @@ bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const un
   return ok;
 }
 
+void rfid_set_densitivity_mode(bool dense_mode) {
+  // Set reader mode based on loaded configuration
+  bool ok;
+
+  if(dense_mode) {
+    ok = setReaderSetting(DenseReader, 8, DenseReaderResponse, 8);
+    if(ok) {
+      Serial.println("RFID: set dense reader mode.");
+      ledOn(RFID_LED_PIN);
+      wait(200);
+      ledOff(RFID_LED_PIN);
+      wait(200);
+    } else {
+      Serial.println("RFID: failed to set dense reader mode.");
+    }
+  } else {
+    ok = setReaderSetting(HighSensitivity, 8, HighSensitivityResponse, 8);
+    if(ok) {
+      Serial.println("RFID: set high sensitivity reader mode.");
+      ledOn(RFID_LED_PIN);
+      wait(200);
+      ledOff(RFID_LED_PIN);
+      wait(200);
+    } else {
+      Serial.println("RFID: failed to set high sensitivity reader mode.");
+    }
+  }
+}
+
 void rfid_set_power_level(int config_rfid_power_level) {
   // Set power level based on loaded configuration
   bool ok;
@@ -785,18 +816,6 @@ void initRfid() {
     Serial.println("RFID: failed to set Europe region.");
   }
 
-  //set dense reader
-  if(config_rfid_dense_mode == true) {
-    if(setReaderSetting(DenseReader, 8, DenseReaderResponse, 8)) {
-      Serial.println("RFID: set dense reader.");
-      ledOn(RFID_LED_PIN);
-      wait(200);
-      ledOff(RFID_LED_PIN);
-      wait(200);
-    } else {
-      Serial.println("RFID: failed to set dense reader.");
-    }
-  }
 
   //no module sleep time
   if(setReaderSetting(NoModuleSleepTime, 8, NoModuleSleepTimeResponse, 8)) {
@@ -809,6 +828,9 @@ void initRfid() {
     Serial.println("RFID: failed to disable module sleep time.");
   }
 
+  // set sensitivity mode
+  rfid_set_densitivity_mode(config_rfid_dense_mode);
+  
   //set power level and start ReadMulti
   rfid_set_power_level(config_rfid_power_level);
   SerialRFID.write(ReadMulti,10);
