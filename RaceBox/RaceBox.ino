@@ -503,9 +503,12 @@ void connectWebsocket() {
     }
 
     if(config_target_system == "ch_racing_club") {
-      doc["command"] = "connect";
+      doc["command"] = "racebox_connect";
       doc["data"]["api_key"] = config_ch_racing_club_api_key;
+      doc["data"]["name"] = config_wifi_hostname.c_str();
       doc["data"]["ip"] = WiFi.localIP().toString();
+      doc["data"]["version"] = VERSION;
+
     }
 
     char output[256];
