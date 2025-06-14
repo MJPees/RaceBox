@@ -13,7 +13,7 @@
 #define WIFI_DEFAULT_HOSTNAME "racebox"
 #define PREFERENCES_NAMESPACE "racebox"
 
-#define VERSION "1.2.0"
+#define VERSION "1.2.0" // dont forget to update the releases.json
 //#define DEBUG
 
 //#define ESP32C3
