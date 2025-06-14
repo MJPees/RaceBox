@@ -350,8 +350,9 @@ void connectWebsocket() {
     if(config_target_system == "ch_racing_club") {
       doc["command"] = "ghostcar_connect";
       doc["data"]["api_key"] = config_ch_racing_club_api_key;
+      doc["data"]["name"] = Joystick_BLE.getDeviceName();
       doc["data"]["ip"] = WiFi.localIP().toString();
-      // doc["data"]["version"] = VERSION;
+      doc["data"]["version"] = VERSION;
     }
 
     char output[256];
