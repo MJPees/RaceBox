@@ -114,7 +114,7 @@ bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const un
   return ok;
 }
 
-void rfid_set_densitivity_mode(bool dense_mode) {
+void rfidSetDensitivityMode(bool dense_mode) {
   // Set reader mode based on loaded configuration
   bool ok;
 
@@ -122,6 +122,10 @@ void rfid_set_densitivity_mode(bool dense_mode) {
     ok = setReaderSetting(DenseReader, 8, DenseReaderResponse, 8);
     if(ok) {
       Serial.println("RFID: set dense reader mode.");
+      ledOn();
+      delay(200);
+      ledOff();
+      delay(100);
       ledOn();
       delay(200);
       ledOff();
@@ -133,6 +137,14 @@ void rfid_set_densitivity_mode(bool dense_mode) {
     ok = setReaderSetting(HighSensitivity, 8, HighSensitivityResponse, 8);
     if(ok) {
       Serial.println("RFID: set high sensitivity reader mode.");
+      ledOn();
+      delay(200);
+      ledOff();
+      delay(100);
+      ledOn();
+      delay(200);
+      ledOff();
+      delay(100);
       ledOn();
       delay(200);
       ledOff();
@@ -258,7 +270,7 @@ void initRfid() {
   }
 
   //set dense reader
-  rfid_set_densitivity_mode(true);
+  rfidSetDensitivityMode(true);
   
   //set power level and start ReadMulti
   setPowerLevel(powerLevel);
