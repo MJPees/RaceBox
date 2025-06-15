@@ -418,7 +418,7 @@ void handleConfig() {
     if(reConnectWifi) {
       wifi_reload();
     }
-    rfid_set_densitivity_mode(config_rfid_dense_mode);
+    rfidSetDensitivityMode(config_rfid_dense_mode);
     rfid_set_power_level(config_rfid_power_level);
     SerialRFID.write(ReadMulti,10);
     Serial.println("RFID: started ReadMulti.");
@@ -692,7 +692,7 @@ bool setReaderSetting(const unsigned char sendBuffer[], int sendLength, const un
   return ok;
 }
 
-void rfid_set_densitivity_mode(bool dense_mode) {
+void rfidSetDensitivityMode(bool dense_mode) {
   // Set reader mode based on loaded configuration
   bool ok;
 
@@ -700,6 +700,10 @@ void rfid_set_densitivity_mode(bool dense_mode) {
     ok = setReaderSetting(DenseReader, 8, DenseReaderResponse, 8);
     if(ok) {
       Serial.println("RFID: set dense reader mode.");
+      ledOn(RFID_LED_PIN);
+      wait(200);
+      ledOff(RFID_LED_PIN);
+      wait(100);
       ledOn(RFID_LED_PIN);
       wait(200);
       ledOff(RFID_LED_PIN);
@@ -711,6 +715,14 @@ void rfid_set_densitivity_mode(bool dense_mode) {
     ok = setReaderSetting(HighSensitivity, 8, HighSensitivityResponse, 8);
     if(ok) {
       Serial.println("RFID: set high sensitivity reader mode.");
+      ledOn(RFID_LED_PIN);
+      wait(200);
+      ledOff(RFID_LED_PIN);
+      wait(100);
+      ledOn(RFID_LED_PIN);
+      wait(200);
+      ledOff(RFID_LED_PIN);
+      wait(100);
       ledOn(RFID_LED_PIN);
       wait(200);
       ledOff(RFID_LED_PIN);
@@ -829,7 +841,7 @@ void initRfid() {
   }
 
   // set sensitivity mode
-  rfid_set_densitivity_mode(config_rfid_dense_mode);
+  rfidSetDensitivityMode(config_rfid_dense_mode);
   
   //set power level and start ReadMulti
   rfid_set_power_level(config_rfid_power_level);
