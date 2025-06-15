@@ -1,9 +1,17 @@
 #ifndef STARTINGLIGHTS_H
 #define STARTINGLIGHTS_H
 #include <FastLED.h>
-#include <array>
+#include "config.h"
 
-#define FAST_LED_PIN 5
+#ifndef LED_TYPE
+  #define LED_TYPE WS2811 // Default LED type, can be overridden in config.h
+#endif
+#ifndef FAST_LED_PIN
+  #define FAST_LED_PIN 5 // Default pin for FastLED, can be overridden in config.h
+#endif
+#ifndef LED_BRIGHTNESS
+  #define LED_BRIGHTNESS 255 // Default LED brightness, can be overridden in config.h
+#endif
 
 enum LedMode {
     MODE_NONE,
@@ -21,6 +29,7 @@ class StartingLights {
     void setRowLights(const int* rows, int numRows, CRGB color);
     void runCountDownLights(const int* rows, int numRows, unsigned int countDownTime, CRGB color);
     void runFlashLights(const int* rows, int numRows, unsigned int interval, CRGB color, int maxFlashCount = -1);
+    bool isSequenceRunning(LedMode mode) const { return sequenceIsRunning && this->mode == mode; }
     void stopRunningSequence();
     void updateLeds();
   private:

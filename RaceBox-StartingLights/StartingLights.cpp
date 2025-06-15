@@ -13,7 +13,8 @@ StartingLights::~StartingLights() {
 }
 
 void StartingLights::begin() {
-  FastLED.addLeds<WS2811, FAST_LED_PIN, GRB>(leds, numLeds);
+  FastLED.addLeds<LED_TYPE, FAST_LED_PIN, GRB>(leds, numLeds);
+  FastLED.setBrightness(LED_BRIGHTNESS);
   setAllLightsOff();
 }
 
