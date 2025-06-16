@@ -3,28 +3,44 @@
 std::vector<std::vector<int>> ledMatrix;
 
 //matrix is like
-  // 1   8   9  16  17
-  // 2   7  10  15  18
-  // 3   6  11  14  19
-  // 4   5  12  13  20
+  // 4   8  12  16  20
+  // 3   7  11  15  19
+  // 2   6  10  14  18
+  // 1   5   9  13  17
+
+// or like
+  // 3   6   9  12  15
+  // 2   5   8  11  14
+  // 1   4   7  10  13
 
 StartingLights::StartingLights(const int numLeds, int ledRows)
   : numLeds(numLeds), ledRows(ledRows), ledsPerRow(numLeds / ledRows) {
   leds = new CRGB[numLeds];
   sequenceIsRunning = false;
-  // Build matrix mapping (zig-zag columns)
+  // Build matrix mapping (zig-zag rows, supports all 1-4 row configs)
   ledMatrix.resize(ledRows, std::vector<int>(ledsPerRow, -1));
+
+  if ((ledRows == 4 && ledsPerRow == 5 && numLeds == 20) ||
+    (ledRows == 3 && ledsPerRow == 5 && numLeds == 15)) {
   int idx = 0;
   for (int col = 0; col < ledsPerRow; ++col) {
     if (col % 2 == 0) {
+      // bottom to top
       for (int row = 0; row < ledRows; ++row) {
-        ledMatrix[ledRows - 1 - row][col] = idx++; // <-- invert row
+        int mappedRow = ledRows - 1 - row; // invert row: 0=bottom
+        ledMatrix[mappedRow][col] = idx++;
       }
     } else {
+      // top to bottom
       for (int row = ledRows - 1; row >= 0; --row) {
-        ledMatrix[ledRows - 1 - row][col] = idx++; // <-- invert row
+        int mappedRow = ledRows - 1 - row; // invert row: 0=bottom
+        ledMatrix[mappedRow][col] = idx++;
       }
     }
+  }
+  } else {
+    // Not supported
+    // Optionally: set an error flag or print a warning
   }
 }
 

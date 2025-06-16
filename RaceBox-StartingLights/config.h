@@ -43,60 +43,8 @@
 #define WHITE CRGB::White
 
 // select the starting lights version
-//#define STARTING_LIGHTS_VERSION_1_ROW
-//#define STARTING_LIGHTS_VERSION_2_ROWS
 //#define STARTING_LIGHTS_VERSION_3_ROWS
 #define STARTING_LIGHTS_VERSION_4_ROWS
-
-#ifdef STARTING_LIGHTS_VERSION_1_ROW
-  #define NUM_LEDS 5
-  #define LED_ROWS 1
-
-  const int websocketLedRows[] = {1};
-  #define WEBSOCKET_FLAHS_INTERVAL 200 // ms
-
-  const int wifiLedRows[] =  {1};
-  #define WIFI_FLAHS_INTERVAL 200 // ms
-
-  #define CH_RACING_CLUB_LEDS_COUNTDOWN_TIME 5000
-  #define CH_RACING_CLUB_LEDS_FLASH_INTERVAL 500
-  const int chRacingClubDriveLedRows[] = {1};
-  const int chRacingClubStopLedRows[] = {1};
-  const int chRacingClubYellowLedRows[] = {1};
-  const int chRacingClubCountdownLedRows[] = {1};
-
-  #define SMARTRACE_LEDS_COUNTDOWN_TIME 5000
-  #define SMARTRACE_LEDS_FLASH_INTERVAL 600
-  const int smartraceDriveLedRows[] = {1};
-  const int smartraceStopLedRows[] = {1};
-  const int smartraceYellowLedRows[] = {1};
-  const int smartraceCountdownLedRows[] = {1};
-#endif // STARTING_LIGHTS_VERSION_1_ROW
-
-#ifdef STARTING_LIGHTS_VERSION_2_ROWS
-  #define NUM_LEDS 10
-  #define LED_ROWS 2
-
-  const int websocketLedRows[] = {1, 2};
-  #define WEBSOCKET_FLAHS_INTERVAL 200 // ms
-
-  const int wifiLedRows[] =  {1, 2};
-  #define WIFI_FLAHS_INTERVAL 200 // ms
-
-  #define CH_RACING_CLUB_LEDS_COUNTDOWN_TIME 5000
-  #define CH_RACING_CLUB_LEDS_FLASH_INTERVAL 500
-  const int chRacingClubDriveLedRows[] = {2};
-  const int chRacingClubStopLedRows[] = {1};
-  const int chRacingClubYellowLedRows[] = {1};
-  const int chRacingClubCountdownLedRows[] = {1};
-
-  #define SMARTRACE_LEDS_COUNTDOWN_TIME 5000
-  #define SMARTRACE_LEDS_FLASH_INTERVAL 600
-  const int smartraceDriveLedRows[] = {2};
-  const int smartraceStopLedRows[] = {1};
-  const int smartraceYellowLedRows[] = {1};
-  const int smartraceCountdownLedRows[] = {1};
-#endif // STARTING_LIGHTS_VERSION_2_ROW
 
 #ifdef STARTING_LIGHTS_VERSION_3_ROWS
   #define NUM_LEDS 15
@@ -143,9 +91,9 @@
   #define SMARTRACE_LEDS_COUNTDOWN_TIME 5000
   #define SMARTRACE_LEDS_FLASH_INTERVAL 600
   const int smartraceDriveLedRows[] = {3, 4};
-  const int smartraceStopLedRows[] = {3, 4};
+  const int smartraceStopLedRows[] = {1, 2, 3};
   const int smartraceYellowLedRows[] = {1, 2};
-  const int smartraceCountdownLedRows[] = {3, 4};
+  const int smartraceCountdownLedRows[] = {1, 2, 3};
 #endif // STARTING_LIGHTS_VERSION_4_ROWS
 
 #endif // CONFIG_H
