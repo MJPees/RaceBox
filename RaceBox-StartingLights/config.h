@@ -27,8 +27,8 @@
 #endif
 
 // define the LED type
-#define LED_TYPE WS2811 // LED type, e.g. WS2811
-//#define LEDTYPE WS2812B // LED type, e.g. WS2812B
+//#define LED_TYPE WS2811 // LED type, e.g. WS2811
+#define LEDTYPE WS2812B // LED type, e.g. WS2812B
 
 // define the FastLED pin
 #define FAST_LED_PIN 5 // Pin for FastLED, e.g. GPIO 5
@@ -36,8 +36,8 @@
 #define LED_BRIGHTNESS 100 // LED brightness (0-255)
 
 // define colors for the starting lights
-#define RED CRGB::Green // Green and Red are swapped to match the starting lights
-#define GREEN CRGB::Red
+#define RED CRGB::Red // Green and Red may be swapped
+#define GREEN CRGB::Green
 #define YELLOW CRGB::Yellow
 #define BLUE CRGB::Blue
 #define WHITE CRGB::White

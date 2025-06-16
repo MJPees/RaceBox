@@ -1,15 +1,40 @@
 #include "StartingLights.h"
 #include <FastLED.h>
-#include <array>
+std::vector<std::vector<int>> ledMatrix;
+
+//matrix is like
+  // 1   8   9  16  17
+  // 2   7  10  15  18
+  // 3   6  11  14  19
+  // 4   5  12  13  20
 
 StartingLights::StartingLights(const int numLeds, int ledRows)
   : numLeds(numLeds), ledRows(ledRows), ledsPerRow(numLeds / ledRows) {
   leds = new CRGB[numLeds];
   sequenceIsRunning = false;
+  // Build matrix mapping (zig-zag columns)
+  ledMatrix.resize(ledRows, std::vector<int>(ledsPerRow, -1));
+  int idx = 0;
+  for (int col = 0; col < ledsPerRow; ++col) {
+    if (col % 2 == 0) {
+      for (int row = 0; row < ledRows; ++row) {
+        ledMatrix[ledRows - 1 - row][col] = idx++; // <-- invert row
+      }
+    } else {
+      for (int row = ledRows - 1; row >= 0; --row) {
+        ledMatrix[ledRows - 1 - row][col] = idx++; // <-- invert row
+      }
+    }
+  }
 }
 
 StartingLights::~StartingLights() {
   delete[] leds;
+}
+
+int StartingLights::getMatrixIndex(int row, int col) const {
+  if (row < 0 || row >= ledRows || col < 0 || col >= ledsPerRow) return -1;
+  return ledMatrix[row][col];
 }
 
 void StartingLights::begin() {
@@ -36,10 +61,11 @@ void StartingLights::setRowLights(const int* rows, int numRows, CRGB color) {
   for (int r = 0; r < numRows; r++) {
     int row = rows[r] - 1;
     if (row >= 0 && row < ledRows) {
-      int start = row * ledsPerRow;
-      int end = start + ledsPerRow;
-      for (int i = start; i < end; i++) {
-        leds[i] = color;
+      for (int col = 0; col < ledsPerRow; col++) {
+        int idx = getMatrixIndex(row, col);
+        if (idx >= 0 && idx < numLeds) {
+          leds[idx] = color;
+        }
       }
     }
   }
@@ -94,7 +120,9 @@ void StartingLights::updateLeds() {
           for (int r = 0; r < countdownNumRows; r++) {
               int row = countdownRows[r] - 1;
               if (row >= 0 && row < ledRows) {
-                  leds[countdownStep + row * ledsPerRow] = countdownColor;
+                  for (int i = 0; i <= countdownStep; i++) {
+                      leds[getMatrixIndex(row, i)] = countdownColor;
+                  }
               }
           }
           FastLED.show();
@@ -110,12 +138,12 @@ void StartingLights::updateLeds() {
         }
         if (now - flashLastMillis >= flashInterval) {
             for (int r = 0; r < flashNumRows; r++) {
-                int row = flashRows[r] - 1;
-                if (row >= 0 && row < ledRows) {
-                    for (int i = 0; i < ledsPerRow; i++) {
-                        leds[i + row * ledsPerRow] = flashLedIsOn ? flashColor : CRGB::Black;
-                    }
+              int row = flashRows[r] - 1;
+              if (row >= 0 && row < ledRows) {
+                for (int i = 0; i < ledsPerRow; i++) {
+                  leds[getMatrixIndex(row, i)] = flashLedIsOn ? flashColor : CRGB::Black;
                 }
+              }
             }
             FastLED.show();
             if (flashLedIsOn) flashCount++;

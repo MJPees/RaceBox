@@ -24,6 +24,7 @@ class StartingLights {
     StartingLights(int numLeds, int ledRows);
     ~StartingLights();
     void begin();
+    int getMatrixIndex(int row, int col) const;
     void setAllLightsOff();
     void setAllLights(CRGB color);
     void setRowLights(const int* rows, int numRows, CRGB color);
