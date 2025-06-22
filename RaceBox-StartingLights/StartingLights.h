@@ -38,6 +38,7 @@ class StartingLights {
     const int ledRows;
     const int ledsPerRow;
     volatile bool sequenceIsRunning;
+    std::vector<std::vector<int>> ledMatrix;
     CRGB* leds;
 
     // Für nicht-blockierende Logik:

@@ -1,43 +1,57 @@
 #include "StartingLights.h"
 #include <FastLED.h>
-std::vector<std::vector<int>> ledMatrix;
-
-//matrix is like
-  // 4   8  12  16  20
-  // 3   7  11  15  19
-  // 2   6  10  14  18
-  // 1   5   9  13  17
-
-// or like
-  // 3   6   9  12  15
-  // 2   5   8  11  14
-  // 1   4   7  10  13
 
 StartingLights::StartingLights(const int numLeds, int ledRows)
   : numLeds(numLeds), ledRows(ledRows), ledsPerRow(numLeds / ledRows) {
   leds = new CRGB[numLeds];
   sequenceIsRunning = false;
-  // Build matrix mapping (zig-zag rows, supports all 1-4 row configs)
+  // Build matrix mapping (custom pattern for 4x5 and 3x5)
   ledMatrix.resize(ledRows, std::vector<int>(ledsPerRow, -1));
 
-  if ((ledRows == 4 && ledsPerRow == 5 && numLeds == 20) ||
-    (ledRows == 3 && ledsPerRow == 5 && numLeds == 15)) {
-  int idx = 0;
-  for (int col = 0; col < ledsPerRow; ++col) {
-    if (col % 2 == 0) {
-      // bottom to top
-      for (int row = 0; row < ledRows; ++row) {
-        int mappedRow = ledRows - 1 - row; // invert row: 0=bottom
-        ledMatrix[mappedRow][col] = idx++;
-      }
-    } else {
-      // top to bottom
-      for (int row = ledRows - 1; row >= 0; --row) {
-        int mappedRow = ledRows - 1 - row; // invert row: 0=bottom
-        ledMatrix[mappedRow][col] = idx++;
+  if (ledRows == 4 && ledsPerRow == 5 && numLeds == 20) {
+    // 4x5 matrix, custom mapping
+    int mapping[4][5] = {
+      {  0,  7,  8, 15, 16 }, // row 0 (top)
+      {  1,  6,  9, 14, 17 }, // row 1
+      {  2,  5, 10, 13, 18 }, // row 2
+      {  3,  4, 11, 12, 19 }  // row 3 (bottom)
+    };
+    for (int row = 0; row < 4; ++row) {
+      for (int col = 0; col < 5; ++col) {
+        ledMatrix[row][col] = mapping[row][col];
       }
     }
-  }
+  } else if (ledRows == 3 && ledsPerRow == 5 && numLeds == 15) {
+    // 3x5 matrix, custom mapping (update as needed)
+    int mapping[3][5] = {
+      { 0,  5,  6, 11, 12 }, // row 0 (top)
+      { 1,  4,  7, 10, 13 }, // row 1
+      { 2,  3,  8,  9, 14 }  // row 2 (bottom)
+    };
+    for (int row = 0; row < 3; ++row) {
+      for (int col = 0; col < 5; ++col) {
+        ledMatrix[row][col] = mapping[row][col];
+      }
+    } 
+  } else if (ledRows == 2 && ledsPerRow == 5 && numLeds == 10) {
+    // 2x5 matrix, custom mapping (update as needed)
+    int mapping[2][5] = {
+      { 0,  3,  4, 7, 8 }, // row 0 (top)
+      { 1,  2,  5, 6, 9 }, // row 1
+    };
+    for (int row = 0; row < 2; ++row) {
+      for (int col = 0; col < 5; ++col) {
+        ledMatrix[row][col] = mapping[row][col];
+      }
+    }  
+  } else if (ledRows == 1 && ledsPerRow == 5 && numLeds == 5) {
+    // 1x5 matrix, custom mapping (update as needed)
+    int mapping[1][5] = {
+      { 0,  1,  2,  3,  4 }, // row 0 (top)
+    };
+    for (int col = 0; col < 5; ++col) {
+      ledMatrix[0][col] = mapping[0][col];
+    }
   } else {
     // Not supported
     // Optionally: set an error flag or print a warning

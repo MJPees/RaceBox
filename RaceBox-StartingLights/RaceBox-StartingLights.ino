@@ -25,7 +25,6 @@ Joystick_BLE_ Joystick_BLE;
 #define WIFI_CONNECT_DELAY_MS 500
 #define WEBSOCKET_PING_INTERVAL 5000
 
-
 bool wifi_ap_mode = false;
 bool webserver_running = false;
 
@@ -493,7 +492,7 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
       #endif
       stop();
       startingLights.stopRunningSequence();
-      startingLights.runFlashLights(smartraceStopLedRows, smartraceStopLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, RED, -1);
+      startingLights.runFlashLights(smartraceYellowLedRows, smartraceYellowLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, RED, -1);
     } else if (data == "ended") {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - ended");
@@ -755,6 +754,9 @@ void setup() {
     digitalWrite(LED_PIN, HIGH);
   #endif
 
+  pinMode(START_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(STOP_BUTTON_PIN, INPUT_PULLUP);
+
   initializeJoystickMode();
 
   server.on("/", handleRoot);
@@ -796,6 +798,44 @@ void loop() {
       #ifdef RGB_LED
         rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
       #endif
+    }
+    bool startButtonPressed = digitalRead(START_BUTTON_PIN) == LOW;
+    bool stopButtonPressed = digitalRead(STOP_BUTTON_PIN) == LOW;
+
+    if(startButtonPressed || stopButtonPressed) {
+      while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW) {
+        wait(1);
+      }
+      #ifdef ESP32C3
+        Serial.println("Websocket: Button pressed");
+      #endif
+      JsonDocument doc;
+      if(startButtonPressed) {
+        if(config_target_system == "smart_race") {
+          doc["type"] = "race_control";
+          doc["data"]["value"] = "start";
+        }
+        else if(config_target_system == "ch_racing_club") {
+          doc["command"] = "drive"; // "launchcontrol"
+          doc["status"] = "running";
+          doc["api_key"] = config_ch_racing_club_api_key;
+        }
+      }
+      else if(stopButtonPressed) {
+        if(config_target_system == "smart_race") {
+          doc["type"] = "race_control";
+          doc["data"]["value"] = "stop";
+        }
+        else if(config_target_system == "ch_racing_club") {
+          doc["command"] = "stop";
+          doc["status"] = "suspended"; // "ended"
+          doc["api_key"] = config_ch_racing_club_api_key;
+        }
+      }
+      char output[256];
+      serializeJson(doc, output);
+      client.ping();
+      client.send(output);
     }
   }
   else {
