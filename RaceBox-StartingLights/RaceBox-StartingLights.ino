@@ -447,20 +447,23 @@ void handleRacingClubUpdateEvent(String command, JsonDocument doc) {
     startingLights.stopRunningSequence();
     startingLights.setRowLights(chRacingClubDriveLedRows, chRacingClubDriveLedNumRows, GREEN);
     drive();
-  } else if (command == "yellow_flag") {
-    #if defined(DEBUG) && defined(ESP32C3)
-      Serial.println("INFO - yellow flag");
-    #endif
-    stop();
-    startingLights.stopRunningSequence();
-    startingLights.runFlashLights(chRacingClubYellowLedRows, chRacingClubYellowLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, YELLOW, -1);
   } else if (command == "stop") {
     #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("INFO - stop");
     #endif
     stop();
-    startingLights.stopRunningSequence();
-    startingLights.runFlashLights(chRacingClubStopLedRows, chRacingClubStopLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, RED, -1);
+    if(doc["status"] == "suspended") {
+      #if defined(DEBUG) && defined(ESP32C3)
+        Serial.println("INFO - suspended");
+      #endif
+      startingLights.runFlashLights(chRacingClubYellowLedRows, chRacingClubYellowLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, YELLOW, -1);
+    } else {
+      #if defined(DEBUG) && defined(ESP32C3)
+        Serial.println("INFO - finished");
+      #endif
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(chRacingClubStopLedRows, chRacingClubStopLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, RED, -1);
+    }
   }
 }
 
@@ -559,12 +562,12 @@ void onEventsCallback(WebsocketsEvent event, String data) {
 }
 
 void wait(unsigned long waitTime) {
-  startingLights.updateLeds();
   unsigned long startWaitTime = millis();
   while((millis() - startWaitTime) < waitTime) {
     if (webserver_running) server.handleClient();
     else delay(1);
     client.poll();
+    startingLights.updateLeds();
   }
 }
 
@@ -816,9 +819,22 @@ void loop() {
           doc["data"]["value"] = "start";
         }
         else if(config_target_system == "ch_racing_club") {
-          doc["command"] = "drive"; // "launchcontrol"
-          doc["status"] = "running";
-          doc["api_key"] = config_ch_racing_club_api_key;
+          if(isDriving) {
+            doc["command"] = "stop";
+            doc["status"] = "ended";;
+            doc["api_key"] = config_ch_racing_club_api_key;
+          } else {
+            doc["command"] = "launchcontrol";
+            doc["status"] = "starting";
+            doc["api_key"] = config_ch_racing_club_api_key;
+            char output[256];
+            serializeJson(doc, output);
+            client.ping();
+            client.send(output);
+            wait(6000);
+            doc["command"] = "drive";
+            doc["status"] = "running";
+          }
         }
       }
       else if(stopButtonPressed) {
@@ -827,9 +843,15 @@ void loop() {
           doc["data"]["value"] = "stop";
         }
         else if(config_target_system == "ch_racing_club") {
-          doc["command"] = "stop";
-          doc["status"] = "suspended"; // "ended"
-          doc["api_key"] = config_ch_racing_club_api_key;
+          if(isDriving) {
+            doc["command"] = "stop";
+            doc["status"] = "suspended";
+            doc["api_key"] = config_ch_racing_club_api_key;
+          } else {
+            doc["command"] = "drive";
+            doc["status"] = "running";
+            doc["api_key"] = config_ch_racing_club_api_key;
+          }
         }
       }
       char output[256];
