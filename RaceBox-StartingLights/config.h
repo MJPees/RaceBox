@@ -135,14 +135,14 @@
   #define WIFI_FLAHS_INTERVAL 200 // ms
 
   #define CH_RACING_CLUB_LEDS_COUNTDOWN_TIME 5000
-  #define CH_RACING_CLUB_LEDS_FLASH_INTERVAL 500
+  #define CH_RACING_CLUB_LEDS_FLASH_INTERVAL 300
   const int chRacingClubDriveLedRows[] = {3, 4};
   const int chRacingClubStopLedRows[] = {3, 4};
   const int chRacingClubYellowLedRows[] = {1, 2};
   const int chRacingClubCountdownLedRows[] = {3, 4};
 
   #define SMARTRACE_LEDS_COUNTDOWN_TIME 5000
-  #define SMARTRACE_LEDS_FLASH_INTERVAL 600
+  #define SMARTRACE_LEDS_FLASH_INTERVAL 300
   const int smartraceDriveLedRows[] = {3, 4};
   const int smartraceStopLedRows[] = {1, 2};
   const int smartraceYellowLedRows[] = {1, 2};

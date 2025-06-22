@@ -492,7 +492,7 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
       #endif
       stop();
       startingLights.stopRunningSequence();
-      startingLights.runFlashLights(smartraceYellowLedRows, smartraceYellowLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, RED, -1);
+      startingLights.runFlashLights(smartraceYellowLedRows, smartraceYellowLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, YELLOW, -1);
     } else if (data == "ended") {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - ended");
