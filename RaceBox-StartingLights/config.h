@@ -15,6 +15,8 @@
 // Additional board managers (current ESP32 version) => https://espressif.github.io/arduino-esp32/package_esp32_index.json
 // Include libraries from the libs folder via Arduino IDE (Zip)
 
+//#define DEBUG // enable debug output to Serial Monitor
+
 #define ESP32C3 // only Bluetooth
 //#define ESP32S3 // Bluetooth and USB-Joystik
 
@@ -22,12 +24,15 @@
 #ifdef ESP32S3
   #define RGB_LED // optional - RGB LED is used for feedback
   #define RGB_LED_PIN 21
+  #define START_BUTTON_PIN 10
+  #define STOP_BUTTON_PIN 11
+  #define SPEED_POT_PIN 3 // optional - Speed Potentiometer
 #elif defined(ESP32C3)
   #define LED_PIN 8 // optional - LED is used for feedback
+  #define START_BUTTON_PIN 6
+  #define STOP_BUTTON_PIN 7
+  #define SPEED_POT_PIN 3 // optional - Speed Potentiometer
 #endif
-
-#define START_BUTTON_PIN 6
-#define STOP_BUTTON_PIN 7
 
 // define the LED type
 //#define LED_TYPE WS2811 // LED type, e.g. WS2811

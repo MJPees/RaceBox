@@ -356,9 +356,9 @@ void connectWebsocket() {
     }
 
     if(config_target_system == "ch_racing_club") {
-      doc["command"] = "ghostcar_connect";
+      doc["command"] = "starting_light_connect";
       doc["data"]["api_key"] = config_ch_racing_club_api_key;
-      doc["data"]["name"] = Joystick_BLE.getDeviceName();
+      doc["data"]["name"] = config_wifi_hostname.c_str();
       doc["data"]["ip"] = WiFi.localIP().toString();
       doc["data"]["version"] = VERSION;
     }
@@ -426,7 +426,7 @@ void onMessageCallback(WebsocketsMessage message) {
 void handleRacingClubUpdateEvent(String command, JsonDocument doc) {
   if (doc["api_key"].as<String>() != config_ch_racing_club_api_key) {
     #if defined(DEBUG) && defined(ESP32C3)
-      Serial.println("INFO - received message with invalid API key: " + api_key);
+      Serial.println("INFO - received message with invalid API key: " + doc["api_key"].as<String>());
     #endif
 
     return;
@@ -802,13 +802,36 @@ void loop() {
         rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
       #endif
     }
+
+    #ifdef SPEED_POT_PIN
+      int newSpeed = map(analogRead(SPEED_POT_PIN), 0, 4095, 0, 100);
+      if(newSpeed < 0) {
+        newSpeed = 0;
+      }
+      if(newSpeed > 100) {
+        newSpeed = 100;
+      }
+      if(newSpeed != speed) {
+        speed = newSpeed;
+        if(isDriving) {
+          Joystick_BLE.setAccelerator(speed);
+          Joystick_BLE.sendState();
+          #ifndef ESP32C3
+            Joystick.setAccelerator(speed);
+            Joystick.sendState();
+          #endif
+        }
+        #if defined(DEBUG) && defined(ESP32C3)
+          Serial.print("Speed changed to: ");
+          Serial.println(speed);
+        #endif
+      }
+    #endif
+
     bool startButtonPressed = digitalRead(START_BUTTON_PIN) == LOW;
     bool stopButtonPressed = digitalRead(STOP_BUTTON_PIN) == LOW;
 
     if(startButtonPressed || stopButtonPressed) {
-      while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW) {
-        wait(1);
-      }
       #ifdef ESP32C3
         Serial.println("Websocket: Button pressed");
       #endif
@@ -858,6 +881,9 @@ void loop() {
       serializeJson(doc, output);
       client.ping();
       client.send(output);
+      while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW) {
+        wait(1);
+      }
     }
   }
   else {
