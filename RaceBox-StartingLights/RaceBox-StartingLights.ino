@@ -424,45 +424,42 @@ void onMessageCallback(WebsocketsMessage message) {
 }
 
 void handleRacingClubUpdateEvent(String command, JsonDocument doc) {
-  if (doc["api_key"].as<String>() != config_ch_racing_club_api_key) {
-    #if defined(DEBUG) && defined(ESP32C3)
-      Serial.println("INFO - received message with invalid API key: " + doc["api_key"].as<String>());
-    #endif
+  String api_key = doc["api_key"].as<String>();
+  String status = doc["status"].as<String>();
 
+  // received message with invalid API key
+  if (api_key != config_ch_racing_club_api_key) {
     return;
   }
 
-  if (command == "launchcontrol") {
-    #if defined(DEBUG) && defined(ESP32C3)
-      Serial.println("INFO - starting");
-    #endif
-    activateLaunchControl();
+  if (command == "launchcontrol") { // starting
     startingLights.stopRunningSequence();
     startingLights.runCountDownLights(chRacingClubCountdownLedRows, chRacingClubCountdownLedNumRows, CH_RACING_CLUB_LEDS_COUNTDOWN_TIME, RED);
     activateLaunchControl();
-  } else if (command == "drive") {
-    #if defined(DEBUG) && defined(ESP32C3)
-      Serial.println("INFO - running");
-    #endif
+  }
+  else if (command == "drive") { // running
     startingLights.stopRunningSequence();
     startingLights.setRowLights(chRacingClubDriveLedRows, chRacingClubDriveLedNumRows, GREEN);
     drive();
-  } else if (command == "stop") {
-    #if defined(DEBUG) && defined(ESP32C3)
-      Serial.println("INFO - stop");
-    #endif
+  }
+  else if (command == "stop") { // stop
     stop();
-    if(doc["status"] == "suspended") {
-      #if defined(DEBUG) && defined(ESP32C3)
-        Serial.println("INFO - suspended");
-      #endif
-      startingLights.runFlashLights(chRacingClubYellowLedRows, chRacingClubYellowLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, YELLOW, -1);
-    } else {
-      #if defined(DEBUG) && defined(ESP32C3)
-        Serial.println("INFO - finished");
-      #endif
+    if (status == "ended") {
       startingLights.stopRunningSequence();
       startingLights.runFlashLights(chRacingClubStopLedRows, chRacingClubStopLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, RED, -1);
+    } else if (status == "finished") {
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(chRacingClubStopLedRows, chRacingClubStopLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, RED, -1);
+    } else if (status == "suspended") {
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(chRacingClubYellowLedRows, chRacingClubYellowLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, YELLOW, -1);
+    } else if (status == "false_start") {
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(chRacingClubStopLedRows, chRacingClubStopLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, RED, -1);
+    } else if (status == "idle") {
+      startingLights.setAllLightsOff();
+    } else {
+      startingLights.setAllLightsOff();
     }
   }
 }
