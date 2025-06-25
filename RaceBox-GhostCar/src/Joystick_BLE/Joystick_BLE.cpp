@@ -1,6 +1,6 @@
 #include "Joystick_BLE.h"
 
-Joystick_BLE_::Joystick_BLE_() {
+Joystick_BLE_::Joystick_BLE_(String productName) {
   _autoSend = false;
   _config = new XboxOneSControllerDeviceConfiguration();
   //_config = new XboxSeriesXControllerDeviceConfiguration();
@@ -8,7 +8,7 @@ Joystick_BLE_::Joystick_BLE_() {
   _gamepad = new XboxGamepadDevice(_config);
   //_gamepad = new XboxGamepadDevice(_config);
   
-  _deviceName = String("RaceBox-GhostCar ") + String(ESP.getEfuseMac());
+  _deviceName = productName + " " + String(ESP.getEfuseMac());
   _compositeHID = new BleCompositeHID(_deviceName.c_str(), "MJPees", 100);
   _compositeHID->addDevice(_gamepad);
   _compositeHID->begin(_hostConfig);
