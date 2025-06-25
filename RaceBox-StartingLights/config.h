@@ -3,6 +3,8 @@
 
 #define VERSION "1.0.0"
 
+//#define DEBUG // enable debug output to Serial Monitor
+
 #define WIFI_DEFAULT_HOSTNAME "racebox-startinglights"
 
 #define KEY_TURBO 3 // Turbo-Button at gamepad
@@ -15,7 +17,6 @@
 // Additional board managers (current ESP32 version) => https://espressif.github.io/arduino-esp32/package_esp32_index.json
 // Include libraries from the libs folder via Arduino IDE (Zip)
 
-//#define DEBUG // enable debug output to Serial Monitor
 
 #define ESP32C3 // only Bluetooth
 //#define ESP32S3 // Bluetooth and USB-Joystik
@@ -41,7 +42,7 @@
 // define the FastLED pin
 #define FAST_LED_PIN 5 // Pin for FastLED, e.g. GPIO 5
 
-#define LED_BRIGHTNESS 100 // LED brightness (0-255)
+#define LED_BRIGHTNESS 150 // LED brightness (0-255)
 
 // define colors for the starting lights
 #define RED CRGB::Red // Green and Red may be swapped

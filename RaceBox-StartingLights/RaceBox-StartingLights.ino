@@ -4,7 +4,11 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 #include <ArduinoWebsockets.h> //ArduinoWebsockets 0.5.4
-#include <ArduinoJson.h> // Tested V0.9.5 https://github.com/schnoog/Joystick_ESP32S2
+#include <ArduinoJson.h> // Tested V0.9.5
+
+#ifndef ESP32C3
+  #include <Joystick_ESP32S2.h> //https://github.com/schnoog/Joystick_ESP32S2
+#endif
 #include "src/Joystick_BLE/Joystick_BLE.h"
 #include "StartingLights.h" //Needs FastLED by Daniel Garcia
 
@@ -15,7 +19,6 @@
 Joystick_BLE_ Joystick_BLE;
 
 #ifndef ESP32C3
-  #include <Joystick_ESP32S2.h>
   Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
                    14, 2,true, false, false, false, false,
                    false,false, false, true, true, false);
@@ -63,6 +66,8 @@ String config_ch_racing_club_websocket_ca_cert;
 String config_ch_racing_club_api_key;
 
 int speed = DEFAULT_SPEED; // ghostcar speed %
+bool startButtonPressed = false;
+bool stopButtonPressed = false;
 
 StartingLights startingLights(NUM_LEDS, LED_ROWS);
 
@@ -432,17 +437,24 @@ void handleRacingClubUpdateEvent(String command, JsonDocument doc) {
     return;
   }
 
-  if (command == "launchcontrol") { // starting
+  if (command == "launchcontrol") {
+    #if defined(DEBUG) && defined(ESP32C3)
+      Serial.println("INFO - starting");
+    #endif
     startingLights.stopRunningSequence();
     startingLights.runCountDownLights(chRacingClubCountdownLedRows, chRacingClubCountdownLedNumRows, CH_RACING_CLUB_LEDS_COUNTDOWN_TIME, RED);
     activateLaunchControl();
-  }
-  else if (command == "drive") { // running
+  } else if (command == "drive") {
+    #if defined(DEBUG) && defined(ESP32C3)
+      Serial.println("INFO - running");
+    #endif
     startingLights.stopRunningSequence();
     startingLights.setRowLights(chRacingClubDriveLedRows, chRacingClubDriveLedNumRows, GREEN);
     drive();
-  }
-  else if (command == "stop") { // stop
+  } else if (command == "stop") {
+    #if defined(DEBUG) && defined(ESP32C3)
+      Serial.println("INFO - stop");
+    #endif
     stop();
     if (status == "ended") {
       startingLights.stopRunningSequence();
@@ -680,6 +692,76 @@ void resetJoystickPosition() {
   isBraking = false;
 }
 
+void checkButtons() {
+  startButtonPressed = digitalRead(START_BUTTON_PIN) == LOW;
+  stopButtonPressed = digitalRead(STOP_BUTTON_PIN) == LOW;
+
+  if(startButtonPressed || stopButtonPressed) {
+    #ifdef ESP32C3
+      Serial.println("Button pressed");
+    #endif
+    JsonDocument doc;
+    if(startButtonPressed) {
+      if(websocket_connected) {
+        if(config_target_system == "smart_race") {
+          doc["type"] = "race_control";
+          doc["data"]["value"] = "start";
+        }
+        else if(config_target_system == "ch_racing_club") {
+          if(isDriving) {
+            doc["command"] = "stop";
+            doc["status"] = "ended";;
+            doc["api_key"] = config_ch_racing_club_api_key;
+          } else {
+            doc["command"] = "launchcontrol";
+            doc["status"] = "starting";
+            doc["api_key"] = config_ch_racing_club_api_key;
+            char output[256];
+            serializeJson(doc, output);
+            client.ping();
+            client.send(output);
+            wait(6000);
+            doc["command"] = "drive";
+            doc["status"] = "running";
+          }
+        }
+      } else {
+        drive();
+      }
+    }
+    else if(stopButtonPressed) {
+      if(websocket_connected) {
+        if(config_target_system == "smart_race") {
+          doc["type"] = "race_control";
+          doc["data"]["value"] = "stop";
+        }
+        else if(config_target_system == "ch_racing_club") {
+          if(isDriving) {
+            doc["command"] = "stop";
+            doc["status"] = "suspended";
+            doc["api_key"] = config_ch_racing_club_api_key;
+          } else {
+            doc["command"] = "drive";
+            doc["status"] = "running";
+            doc["api_key"] = config_ch_racing_club_api_key;
+          }
+        }
+      } else {
+        stop();
+      }
+    }
+    if(websocket_connected) {
+      char output[256];
+      serializeJson(doc, output);
+      client.ping();
+      client.send(output);
+    }
+    while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW) {
+      wait(1);
+    }
+  }
+}
+
 void setup() {
   startingLights.begin();
   preferences.begin(PREFERENCES_NAMESPACE, false);
@@ -696,7 +778,7 @@ void setup() {
 
   #ifdef ESP32C3
     Serial.println();
-    Serial.print("Starting ...");
+    Serial.println("Starting ...");
   #endif
 
   if (config_wifi_ssid != "") {
@@ -767,6 +849,8 @@ void setup() {
   server.begin();
   #ifdef ESP32C3
     Serial.println("Webserver: running");
+    Serial.print("BLE device name: ");
+    Serial.println(Joystick_BLE.getDeviceName());
   #endif
   webserver_running = true;
 }
@@ -780,26 +864,15 @@ void loop() {
       websocket_last_ping = millis();
       client.ping();
     }
-    if(millis() > (lastJoystickUpdate + JOYSTICK_UPDATE_INTERVAL)) {
-      lastJoystickUpdate = millis();
-      Joystick_BLE.sendState();
-      #ifndef ESP32C3
-        Joystick.sendState();
-      #endif
-    }
-    if(isBraking && (millis() > (brakeTime + DEFAULT_BRAKING_TIME))) {
-      isBraking = false;
-      Joystick_BLE.setBrake(0);
-      Joystick_BLE.sendState();
-      #ifndef ESP32C3
-        Joystick.setBrake(0);
-        Joystick.sendState();
-      #endif
-      #ifdef RGB_LED
-        rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
-      #endif
-    }
+  }
+  else {
+    if(!wifi_ap_mode) connectWebsocket();
+  }
+  
+  checkButtons();
 
+  if(millis() > (lastJoystickUpdate + JOYSTICK_UPDATE_INTERVAL)) {
+    lastJoystickUpdate = millis();
     #ifdef SPEED_POT_PIN
       int newSpeed = map(analogRead(SPEED_POT_PIN), 0, 4095, 0, 100);
       if(newSpeed < 0) {
@@ -812,10 +885,8 @@ void loop() {
         speed = newSpeed;
         if(isDriving) {
           Joystick_BLE.setAccelerator(speed);
-          Joystick_BLE.sendState();
           #ifndef ESP32C3
             Joystick.setAccelerator(speed);
-            Joystick.sendState();
           #endif
         }
         #if defined(DEBUG) && defined(ESP32C3)
@@ -824,66 +895,19 @@ void loop() {
         #endif
       }
     #endif
-
-    bool startButtonPressed = digitalRead(START_BUTTON_PIN) == LOW;
-    bool stopButtonPressed = digitalRead(STOP_BUTTON_PIN) == LOW;
-
-    if(startButtonPressed || stopButtonPressed) {
-      #ifdef ESP32C3
-        Serial.println("Websocket: Button pressed");
+    if(isBraking && (millis() > (brakeTime + DEFAULT_BRAKING_TIME))) {
+      isBraking = false;
+      Joystick_BLE.setBrake(0);
+      #ifndef ESP32C3
+        Joystick.setBrake(0);
       #endif
-      JsonDocument doc;
-      if(startButtonPressed) {
-        if(config_target_system == "smart_race") {
-          doc["type"] = "race_control";
-          doc["data"]["value"] = "start";
-        }
-        else if(config_target_system == "ch_racing_club") {
-          if(isDriving) {
-            doc["command"] = "stop";
-            doc["status"] = "ended";;
-            doc["api_key"] = config_ch_racing_club_api_key;
-          } else {
-            doc["command"] = "launchcontrol";
-            doc["status"] = "starting";
-            doc["api_key"] = config_ch_racing_club_api_key;
-            char output[256];
-            serializeJson(doc, output);
-            client.ping();
-            client.send(output);
-            wait(6000);
-            doc["command"] = "drive";
-            doc["status"] = "running";
-          }
-        }
-      }
-      else if(stopButtonPressed) {
-        if(config_target_system == "smart_race") {
-          doc["type"] = "race_control";
-          doc["data"]["value"] = "stop";
-        }
-        else if(config_target_system == "ch_racing_club") {
-          if(isDriving) {
-            doc["command"] = "stop";
-            doc["status"] = "suspended";
-            doc["api_key"] = config_ch_racing_club_api_key;
-          } else {
-            doc["command"] = "drive";
-            doc["status"] = "running";
-            doc["api_key"] = config_ch_racing_club_api_key;
-          }
-        }
-      }
-      char output[256];
-      serializeJson(doc, output);
-      client.ping();
-      client.send(output);
-      while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW) {
-        wait(1);
-      }
+      #ifdef RGB_LED
+        rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
+      #endif
     }
-  }
-  else {
-    if(!wifi_ap_mode) connectWebsocket();
+    Joystick_BLE.sendState();
+    #ifndef ESP32C3
+      Joystick.sendState();
+    #endif
   }
 }
