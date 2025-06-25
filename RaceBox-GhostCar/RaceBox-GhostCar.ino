@@ -149,7 +149,7 @@ void handleRoot() {
   html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
   html += "<form x-data=\"{ targetSystem: '" + config_target_system + "', smartRaceWebsocketServer: '" + config_smart_race_websocket_server + "', racingClubWebsocketServer: '" + config_ch_racing_club_websocket_server + "' }\" action='/config' method='POST'>";
-  html += "<h1 align=center>PRODUCT_NAME</h1>";
+  html += String("<h1 align=center>") + PRODUCT_NAME + "</h1>";
 
   html += "<label for='config_wifi_ssid'>SSID:</label>";
   html += "<input type='text' id='config_wifi_ssid' name='config_wifi_ssid' value='" + config_wifi_ssid + "'><br>";
