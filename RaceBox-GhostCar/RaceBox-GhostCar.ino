@@ -10,12 +10,19 @@
   #include <Joystick_ESP32S2.h> //https://github.com/schnoog/Joystick_ESP32S2
 #endif
 #include "src/Joystick_BLE/Joystick_BLE.h"
+#include "StartingLights.h" //Needs FastLED by Daniel Garcia
 
 /* configuration */
-#define WIFI_AP_SSID "RaceBox-GhostCar-Config"
+#ifdef STARTING_LIGHTS
+  #define WIFI_AP_SSID "RaceBox-StartingLights-Config"
+  #define PRODUCT_NAME "RaceBox-StartingLights"
+#else
+  #define WIFI_AP_SSID "RaceBox-GhostCar-Config"
+  #define PRODUCT_NAME "RaceBox-GhostCar"
+#endif
 #define PREFERENCES_NAMESPACE "racebox"
 
-Joystick_BLE_ Joystick_BLE;
+Joystick_BLE_ Joystick_BLE(PRODUCT_NAME);
 
 #ifndef ESP32C3
   Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,JOYSTICK_TYPE_GAMEPAD,
@@ -26,7 +33,6 @@ Joystick_BLE_ Joystick_BLE;
 #define WIFI_CONNECT_ATTEMPTS 20
 #define WIFI_CONNECT_DELAY_MS 500
 #define WEBSOCKET_PING_INTERVAL 5000
-
 
 bool wifi_ap_mode = false;
 bool webserver_running = false;
@@ -66,6 +72,21 @@ String config_ch_racing_club_websocket_ca_cert;
 String config_ch_racing_club_api_key;
 
 int speed = DEFAULT_SPEED; // ghostcar speed %
+bool startButtonPressed = false;
+bool stopButtonPressed = false;
+
+StartingLights startingLights(NUM_LEDS, LED_ROWS);
+
+const int websocketLedNumRows = sizeof(websocketLedRows) / sizeof(websocketLedRows[0]);
+const int wifiLedNumRows = sizeof(wifiLedRows) / sizeof(wifiLedRows[0]);
+const int chRacingClubDriveLedNumRows = sizeof(chRacingClubDriveLedRows) / sizeof(chRacingClubDriveLedRows[0]);
+const int chRacingClubStopLedNumRows = sizeof(chRacingClubStopLedRows) / sizeof(chRacingClubStopLedRows[0]);
+const int chRacingClubYellowLedNumRows = sizeof(chRacingClubYellowLedRows) / sizeof(chRacingClubYellowLedRows[0]);
+const int chRacingClubCountdownLedNumRows = sizeof(chRacingClubCountdownLedRows) / sizeof(chRacingClubCountdownLedRows[0]);
+const int smartraceDriveLedNumRows = sizeof(smartraceDriveLedRows) / sizeof(smartraceDriveLedRows[0]);
+const int smartraceStopLedNumRows = sizeof(smartraceStopLedRows) / sizeof(smartraceStopLedRows[0]);
+const int smartraceYellowLedNumRows = sizeof(smartraceYellowLedRows) / sizeof(smartraceYellowLedRows[0]);
+const int smartraceCountdownLedNumRows = sizeof(smartraceCountdownLedRows) / sizeof(smartraceCountdownLedRows[0]);
 
 void configuration_save() {
   preferences.putString("target_system", config_target_system);
@@ -122,13 +143,13 @@ void handleNotFound() {
 }
 
 void handleRoot() {
-  String html = "<!DOCTYPE html><html><head><title>RaceBox-GhostCar</title>";
+  String html = String("<!DOCTYPE html><html><head><title>") + PRODUCT_NAME + "</title>";
   html += "<meta charset='UTF-8'>"; // Specify UTF-8 encoding
   html += "<style>*, *::before, *::after {box-sizing: border-box;}body {min-height: 100vh;margin: 0;}form {max-width: 535px;margin: 0 auto;}label {margin-bottom: 5px;display:block;}input[type=text],input[type=password],input[type=number],select,textarea {width: 100%;padding: 8px;border: 1px solid #ccc;border-radius: 4px;display: block;}input[type=submit] {width: 100%;background-color: #4CAF50;color: white;padding: 10px 15px;border: none;border-radius: 4px;}</style>";
   html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
   html += "<form x-data=\"{ targetSystem: '" + config_target_system + "', smartRaceWebsocketServer: '" + config_smart_race_websocket_server + "', racingClubWebsocketServer: '" + config_ch_racing_club_websocket_server + "' }\" action='/config' method='POST'>";
-  html += "<h1 align=center>RaceBox-GhostCar</h1>";
+  html += String("<h1 align=center>") + PRODUCT_NAME + "</h1>";
 
   html += "<label for='config_wifi_ssid'>SSID:</label>";
   html += "<input type='text' id='config_wifi_ssid' name='config_wifi_ssid' value='" + config_wifi_ssid + "'><br>";
@@ -231,7 +252,7 @@ void handleConfig() {
       }
     }
     configuration_save();
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RaceBox-GhostCar</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", String("<!DOCTYPE html><html><head><title>") + PRODUCT_NAME + "</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
     wait(500);
     if (reConnectWebsocket) {
       if(websocket_connected) {
@@ -246,7 +267,7 @@ void handleConfig() {
       wifi_reload();
     }
   } else {
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RaceBox-GhostCar</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", String("<!DOCTYPE html><html><head><title>")+ PRODUCT_NAME + "</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
   }
 }
 
@@ -296,6 +317,8 @@ void wifi_reload() {
       Serial.println(WiFi.getHostname());
     #endif
     wifi_ap_mode = false;
+    startingLights.stopRunningSequence();
+    startingLights.setRowLights(wifiLedRows, wifiLedNumRows, BLUE);
   } else {
     #ifdef ESP32C3
       Serial.println("\nWiFi: connect failed, starting AP mode");
@@ -309,6 +332,8 @@ void wifi_reload() {
       Serial.print("\nWiFi: AP started, IP: ");
       Serial.println(WiFi.softAPIP());
     #endif
+    startingLights.stopRunningSequence();
+    startingLights.runFlashLights(wifiLedRows, wifiLedNumRows, WIFI_FLAHS_INTERVAL, BLUE, -1);
   }
 }
 
@@ -342,10 +367,17 @@ void connectWebsocket() {
     }
 
     if(config_target_system == "ch_racing_club") {
-      doc["command"] = "ghostcar_connect";
-      doc["data"]["api_key"] = config_ch_racing_club_api_key;
-      doc["data"]["name"] = Joystick_BLE.getDeviceName();
-      doc["data"]["ip"] = WiFi.localIP().toString();
+      #ifdef STARTING_LIGHTS
+        doc["command"] = "starting_light_connect";
+        doc["data"]["api_key"] = config_ch_racing_club_api_key;
+        doc["data"]["name"] = config_wifi_hostname.c_str();
+        doc["data"]["ip"] = WiFi.localIP().toString();
+      #else
+        doc["command"] = "ghostcar_connect";
+        doc["data"]["api_key"] = config_ch_racing_club_api_key;
+        doc["data"]["name"] = Joystick_BLE.getDeviceName();
+        doc["data"]["ip"] = WiFi.localIP().toString();
+      #endif
       doc["data"]["version"] = VERSION;
     }
 
@@ -410,11 +442,11 @@ void onMessageCallback(WebsocketsMessage message) {
 }
 
 void handleRacingClubUpdateEvent(String command, JsonDocument doc) {
-  if (doc["api_key"].as<String>() != config_ch_racing_club_api_key) {
-    #if defined(DEBUG) && defined(ESP32C3)
-      Serial.println("INFO - received message with invalid API key: " + api_key);
-    #endif
+  String api_key = doc["api_key"].as<String>();
+  String status = doc["status"].as<String>();
 
+  // received message with invalid API key
+  if (api_key != config_ch_racing_club_api_key) {
     return;
   }
 
@@ -422,17 +454,38 @@ void handleRacingClubUpdateEvent(String command, JsonDocument doc) {
     #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("INFO - starting");
     #endif
+    startingLights.stopRunningSequence();
+    startingLights.runCountDownLights(chRacingClubCountdownLedRows, chRacingClubCountdownLedNumRows, CH_RACING_CLUB_LEDS_COUNTDOWN_TIME, RED);
     activateLaunchControl();
   } else if (command == "drive") {
     #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("INFO - running");
     #endif
+    startingLights.stopRunningSequence();
+    startingLights.setRowLights(chRacingClubDriveLedRows, chRacingClubDriveLedNumRows, GREEN);
     drive();
   } else if (command == "stop") {
     #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("INFO - stop");
     #endif
     stop();
+    if (status == "ended") {
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(chRacingClubStopLedRows, chRacingClubStopLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, RED, -1);
+    } else if (status == "finished") {
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(chRacingClubStopLedRows, chRacingClubStopLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, RED, -1);
+    } else if (status == "suspended") {
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(chRacingClubYellowLedRows, chRacingClubYellowLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, YELLOW, -1);
+    } else if (status == "false_start") {
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(chRacingClubStopLedRows, chRacingClubStopLedNumRows, CH_RACING_CLUB_LEDS_FLASH_INTERVAL, RED, -1);
+    } else if (status == "idle") {
+      startingLights.setAllLightsOff();
+    } else {
+      startingLights.setAllLightsOff();
+    }
   }
 }
 
@@ -443,26 +496,35 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - prepare_for_start");
       #endif
+      startingLights.runFlashLights(smartraceYellowLedRows, smartraceYellowLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, YELLOW);
     } else if (data == "starting") {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - starting");
       #endif
       activateLaunchControl();
+      startingLights.stopRunningSequence();
+      startingLights.runCountDownLights(smartraceCountdownLedRows, smartraceCountdownLedNumRows, SMARTRACE_LEDS_COUNTDOWN_TIME, RED);
     } else if (data == "running") {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - running");
       #endif
+      startingLights.stopRunningSequence();
+      startingLights.setRowLights(smartraceDriveLedRows, smartraceDriveLedNumRows, GREEN);
       drive();
     } else if (data == "suspended") {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - suspended");
       #endif
       stop();
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(smartraceYellowLedRows, smartraceYellowLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, YELLOW, -1);
     } else if (data == "ended") {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - ended");
       #endif
       stop();
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(smartraceStopLedRows, smartraceStopLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, RED, -1);
     } else {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("Unknown message type: " + type);
@@ -473,6 +535,8 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
       Serial.println("INFO - reset");
     #endif
     stop();
+    startingLights.stopRunningSequence();
+    startingLights.setAllLightsOff();
   } else {
     #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("Unknown message type: " + type);
@@ -492,6 +556,8 @@ void onEventsCallback(WebsocketsEvent event, String data) {
       digitalWrite(LED_PIN, LOW);
     #endif
     websocket_connected = true;
+    startingLights.stopRunningSequence();
+    startingLights.setRowLights(websocketLedRows, websocketLedNumRows, WHITE);
   } else if(event == WebsocketsEvent::ConnectionClosed) {
     #ifdef ESP32C3
       Serial.println("Websocket: connection closed");
@@ -503,6 +569,8 @@ void onEventsCallback(WebsocketsEvent event, String data) {
       digitalWrite(LED_PIN, HIGH);
     #endif
     websocket_connected = false;
+    startingLights.stopRunningSequence();
+    startingLights.runFlashLights(websocketLedRows, websocketLedNumRows, WEBSOCKET_FLAHS_INTERVAL, WHITE);
   } else if(event == WebsocketsEvent::GotPing) {
      #if defined(DEBUG) && defined(ESP32C3)
       Serial.println("Websocket: got a ping!");
@@ -521,6 +589,7 @@ void wait(unsigned long waitTime) {
     if (webserver_running) server.handleClient();
     else delay(1);
     client.poll();
+    startingLights.updateLeds();
   }
 }
 
@@ -600,7 +669,7 @@ void initializeJoystickMode() {
   #ifdef ESP32S3
     USB.PID(0x8211);
     USB.VID(0x303b);
-    USB.productName("RaceBox-GhostCar");
+    USB.productName(PRODUCT_NAME);
     USB.manufacturerName("CH-Community");
     USB.begin();
     delay(100);
@@ -636,13 +705,84 @@ void resetJoystickPosition() {
   isBraking = false;
 }
 
+void checkButtons() {
+  startButtonPressed = digitalRead(START_BUTTON_PIN) == LOW;
+  stopButtonPressed = digitalRead(STOP_BUTTON_PIN) == LOW;
+
+  if(startButtonPressed || stopButtonPressed) {
+    #ifdef ESP32C3
+      Serial.println("Button pressed");
+    #endif
+    JsonDocument doc;
+    if(startButtonPressed) {
+      if(websocket_connected) {
+        if(config_target_system == "smart_race") {
+          doc["type"] = "race_control";
+          doc["data"]["value"] = "start";
+        }
+        else if(config_target_system == "ch_racing_club") {
+          if(isDriving) {
+            doc["command"] = "stop";
+            doc["status"] = "ended";;
+            doc["api_key"] = config_ch_racing_club_api_key;
+          } else {
+            doc["command"] = "launchcontrol";
+            doc["status"] = "starting";
+            doc["api_key"] = config_ch_racing_club_api_key;
+            char output[256];
+            serializeJson(doc, output);
+            client.ping();
+            client.send(output);
+            wait(6000);
+            doc["command"] = "drive";
+            doc["status"] = "running";
+          }
+        }
+      } else {
+        drive();
+      }
+    }
+    else if(stopButtonPressed) {
+      if(websocket_connected) {
+        if(config_target_system == "smart_race") {
+          doc["type"] = "race_control";
+          doc["data"]["value"] = "stop";
+        }
+        else if(config_target_system == "ch_racing_club") {
+          if(isDriving) {
+            doc["command"] = "stop";
+            doc["status"] = "suspended";
+            doc["api_key"] = config_ch_racing_club_api_key;
+          } else {
+            doc["command"] = "drive";
+            doc["status"] = "running";
+            doc["api_key"] = config_ch_racing_club_api_key;
+          }
+        }
+      } else {
+        stop();
+      }
+    }
+    if(websocket_connected) {
+      char output[256];
+      serializeJson(doc, output);
+      client.ping();
+      client.send(output);
+    }
+    while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW) {
+      wait(100);
+    }
+  }
+}
+
 void setup() {
+  startingLights.begin();
   preferences.begin(PREFERENCES_NAMESPACE, false);
 
   #ifdef ESP32C3
     Serial.begin(115200);
     wait(2000);
-    Serial.print("RaceBox-GhostCar Version: ");
+    Serial.print(PRODUCT_NAME + " Version: ");
     Serial.print(VERSION);
     Serial.println(" started.");
     Serial.println("############################");
@@ -675,6 +815,7 @@ void setup() {
         Serial.println(WiFi.getHostname());
       #endif
       wifi_ap_mode = false;
+      startingLights.setRowLights(wifiLedRows, wifiLedNumRows, BLUE);
     } else {
       #ifdef ESP32C3
         Serial.println("\nWiFi:  connection failed!");
@@ -685,6 +826,7 @@ void setup() {
         Serial.println("WiFi: started AP mode");
       #endif
       wifi_ap_mode = true;
+      startingLights.setRowLights(wifiLedRows, wifiLedNumRows, BLUE);
     }
   } else {
     WiFi.softAP(WIFI_AP_SSID);
@@ -693,6 +835,7 @@ void setup() {
       Serial.println("WiFi: started AP mod");
     #endif
     wifi_ap_mode = true;
+    startingLights.runFlashLights(wifiLedRows, wifiLedNumRows, WIFI_FLAHS_INTERVAL, BLUE, -1);
   }
 
   #ifdef RGB_LED
@@ -707,6 +850,10 @@ void setup() {
   #endif
 
   wait(2000);
+
+  pinMode(START_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(STOP_BUTTON_PIN, INPUT_PULLUP);
+
   initializeJoystickMode();
 
   server.on("/", handleRoot);
@@ -724,6 +871,7 @@ void setup() {
 }
 
 void loop() {
+  startingLights.updateLeds();
   server.handleClient();
   client.poll();
   if(websocket_connected) {
@@ -731,27 +879,50 @@ void loop() {
       websocket_last_ping = millis();
       client.ping();
     }
-    if(millis() > (lastJoystickUpdate + JOYSTICK_UPDATE_INTERVAL)) {
-      lastJoystickUpdate = millis();
-      Joystick_BLE.sendState();
-      #ifndef ESP32C3
-        Joystick.sendState();
-      #endif
-    }
+  }
+  else {
+    if(!wifi_ap_mode) connectWebsocket();
+  }
+  
+  checkButtons();
+
+  if(millis() > (lastJoystickUpdate + JOYSTICK_UPDATE_INTERVAL)) {
+    lastJoystickUpdate = millis();
+    #ifdef SPEED_POT_PIN
+      int newSpeed = map(analogRead(SPEED_POT_PIN), 0, 4095, 0, 100);
+      if(newSpeed < 0) {
+        newSpeed = 0;
+      }
+      if(newSpeed > 100) {
+        newSpeed = 100;
+      }
+      if(newSpeed != speed) {
+        speed = newSpeed;
+        if(isDriving) {
+          Joystick_BLE.setAccelerator(speed);
+          #ifndef ESP32C3
+            Joystick.setAccelerator(speed);
+          #endif
+        }
+        #if defined(DEBUG) && defined(ESP32C3)
+          Serial.print("Speed changed to: ");
+          Serial.println(speed);
+        #endif
+      }
+    #endif
     if(isBraking && (millis() > (brakeTime + DEFAULT_BRAKING_TIME))) {
       isBraking = false;
       Joystick_BLE.setBrake(0);
-      Joystick_BLE.sendState();
       #ifndef ESP32C3
         Joystick.setBrake(0);
-        Joystick.sendState();
       #endif
       #ifdef RGB_LED
         rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
       #endif
     }
-  }
-  else {
-    if(!wifi_ap_mode) connectWebsocket();
+    Joystick_BLE.sendState();
+    #ifndef ESP32C3
+      Joystick.sendState();
+    #endif
   }
 }

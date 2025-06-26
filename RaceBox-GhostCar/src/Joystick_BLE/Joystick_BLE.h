@@ -39,7 +39,7 @@ class Joystick_BLE_ {
     };
 
   public:
-    Joystick_BLE_();
+    Joystick_BLE_(String productName);
     void begin(bool initAutoSendState = false);
     String getDeviceName();
     void setXAxis(int32_t value);
