@@ -850,6 +850,7 @@ void setup() {
   #endif
 
   wait(2000);
+
   pinMode(START_BUTTON_PIN, INPUT_PULLUP);
   pinMode(STOP_BUTTON_PIN, INPUT_PULLUP);
 
