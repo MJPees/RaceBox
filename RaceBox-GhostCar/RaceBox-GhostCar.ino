@@ -770,7 +770,7 @@ void checkButtons() {
       client.send(output);
     }
     while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW) {
-      wait(1);
+      wait(100);
     }
   }
 }
