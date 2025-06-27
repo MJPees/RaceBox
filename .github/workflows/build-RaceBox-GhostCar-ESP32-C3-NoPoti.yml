@@ -20,6 +20,16 @@ jobs:
           ref: ${{ github.ref }}
           # Optional: token: ${{ secrets.GITHUB_TOKEN }} falls für private Repos oder Push nötig
 
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+        #with:
+        #  version: 0.35.0 # Unbedingt diese Versionsangabe verwenden!
+
+      - name: Install ESP32 Board Manager
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+
       - name: Install Custom Libraries from Zips
         run: |
           # Pfad zum Ordner, der die gezippten Bibliotheken enthält
@@ -49,16 +59,6 @@ jobs:
           # Optional: Liste alle installierten Bibliotheken auf, um zu debuggen
           echo "Installierte Bibliotheken nach diesem Schritt:"
           arduino-cli lib list
-
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v2
-        #with:
-        #  version: 0.35.0 # Unbedingt diese Versionsangabe verwenden!
-
-      - name: Install ESP32 Board Manager
-        run: |
-          arduino-cli core update-index
-          arduino-cli core install esp32:esp32
 
       - name: Install ArduinoWebsockets Library
         run: |
