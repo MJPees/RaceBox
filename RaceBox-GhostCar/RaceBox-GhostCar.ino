@@ -782,7 +782,7 @@ void setup() {
   #ifdef ESP32C3
     Serial.begin(115200);
     wait(2000);
-    Serial.print(PRODUCT_NAME + " Version: ");
+    Serial.print(String(PRODUCT_NAME) + " Version: ");
     Serial.print(VERSION);
     Serial.println(" started.");
     Serial.println("############################");
