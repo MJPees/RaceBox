@@ -7,7 +7,7 @@ on:
       - 'feat/*'
     paths:
       - 'RaceBox-GhostCar/**'
-      - '.github/workflows/build-RaceBox-GhostCar-ESP32-C3-NoPoti.yml'
+      - '.github/workflows/build-RaceBox-GhostCar-ESP32-C3-Poti.yml'
 
 jobs:
   build:
@@ -81,9 +81,10 @@ jobs:
           sed -i 's/^#[[:space:]]*define ESP32S3/\/\/#define ESP32S3/g' "${CONFIG_FILE}"
           echo "-> '#define ESP32S3' deaktiviert."
           
-          # Zeile 'define SPEED_POT_PIN' auskommentieren
-          sed -i 's/^[[:space:]]*#[[:space:]]*define SPEED_POT_PIN/\/\/#define SPEED_POT_PIN/g' "${CONFIG_FILE}"
-          echo "-> 'SPEED_POT_PIN' ist nun auskommentiert."
+          # Zeile 'define SPEED_POT_PIN' aktivieren (entkommentieren)
+          # Sucht '// #define SPEED_POT_PIN' und ersetzt es durch '#define SPEED_POT_PIN'
+          sed -i 's/^[[:space:]]*\/\/#[[:space:]]*define SPEED_POT_PIN/#define SPEED_POT_PIN/g' "${CONFIG_FILE}"
+          echo "-> 'SPEED_POT_PIN' ist nun aktiviert."
 
           # Zeile 'define STARTING_LIGHTS' auskommentieren
           sed -i 's/^[[:space:]]*#[[:space:]]*define STARTING_LIGHTS/\/\/#define STARTING_LIGHTS/g' "${CONFIG_FILE}"
