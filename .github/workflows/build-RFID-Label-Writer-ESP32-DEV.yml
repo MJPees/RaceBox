@@ -84,5 +84,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: artifact_package
-          name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RFID-Label-Writer-ESP32-DEV
+          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RFID-Label-Writer-ESP32-DEV
+          name: RFID-Label-Writer-ESP32-DEV
           retention-days: 7
