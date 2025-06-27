@@ -1,4 +1,4 @@
-name: Build RaceBox-GhostCar ESP32-C3 Firmware
+name: Build RaceBox-GhostCar ESP32-C3 without Poti Firmware
 
 on:
   push:

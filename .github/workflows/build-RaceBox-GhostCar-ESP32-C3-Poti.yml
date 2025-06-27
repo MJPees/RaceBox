@@ -1,4 +1,4 @@
-name: Build RaceBox-GhostCar ESP32-C3 Firmware
+name: Build RaceBox-GhostCar ESP32-C3 with Poti Firmware
 
 on:
   push:
@@ -32,10 +32,11 @@ jobs:
 
       - name: Install Custom Libraries from Zips
         run: |
-          # Pfad zum Ordner, der die gezippten Bibliotheken enthält
-          CUSTOM_LIBS_ZIP_DIR="./RaceBox-GhostCar/libraries"
+          CUSTOM_LIBS_ZIP_DIR="./RaceBox-GhostCar/libraries" # Aktualisierter Pfad für dich
+          ARDUINO_CLI_LIB_DIR="$HOME/Arduino/libraries" # Das Standard-Bibliotheksverzeichnis der Arduino CLI
           
-          # Sicherstellen, dass das Verzeichnis existiert
+          # Sicherstellen, dass die Verzeichnisse existieren
+          mkdir -p "${ARDUINO_CLI_LIB_DIR}"
           if [ ! -d "${CUSTOM_LIBS_ZIP_DIR}" ]; then
             echo "Fehler: '${CUSTOM_LIBS_ZIP_DIR}' Verzeichnis nicht gefunden."
             exit 1
@@ -43,20 +44,25 @@ jobs:
 
           echo "Starte Installation der benutzerdefinierten Bibliotheken aus ${CUSTOM_LIBS_ZIP_DIR}..."
 
-          # Iteriere über jede ZIP-Datei im Verzeichnis und installiere sie
+          # Iteriere über jede ZIP-Datei und entpacke sie in das Arduino CLI Bibliotheksverzeichnis
           for zip_file in "${CUSTOM_LIBS_ZIP_DIR}"/*.zip; do
             if [ -f "$zip_file" ]; then # Sicherstellen, dass es wirklich eine Datei ist
-              echo "Installiere Bibliothek: $(basename "$zip_file")..."
-              arduino-cli lib install "$zip_file"
+              LIB_NAME=$(basename "$zip_file" .zip) # Extrahiert den Namen der Bibliothek (ohne .zip)
+              echo "Entpacke und installiere Bibliothek: ${LIB_NAME} von $(basename "$zip_file")..."
+              
+              # Entpacke die ZIP-Datei direkt in das Arduino CLI Bibliotheksverzeichnis
+              # Der Pfad nach -d muss der Ordner sein, in dem die Bibliothek nach dem Entpacken liegen soll
+              unzip -q "$zip_file" -d "${ARDUINO_CLI_LIB_DIR}"
+              
               if [ $? -ne 0 ]; then
-                echo "Warnung: Installation von $(basename "$zip_file") fehlgeschlagen. Der Build könnte fehlschlagen, wenn diese Bibliothek benötigt wird."
-                # Optional: exit 1 hier, um den Build bei fehlender Lib zu stoppen
+                echo "Fehler: Entpacken von $(basename "$zip_file") fehlgeschlagen."
+                exit 1 # Den Build abbrechen, wenn das Entpacken fehlschlägt
               fi
             fi
           done
           echo "Installation der benutzerdefinierten Bibliotheken abgeschlossen."
           
-          # Optional: Liste alle installierten Bibliotheken auf, um zu debuggen
+          # Liste alle installierten Bibliotheken auf, um zu debuggen
           echo "Installierte Bibliotheken nach diesem Schritt:"
           arduino-cli lib list
 
