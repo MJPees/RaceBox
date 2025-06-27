@@ -1,4 +1,4 @@
-name: Build RaceBox-GhostCar ESP32-S3 without Poti Firmware
+name: Build RaceBox-GhostCar-StartingLights ESP32-C3 without Poti Firmware
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - 'feat/*'
     paths:
       - 'RaceBox-GhostCar/**'
-      - '.github/workflows/build-RaceBox-GhostCar-ESP32-S3-NoPoti.yml'
+      - '.github/workflows/build-RaceBox-GhostCar-StartingLights-ESP32-C3-NoPoti.yml'
 
 jobs:
   build:
@@ -82,42 +82,38 @@ jobs:
         run: |
           arduino-cli lib install "Callback"
 
-      - name: Install Joystick_ESP32S2 library
-        run: |
-          arduino-cli lib install "Joystick_ESP32S2"
-
       - name: Modify Sketch Defines
         run: |
           CONFIG_FILE="./RaceBox-GhostCar/config.h" # Pfad Konfigurationsdatei
           echo "Passe ESP32-Definitionen in ${CONFIG_FILE} an..."
 
-          # Zeile '#define ESP32S3' aktivieren (entkommentieren, falls auskommentiert)
-          sed -i 's/^[[:space:]]*\/\/#[[:space:]]*define ESP32S3/#define ESP32S3/g' "${CONFIG_FILE}"
-          echo "-> '#define ESP32S3' aktiviert."
+          # Zeile '#define ESP32C3' aktivieren (entkommentieren, falls auskommentiert)
+          sed -i 's/^[[:space:]]*\/\/#[[:space:]]*define ESP32C3/#define ESP32C3/g' "${CONFIG_FILE}"
+          echo "-> '#define ESP32C3' aktiviert."
 
-          # Zeile '#define ESP32C3' deaktivieren (auskommentieren, falls aktiv)
-          sed -i 's/^#[[:space:]]*define ESP32C3/\/\/#define ESP32C3/g' "${CONFIG_FILE}"
-          echo "-> '#define ESP32C3' deaktiviert."
+          # Zeile '#define ESP32S3' deaktivieren (auskommentieren, falls aktiv)
+          sed -i 's/^#[[:space:]]*define ESP32S3/\/\/#define ESP32S3/g' "${CONFIG_FILE}"
+          echo "-> '#define ESP32S3' deaktiviert."
           
           # Zeile 'define SPEED_POT_PIN' auskommentieren
           sed -i 's/^[[:space:]]*#[[:space:]]*define SPEED_POT_PIN/\/\/#define SPEED_POT_PIN/g' "${CONFIG_FILE}"
           echo "-> 'SPEED_POT_PIN' ist nun auskommentiert."
 
-          # Zeile 'define STARTING_LIGHTS' auskommentieren
-          sed -i 's/^\([[:space:]]*#[[:space:]]*define STARTING_LIGHTS\b.*\)/\/\/\1/g' "${CONFIG_FILE}"
-          echo "-> 'STARTING_LIGHTS' ist nun auskommentiert."
+          # Zeile 'define STARTING_LIGHTS' aktivieren
+          sed -i 's/^\([[:space:]]*\)\/\/\([[:space:]]*#[[:space:]]*define STARTING_LIGHTS\b.*\)/\1\2/g' "${CONFIG_FILE}"
+          echo "-> 'STARTING_LIGHTS' ist nun aktiviert (ohne _VERSION zu beeinflussen)."
           
           # Optional: Änderungen im Log anzeigen
           echo "Angepasster Sketch-Inhalt (Auszug Definitionen):"
           grep -E "define ESP32C3|define ESP32S3|define SPEED_POT_PIN|define STARTING_LIGHTS" "${CONFIG_FILE}" || true
 
-      - name: Compile ESP32-S3 Sketch
+      - name: Compile ESP32-C3 Sketch
         run: |
           # Define a clear build output directory
           BUILD_OUTPUT_DIR="build_output"
           BOARD_OPTIONS="CDCOnBoot=cdc,PartitionScheme=huge_app"
           # Kombiniere FQBN und Optionen
-          FULL_FQBN="esp32:esp32:esp32s3:${BOARD_OPTIONS}"
+          FULL_FQBN="esp32:esp32:esp32c3:${BOARD_OPTIONS}"
 
           echo "Kompiliere mit FQBN: ${FULL_FQBN}"
           arduino-cli compile \
@@ -150,11 +146,11 @@ jobs:
 
       - name: copy esptool and Flash Scripts to Artifact Package
         run: |
-          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-S3_RaceBox-GhostCar.ps1 ./artifact_package/windows/
+          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C3_RaceBox-GhostCar.ps1 ./artifact_package/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/esptool.exe ./artifact_package/windows/
-          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-S3_RaceBox-GhostCar.sh ./artifact_package/linux/
+          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C3_RaceBox-GhostCar.sh ./artifact_package/linux/
           cp ./dev-tools/github-workflow-files/flasher/linux/esptool ./artifact_package/linux/
-        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-S3_RaceBox-GhostCar.sh ./artifact_package/osx/
+        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-C3_RaceBox-GhostCar.sh ./artifact_package/osx/
         #cp ./dev-tools/github-workflow-files/flasher/osx/esptool ./artifact_package/osx/
 
       - name: lst package content
@@ -170,6 +166,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: artifact_package 
-          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RaceBox-GhostCar-ESP32-S3-NoPoti
-          name: RaceBox-GhostCar-ESP32-S3-NoPoti
+          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RaceBox-GhostCar-ESP32-C3-NoPoti
+          name: RaceBox-GhostCar-StartingLights-ESP32-C3-NoPoti
           retention-days: 7
