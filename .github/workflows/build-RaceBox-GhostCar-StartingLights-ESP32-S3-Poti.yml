@@ -170,6 +170,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: artifact_package 
-          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RaceBox-GhostCar-StartingLights-ESP32-S3-NoPoti
-          name: RaceBox-GhostCar-StartingLights-ESP32-S3-NoPoti
+          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RaceBox-GhostCar-StartingLights-ESP32-S3-Poti
+          name: RaceBox-GhostCar-StartingLights-ESP32-S3-Poti
           retention-days: 7
