@@ -146,7 +146,7 @@ jobs:
 
       - name: copy esptool and Flash Scripts to Artifact Package
         run: |
-          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C3-RaceBox-GhostCar.ps1 ./artifact_package/windows/
+          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C3_RaceBox-GhostCar.ps1 ./artifact_package/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/esptool.exe ./artifact_package/windows/
           cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C3_RaceBox-GhostCar.sh ./artifact_package/linux/
           cp ./dev-tools/github-workflow-files/flasher/linux/esptool ./artifact_package/linux/
