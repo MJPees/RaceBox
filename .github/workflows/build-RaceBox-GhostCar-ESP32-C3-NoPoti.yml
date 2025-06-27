@@ -33,7 +33,7 @@ jobs:
       - name: Install Custom Libraries from Zips
         run: |
           CUSTOM_LIBS_ZIP_DIR="./RaceBox-GhostCar/libraries" # Aktualisierter Pfad für dich
-          ARDUINO_CLI_LIB_DIR="$HOME/.arduino-cli/libraries" # Das Standard-Bibliotheksverzeichnis der Arduino CLI
+          ARDUINO_CLI_LIB_DIR="$HOME/Arduino/libraries" # Das Standard-Bibliotheksverzeichnis der Arduino CLI
           
           # Sicherstellen, dass die Verzeichnisse existieren
           mkdir -p "${ARDUINO_CLI_LIB_DIR}"
@@ -58,19 +58,6 @@ jobs:
                 echo "Fehler: Entpacken von $(basename "$zip_file") fehlgeschlagen."
                 exit 1 # Den Build abbrechen, wenn das Entpacken fehlschlägt
               fi
-
-              # Optional: Wenn die ZIP-Datei einen zusätzlichen Oberordner enthält, 
-              # muss dieser möglicherweise entfernt werden.
-              # Beispiel: ZIP enthält 'MyLib-1.0/src/MyLib.h'
-              # unzip entpackt zu ~/.arduino-cli/libraries/MyLib-1.0/
-              # arduino-cli erwartet aber ~/.arduino-cli/libraries/MyLib/
-              # Hier ein Beispiel, falls das passiert (Pfade anpassen!)
-              # if [ -d "${ARDUINO_CLI_LIB_DIR}/${LIB_NAME}/${LIB_NAME}" ]; then
-              #   mv "${ARDUINO_CLI_LIB_DIR}/${LIB_NAME}/${LIB_NAME}"/* "${ARDUINO_CLI_LIB_DIR}/${LIB_NAME}/"
-              #   rmdir "${ARDUINO_CLI_LIB_DIR}/${LIB_NAME}/${LIB_NAME}"
-              #   echo "  -> Zusätzlichen Unterordner korrigiert für ${LIB_NAME}"
-              # fi
-
             fi
           done
           echo "Installation der benutzerdefinierten Bibliotheken abgeschlossen."
