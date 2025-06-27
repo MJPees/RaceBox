@@ -82,6 +82,10 @@ jobs:
         run: |
           arduino-cli lib install "Callback"
 
+      - name: Install Joystick_ESP32S2 library
+        run: |
+          arduino-cli lib install "Joystick_ESP32S2"
+
       - name: Modify Sketch Defines
         run: |
           CONFIG_FILE="./RaceBox-GhostCar/config.h" # Pfad Konfigurationsdatei
