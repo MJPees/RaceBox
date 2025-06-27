@@ -20,6 +20,36 @@ jobs:
           ref: ${{ github.ref }}
           # Optional: token: ${{ secrets.GITHUB_TOKEN }} falls für private Repos oder Push nötig
 
+      - name: Install Custom Libraries from Zips
+        run: |
+          # Pfad zum Ordner, der die gezippten Bibliotheken enthält
+          CUSTOM_LIBS_ZIP_DIR="./RaceBox-GhostCar/libraries"
+          
+          # Sicherstellen, dass das Verzeichnis existiert
+          if [ ! -d "${CUSTOM_LIBS_ZIP_DIR}" ]; then
+            echo "Fehler: '${CUSTOM_LIBS_ZIP_DIR}' Verzeichnis nicht gefunden."
+            exit 1
+          fi
+
+          echo "Starte Installation der benutzerdefinierten Bibliotheken aus ${CUSTOM_LIBS_ZIP_DIR}..."
+
+          # Iteriere über jede ZIP-Datei im Verzeichnis und installiere sie
+          for zip_file in "${CUSTOM_LIBS_ZIP_DIR}"/*.zip; do
+            if [ -f "$zip_file" ]; then # Sicherstellen, dass es wirklich eine Datei ist
+              echo "Installiere Bibliothek: $(basename "$zip_file")..."
+              arduino-cli lib install "$zip_file"
+              if [ $? -ne 0 ]; then
+                echo "Warnung: Installation von $(basename "$zip_file") fehlgeschlagen. Der Build könnte fehlschlagen, wenn diese Bibliothek benötigt wird."
+                # Optional: exit 1 hier, um den Build bei fehlender Lib zu stoppen
+              fi
+            fi
+          done
+          echo "Installation der benutzerdefinierten Bibliotheken abgeschlossen."
+          
+          # Optional: Liste alle installierten Bibliotheken auf, um zu debuggen
+          echo "Installierte Bibliotheken nach diesem Schritt:"
+          arduino-cli lib list
+
       - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@v2
         #with:
