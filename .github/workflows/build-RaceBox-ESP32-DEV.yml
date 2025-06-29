@@ -66,6 +66,7 @@ jobs:
         run: |
           cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-DEV_RaceBox.ps1 ./artifact_package/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/esptool.exe ./artifact_package/windows/
+          cp ./dev-tools/github-workflow-files/flasher/windows/README.md ./artifact_package/windows/
           cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-DEV_RaceBox.sh ./artifact_package/linux/
           cp ./dev-tools/github-workflow-files/flasher/linux/esptool ./artifact_package/linux/
         #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-DEV_RaceBox.sh ./artifact_package/osx/

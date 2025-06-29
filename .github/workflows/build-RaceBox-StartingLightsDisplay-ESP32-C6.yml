@@ -1,4 +1,4 @@
-name: Build RaceBox-GhostCar-StartingLights ESP32-C3 with Poti Firmware
+name: Build RaceBox-StartingLightsDisplay ESP32-C6 Firmware
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - main
       - 'feat/*'
     paths:
-      - 'RaceBox-GhostCar/**'
-      - '.github/workflows/build-RaceBox-GhostCar-StartingLights-ESP32-C3-Poti.yml'
+      - 'RaceBox/**'
+      - '.github/workflows/build-RaceBox-StargingLightsDisplay-ESP32-C6.yml'
 
 jobs:
   build:
@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          # Optional: token: ${{ secrets.GITHUB_TOKEN }} falls für private Repos oder Push nötig
+        # Optional: token: ${{ secrets.GITHUB_TOKEN }} falls für private Repos oder Push nötig
 
       - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@v2
@@ -32,7 +32,7 @@ jobs:
 
       - name: Install Custom Libraries from Zips
         run: |
-          CUSTOM_LIBS_ZIP_DIR="./RaceBox-GhostCar/libraries" # Aktualisierter Pfad für dich
+          CUSTOM_LIBS_ZIP_DIR="./RaceBox-StartingLightsDisplay/libraries" # Aktualisierter Pfad für dich
           ARDUINO_CLI_LIB_DIR="$HOME/Arduino/libraries" # Das Standard-Bibliotheksverzeichnis der Arduino CLI
           
           # Sicherstellen, dass die Verzeichnisse existieren
@@ -74,58 +74,15 @@ jobs:
         run: |
           arduino-cli lib install "ArduinoJson"
 
-      - name: Install FastLED Library
-        run: |
-          arduino-cli lib install "FastLED"
-
-      - name: Install Callback Library
-        run: |
-          arduino-cli lib install "Callback"
-
-      - name: Modify Sketch Defines
-        run: |
-          CONFIG_FILE="./RaceBox-GhostCar/config.h" # Pfad Konfigurationsdatei
-          echo "Passe ESP32-Definitionen in ${CONFIG_FILE} an..."
-
-          # Zeile '#define ESP32C3' aktivieren (entkommentieren, falls auskommentiert)
-          sed -i 's/^[[:space:]]*\/\/#[[:space:]]*define ESP32C3/#define ESP32C3/g' "${CONFIG_FILE}"
-          echo "-> '#define ESP32C3' aktiviert."
-
-          # Zeile '#define ESP32S3' deaktivieren (auskommentieren, falls aktiv)
-          sed -i 's/^#[[:space:]]*define ESP32S3/\/\/#define ESP32S3/g' "${CONFIG_FILE}"
-          echo "-> '#define ESP32S3' deaktiviert."
-          
-          # Zeile 'define SPEED_POT_PIN' aktivieren (entkommentieren)
-          sed -i 's/^[[:space:]]*\/\/#[[:space:]]*define SPEED_POT_PIN/#define SPEED_POT_PIN/g' "${CONFIG_FILE}"
-          echo "-> 'SPEED_POT_PIN' ist nun aktiviert."
-
-          # Zeile 'define STARTING_LIGHTS' aktivieren
-          sed -i 's/^\([[:space:]]*\)\/\/\([[:space:]]*#[[:space:]]*define STARTING_LIGHTS\b.*\)/\1\2/g' "${CONFIG_FILE}"
-          echo "-> 'STARTING_LIGHTS' ist nun aktiviert (ohne _VERSION zu beeinflussen)."
-
-          # Optional: Änderungen im Log anzeigen
-          echo "Angepasster Sketch-Inhalt (Auszug Definitionen):"
-          grep -E "define ESP32C3|define ESP32S3|define SPEED_POT_PIN|define STARTING_LIGHTS" "${CONFIG_FILE}" || true
-
-      - name: Compile ESP32-C3 Sketch
+      - name: Compile ESP32 Sketch
         run: |
           # Define a clear build output directory
           BUILD_OUTPUT_DIR="build_output"
-          BOARD_OPTIONS="CDCOnBoot=cdc,PartitionScheme=huge_app"
-          # Kombiniere FQBN und Optionen
-          FULL_FQBN="esp32:esp32:esp32c3:${BOARD_OPTIONS}"
-
-          echo "Kompiliere mit FQBN: ${FULL_FQBN}"
+          
           arduino-cli compile \
-            --fqbn "${FULL_FQBN}" \
+            --fqbn esp32:esp32:esp32c6 \
             --build-path ${BUILD_OUTPUT_DIR} \
-            ./RaceBox-GhostCar/
-
-          echo "ACTUAL_BUILD_PATH=${BUILD_OUTPUT_DIR}" >> "$GITHUB_OUTPUT"
-          echo "Inhalt des Build-Output-Verzeichnisses nach Kompilierung:"
-          ls -R ${BUILD_OUTPUT_DIR}
-          echo "---"
-
+            ./RaceBox-StartingLightsDisplay/
 
       - name: Create Artifact Directory
         run: |
@@ -138,7 +95,7 @@ jobs:
         run: |
           BUILD_OUTPUT_DIR="build_output"
           TARGET_BIN_DIR="./artifact_package/bin"
-          INO_FILE="RaceBox-GhostCar.ino"
+          INO_FILE="RaceBox-StartingLightsDisplay.ino"
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.bootloader.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.partitions.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
@@ -146,12 +103,12 @@ jobs:
 
       - name: copy esptool and Flash Scripts to Artifact Package
         run: |
-          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C3_RaceBox-GhostCar.ps1 ./artifact_package/windows/
+          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C6_RaceBox-StartingLightsDisplay.ps1 ./artifact_package/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/esptool.exe ./artifact_package/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/README.md ./artifact_package/windows/
-          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C3_RaceBox-GhostCar.sh ./artifact_package/linux/
+          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C6_RaceBox-StartingLightsDisplay.sh ./artifact_package/linux/
           cp ./dev-tools/github-workflow-files/flasher/linux/esptool ./artifact_package/linux/
-        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-C3_RaceBox-GhostCar.sh ./artifact_package/osx/
+        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-C6_RaceBox-StartingLightsDisplay.sh ./artifact_package/osx/
         #cp ./dev-tools/github-workflow-files/flasher/osx/esptool ./artifact_package/osx/
 
       - name: lst package content
@@ -166,7 +123,7 @@ jobs:
       - name: Upload Binaries as Artifact
         uses: actions/upload-artifact@v4
         with:
-          path: artifact_package 
-          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RaceBox-GhostCar-StartingLights-ESP32-C3-Poti
-          name: RaceBox-GhostCar-StartingLights-ESP32-C3-Poti
+          path: artifact_package
+          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RaceBox-StartingLightsDisplay-ESP32-C6
+          name: RaceBox-StartingLightsDisplay-ESP32-C6
           retention-days: 7
