@@ -11,7 +11,7 @@ Bevor Sie Ihren ESP32 flashen, stellen Sie sicher, dass Sie alle notwendigen Vor
 
 ## Flashvorgang
 
-1.  **ESP32 verbinden:** Schließen Sie Ihren ESP32 über ein USB-Kabel an Ihren Computer an.
+1.  **ESP32 verbinden:** Schließen Sie Ihren ESP32 über ein USB-Kabel an Ihren Computer an. Eventuell muss die BOOT-Taste auf dem ESP32-C3/S3 beim Einstecken gedrückt gehalten werden, um in den Flash-Modus zu gelangen.
 2.  **COM-Port ermitteln:** Öffnen Sie den **Geräte-Manager** (suchen Sie in der Windows-Suche nach "Geräte-Manager"). Suchen Sie dort unter "Anschlüsse (COM & LPT)" den COM-Port, der Ihrem ESP32 zugewiesen ist. Merken Sie sich die COM-Port-Nummer (z.B. COM3).
 3.  **Flash-Skript starten:** Geben Sie in der zuvor geöffneten Kommandozeile oder PowerShell den **Namen des Flash-Skripts** ein und bestätigen Sie mit **Enter**.
 4.  **COM-Port eingeben:** Das Skript wird Sie nach der Nummer des COM-Ports Ihres ESP32 fragen. Geben Sie die ermittelte Nummer ein und drücken Sie **Enter**.
