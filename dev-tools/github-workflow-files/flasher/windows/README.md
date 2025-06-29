@@ -1,7 +1,3 @@
-Gerne, hier ist der optimierte Markdown-Inhalt für das Flashen unter Windows:
-
------
-
 # ESP32 flashen unter Windows
 
 Bevor Sie Ihren ESP32 flashen, stellen Sie sicher, dass Sie alle notwendigen Vorbereitungen getroffen haben.

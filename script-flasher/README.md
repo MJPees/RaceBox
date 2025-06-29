@@ -1,53 +1,74 @@
-# RaceBox Script-Flasher
+# RaceBox Skript-Flasher
 
-Das Flashen aktuell unterstützen ESP32 erfolgt durch Herunterladen des entsprechenden Zip-Files und ausführen des enthaltenen Skriptes. Es wird aktuell Windows und Linux unterstütz.<br><br>
-Es sind folgende "Boxen" verfügbar:
-## RaceBox
-Der RFID-Empfänger zur Erfassung der Fahrzeuge und Übertragung der Zieldurchfahrten an SmartRace oder CH-Racing-Club. <a href="./RaceBox-ESP32-DEV.zip">RaceBox-ESP32-DEV.zip</a>
+Willkommen beim RaceBox Skript-Flasher\! Hier finden Sie die Firmware für Ihre RaceBox-Geräte. Das Flashen der unterstützten ESP32-Geräte ist einfach: Laden Sie die entsprechende Zip-Datei herunter und führen Sie das enthaltene Skript aus. Der Flasher unterstützt **Windows** und **Linux**.
 
-## RaceBox-GhostCar
+Eine detaillierte Anleitung für den Flash-Vorgang unter Windows finden Sie hier: [Anleitung Windows](https://www.google.com/search?q=./dev-tools/github-workflow-files/flasher/windows/README.md). Diese Anleitung ist auch in jeder Flasher-Zip-Datei enthalten.
 
-#### ESP32-S3 (Bluetooth-GhostCar und USB-GhostCar)
+-----
 
-- ESP32-S3 ohne zusätzliche Verdrahtung oder nur mit Start/Stop-Taster.<br>
-<a href="RaceBox-GhostCar-ESP32-S3-NoPoti.zip">RaceBox-GhostCar-ESP32-S3-NoPoti.zip</a>
+## Verfügbare "Boxen"
 
-- ESP32-S3 mit Potentimeter zur Geschwindigkeitsanpassung und optional Start/Stop-Taster.<br>
-<a href="RaceBox-GhostCar-ESP32-S3-Poti.zip">RaceBox-GhostCar-ESP32-S3-Poti.zip</a>
+Hier eine Übersicht der verschiedenen RaceBox-Firmware-Versionen:
 
-#### ESP32-C3 (Nur ein Bluetooth-GhostCar)
+### RaceBox
 
-- ESP32-C3 ohne zusätzliche Verdrahtung oder nur mit Start/Stop-Taster.<br>
-<a href="RaceBox-GhostCar-ESP32-C3-NoPoti.zip">RaceBox-GhostCar-ESP32-C3-NoPoti.zip</a>
+Die **RaceBox** ist Ihr RFID-Empfänger zur präzisen Erfassung von Fahrzeugen und zur Übertragung der Zieldurchfahrten an SmartRace oder CH-Racing-Club.
+[RaceBox-ESP32-DEV.zip](https://www.google.com/search?q=RaceBox-ESP32-DEV.zip)
 
-- ESP32-C3 mit Potentimeter zur Geschwindigkeitsanpassung und optional Start/Stop-Taster.<br>
-<a href="RaceBox-GhostCar-ESP32-C3-Poti.zip">RaceBox-GhostCar-ESP32-C3-Poti.zip</a>
+-----
 
-## RaceBox-GhostCar-StartingLights
-Diese Version benötigt 20 ws2812b leds!<br>Die Ampel besteht aus 5 LEDs in 4 Reihen.<br>Eine Platine zum "leichteren" Aufbau (aktuell nur CNC-Fräsdaten) wird nachgereicht. Unterstützt wird SmartRace sowie CH-Racing-Club.
+### RaceBox-GhostCar
 
-#### ESP32-S3 (Startampel + Bluetooth-GhostCar + USB-GhostCar)
+Verwandeln Sie ein Fahrzeug in ein Geisterauto\!
 
-- ESP32-S3 mit Startampel, optional Start/Stop-Tastern, aber ohne Potentimeter zur Geschwindigkeitsanpassung.<br>
-<a href="RaceBox-GhostCar-StartingLights-ESP32-S3-NoPoti.zip">RaceBox-GhostCar-StartingLights-ESP32-S3-NoPoti.zip</a>
+#### Für ESP32-S3 (Bluetooth-GhostCar und USB-GhostCar)
 
-- ESP32-S3 mit Startampel, Potentimeter zur Geschwindigkeitsanpassung und optional Start/Stop-Tastern.<br>
-<a href="RaceBox-GhostCar-ESP32-S3-Poti.zip">RaceBox-GhostCar-StartingLights-ESP32-S3-Poti.zip</a>
+  * **Ohne Poti:** ESP32-S3 ohne zusätzliche Verdrahtung oder nur mit Start/Stop-Taster.
+    [RaceBox-GhostCar-ESP32-S3-NoPoti.zip](https://www.google.com/search?q=RaceBox-GhostCar-ESP32-S3-NoPoti.zip)
+  * **Mit Poti:** ESP32-S3 mit Potentiometer zur Geschwindigkeitsanpassung und optionalem Start/Stop-Taster.
+    [RaceBox-GhostCar-ESP32-S3-Poti.zip](https://www.google.com/search?q=RaceBox-GhostCar-ESP32-S3-Poti.zip)
 
-#### ESP32-C3 (Starampel + Bluetooth-GhostCar)
+#### Für ESP32-C3 (Nur Bluetooth-GhostCar)
 
-- ESP32-C3 mit Startampel, optional Start/Stop-Tastern, aber ohne Potentimeter zur Geschwindigkeitsanpassung.<br>
-<a href="RaceBox-GhostCar-StartingLights-ESP32-C3-NoPoti.zip">RaceBox-GhostCar-StartingLights-ESP32-C3-NoPoti.zip</a>
+  * **Ohne Poti:** ESP32-C3 ohne zusätzliche Verdrahtung oder nur mit Start/Stop-Taster.
+    [RaceBox-GhostCar-ESP32-C3-NoPoti.zip](https://www.google.com/search?q=RaceBox-GhostCar-ESP32-C3-NoPoti.zip)
+  * **Mit Poti:** ESP32-C3 mit Potentiometer zur Geschwindigkeitsanpassung und optionalem Start/Stop-Taster.
+    [RaceBox-GhostCar-ESP32-C3-Poti.zip](https://www.google.com/search?q=RaceBox-GhostCar-ESP32-C3-Poti.zip)
 
-- ESP32-C3 mit Startampel, Potentimeter zur Geschwindigkeitsanpassung und optional Start/Stop-Tastern.<br>
-<a href="RaceBox-GhostCar-StartingLights-ESP32-C3-Poti.zip">RaceBox-StartingLights-GhostCar-ESP32-C3-Poti.zip</a>
+-----
 
-## RaceBox-GhostCar-StartingLightsDisplay
-Einfach zu fertigende und optisch sehr ansprechende Startampel basierend auf einem ESP32-C6 mit montiertem kleinen Display. (Inklusive Werbebannern im idle-mode)<br>
-<a href="RaceBox-StartingLightsDisplay-ESP32-C6.zip">RaceBox-StartingLightsDisplay-ESP32-C6.zip</a>
+### RaceBox-GhostCar-StartingLights
 
+Diese Version kombiniert das GhostCar mit einer Startampel. **Benötigt 20 WS2812B LEDs\!** Die Ampel ist in 4 Reihen zu je 5 LEDs angeordnet. Eine Platine zur einfacheren Montage (aktuell nur CNC-Fräsdaten) wird nachgereicht. Unterstützt SmartRace sowie CH-Racing-Club.
 
-## RFID-Label-Writer
-Mit dem RFID-Label-Writer können neue RFID-Tags mit gleicher ID einmalig neu beschrieben werden.
-Die Firmware kann einfach auf die RaceBox temporär aufgespielt werden. Anschliessend alle Tags <b>nacheinander</b> einmal über die Antenne ziehen.
-Die Ids werden von 1 an mit jedem Tag hochgezählt und sind somit eineindeutig.<br><b>Bei Neustart der Box beginnt der Schreibvorgang wieder bei eins!</b><br><a href="./RFID-Label-Writer-ESP32-DEV.zip">RFID-Label-Writer-ESP32-DEV.zip</a>
+#### Für ESP32-S3 (Startampel + Bluetooth-GhostCar + USB-GhostCar)
+
+  * **Ohne Poti:** ESP32-S3 mit Startampel, optionalen Start/Stop-Tastern, aber ohne Potentiometer zur Geschwindigkeitsanpassung.
+    [RaceBox-GhostCar-StartingLights-ESP32-S3-NoPoti.zip](https://www.google.com/search?q=RaceBox-GhostCar-StartingLights-ESP32-S3-NoPoti.zip)
+  * **Mit Poti:** ESP32-S3 mit Startampel, Potentiometer zur Geschwindigkeitsanpassung und optionalen Start/Stop-Tastern.
+    [RaceBox-GhostCar-StartingLights-ESP32-S3-Poti.zip](https://www.google.com/search?q=RaceBox-GhostCar-StartingLights-ESP32-S3-Poti.zip)
+
+#### Für ESP32-C3 (Startampel + Bluetooth-GhostCar)
+
+  * **Ohne Poti:** ESP32-C3 mit Startampel, optionalen Start/Stop-Tastern, aber ohne Potentiometer zur Geschwindigkeitsanpassung.
+    [RaceBox-GhostCar-StartingLights-ESP32-C3-NoPoti.zip](https://www.google.com/search?q=RaceBox-GhostCar-StartingLights-ESP32-C3-NoPoti.zip)
+  * **Mit Poti:** ESP32-C3 mit Startampel, Potentiometer zur Geschwindigkeitsanpassung und optionalen Start/Stop-Tastern.
+    [RaceBox-StartingLights-GhostCar-ESP32-C3-Poti.zip](https://www.google.com/search?q=RaceBox-StartingLights-GhostCar-ESP32-C3-Poti.zip)
+
+-----
+
+### RaceBox-GhostCar-StartingLightsDisplay
+
+Eine optisch ansprechende Startampel, einfach zu bauen, basierend auf einem ESP32-C6 mit kleinem Display. Inklusive Werbebannern im Idle-Modus.
+[RaceBox-StartingLightsDisplay-ESP32-C6.zip](https://www.google.com/search?q=RaceBox-StartingLightsDisplay-ESP32-C6.zip)
+
+-----
+
+### RFID-Label-Writer
+
+Mit dem **RFID-Label-Writer** können Sie neue RFID-Tags mit einer einmalig neuen ID beschreiben. Die Firmware kann temporär auf die RaceBox aufgespielt werden. Ziehen Sie anschließend alle Tags **nacheinander** einmal über die Antenne. Die IDs werden ab 1 mit jedem Tag hochgezählt und sind somit eindeutig.
+
+**Wichtig:** Bei einem Neustart der Box beginnt der Schreibvorgang wieder bei 1\!
+[RFID-Label-Writer-ESP32-DEV.zip](https://www.google.com/search?q=./RFID-Label-Writer-ESP32-DEV.zip)
+
+-----
