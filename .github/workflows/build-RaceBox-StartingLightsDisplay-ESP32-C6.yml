@@ -86,15 +86,17 @@ jobs:
 
       - name: Create Artifact Directory
         run: |
-             mkdir -p artifact_package/bin
-             mkdir -p artifact_package/windows
-             mkdir -p artifact_package/linux
-        #mkdir -p artifact_package/osx
+          SUB_DIR="RaceBox-StartingLightsDisplay-ESP32-C6"
+          mkdir -p artifact_package/${SUB_DIR}/bin
+          mkdir -p artifact_package/${SUB_DIR}/windows
+          mkdir -p artifact_package/${SUB_DIR}/linux
+        #mkdir -p artifact_package/${SUB_DIR}/osx
 
       - name: Move compiled binaries to Artifact Directory
         run: |
           BUILD_OUTPUT_DIR="build_output"
-          TARGET_BIN_DIR="./artifact_package/bin"
+          SUB_DIR="RaceBox-StartingLightsDisplay-ESP32-C6"
+          TARGET_BIN_DIR="./artifact_package/${SUB_DIR}/bin"
           INO_FILE="RaceBox-StartingLightsDisplay.ino"
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.bootloader.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
@@ -103,13 +105,14 @@ jobs:
 
       - name: copy esptool and Flash Scripts to Artifact Package
         run: |
-          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C6_RaceBox-StartingLightsDisplay.ps1 ./artifact_package/windows/
-          cp ./dev-tools/github-workflow-files/flasher/windows/esptool.exe ./artifact_package/windows/
-          cp ./dev-tools/github-workflow-files/flasher/windows/README.md ./artifact_package/windows/
-          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C6_RaceBox-StartingLightsDisplay.sh ./artifact_package/linux/
-          cp ./dev-tools/github-workflow-files/flasher/linux/esptool ./artifact_package/linux/
-        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-C6_RaceBox-StartingLightsDisplay.sh ./artifact_package/osx/
-        #cp ./dev-tools/github-workflow-files/flasher/osx/esptool ./artifact_package/osx/
+          SUB_DIR="RaceBox-StartingLightsDisplay-ESP32-C6"
+          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C6_RaceBox-StartingLightsDisplay.ps1 ./artifact_package/${SUB_DIR}/windows/
+          cp ./dev-tools/github-workflow-files/flasher/windows/esptool.exe ./artifact_package/${SUB_DIR}/windows/
+          cp ./dev-tools/github-workflow-files/flasher/windows/README.md ./artifact_package/${SUB_DIR}/windows/
+          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C6_RaceBox-StartingLightsDisplay.sh ./artifact_package/${SUB_DIR}/linux/
+          cp ./dev-tools/github-workflow-files/flasher/linux/esptool ./artifact_package/${SUB_DIR}/linux/
+        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-C6_RaceBox-StartingLightsDisplay.sh ./artifact_package/${SUB_DIR}/osx/
+        #cp ./dev-tools/github-workflow-files/flasher/osx/esptool ./artifact_package/${SUB_DIR}/osx/
 
       - name: lst package content
         run: |
