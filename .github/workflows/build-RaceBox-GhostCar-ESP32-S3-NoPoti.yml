@@ -8,6 +8,7 @@ on:
     paths:
       - 'RaceBox-GhostCar/**'
       - '.github/workflows/build-RaceBox-GhostCar-ESP32-S3-NoPoti.yml'
+      - 'dev-tools/github-workflow-files/flasher/**'
 
 jobs:
   build:

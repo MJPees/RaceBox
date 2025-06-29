@@ -8,6 +8,7 @@ on:
     paths:
       - 'RaceBox-StartingLightsDisplay/**'
       - '.github/workflows/build-RaceBox-StartingLightsDisplay-ESP32-C6.yml'
+      - 'dev-tools/github-workflow-files/flasher/**'
 
 jobs:
   build:
