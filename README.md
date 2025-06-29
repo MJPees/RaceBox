@@ -1,6 +1,6 @@
 # RaceBox
 
-RaceBox ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a> oder CH-Racing-Club. Hierzu wird bei SmartRace der analoge Sensormodus genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 8 Autos möglich (8 Controller in SmartRace).<br>
+RaceBox ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a> oder <a href="https://carrera-hybrid-racing-club.de/">CH-Racing-Club</a>. Hierzu wird bei SmartRace der analoge Sensormodus genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 8 Autos möglich (8 Controller in SmartRace).<br>
 Des Weiteren können 2 RFID-Ids für einen Controller definiert werden. Somit sind auch Langstreckenrennen mit jeweils zwei Fahrzeugen pro Team möglich.
 Der ESP32 geht bei fehlender WLAN-Konfiguration automatisch in einen Accesspoint-Modus.
 Über das Webinterface <a href="http://RaceBox">http://RaceBox</a> kann RaceBox konfiguriert werden.
@@ -13,6 +13,7 @@ Die optionale WEBSOCKET LED wird mit Anode (+) an 3,3V und Kathode (-) an Pin D4
 Im Quellcode kann die ESP32 Version für den ESP32-C3 über einen define
 aktiviert werden.<br>
 Standard ist der ESP32-Dev mit externer Antenne.
+<a href="./script-flasher/README.md">Flash-Anleitungen</a>
 
 ## Konfiguration über Web-Interface:
 <a href="http://RaceBox">http://RaceBox</a><br><br>
@@ -82,7 +83,7 @@ Wird ein ESP32-C3 genutzt so ist nur Bluetooth möglich!<br>
 Die defines können in der config.h entsprechend gesetzt werden.<br>
 
 Die Konfiguration des GhostCars erfolgt über das Webinterface <a href="http://RaceBox-GhostCar">http://racebox-ghostcar</a>
-<br><br>
+<br><a href="./script-flasher/README.md">Flash-Anleitungen</a><br><br>
 ## Benötigte Hardware
 
 - ESP32-S3 mini (Waveshare) oder ESP32C3 (nur Bluetooth)

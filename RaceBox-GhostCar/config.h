@@ -19,7 +19,7 @@
 #define JOYSTICK_UPDATE_INTERVAL 100 // ms
 
 // USB CDC on boot should be enabled in the Arduino IDE
-// For ESP32C3 or ESP32S3_BLE use Tools -> Partition Scheme -> No OTA (2MB APP/2MB SPIFFS)
+// For ESP32C3 or ESP32S3_BLE use Tools -> Partition Scheme -> Huge App (3MB No OTA/1MB SPIFFS)
 // Additional board managers (current ESP32 version) => https://espressif.github.io/arduino-esp32/package_esp32_index.json
 // Include libraries from the libs folder via Arduino IDE (Zip)
 
