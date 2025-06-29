@@ -6,8 +6,8 @@ on:
       - main
       - 'feat/*'
     paths:
-      - 'RaceBox/**'
-      - '.github/workflows/build-RaceBox-StargingLightsDisplay-ESP32-C6.yml'
+      - 'RaceBox-StartingLightsDisplay/**'
+      - '.github/workflows/build-RaceBox-StartingLightsDisplay-ESP32-C6.yml'
 
 jobs:
   build:
