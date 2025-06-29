@@ -1,6 +1,6 @@
 # RaceBox Skript-Flasher
 
-Willkommen beim RaceBox Skript-Flasher\! Hier finden Sie die Firmware für Ihre RaceBox-Geräte. Das Flashen der unterstützten ESP32-Geräte ist einfach: Laden Sie die entsprechende Zip-Datei herunter und führen Sie das enthaltene Skript aus. Der Flasher unterstützt **Windows** und **Linux**.
+Willkommen beim RaceBox Skript-Flasher\! Hier finden Sie die Firmware für Ihre RaceBox-Geräte. Das Flashen der unterstützten ESP32-Geräte ist einfach: Laden Sie die entsprechende Zip-Datei herunter ("<i>Download raw file</i>") und führen Sie das enthaltene Skript aus. Der Flasher unterstützt **Windows** und **Linux**.
 
 Eine detaillierte Anleitung für den Flash-Vorgang unter Windows finden Sie hier: [Anleitung Windows](../dev-tools/github-workflow-files/flasher/windows/README.md). Diese Anleitung ist auch in jeder Flasher-Zip-Datei enthalten.
 
