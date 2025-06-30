@@ -24,7 +24,7 @@ Verwandeln Sie ein Fahrzeug in ein Geisterauto\!
 #### Für ESP32-S3 (Bluetooth-GhostCar und USB-GhostCar)
 
   * **Ohne Poti:** ESP32-S3 ohne zusätzliche Verdrahtung oder nur mit Start/Stop-Taster.
-    [RaceBox-GhostCar-ESP32-S3-NoPoti.zip](./RaceBox-GhostCar-ESP32-S3-NoPoti.zip)<br><img src="../images/CH-GhostCar-SmartRace.jpg"/><br><br>
+    [RaceBox-GhostCar-ESP32-S3-NoPoti.zip](./RaceBox-GhostCar-ESP32-S3-NoPoti.zip)<br><img src="../images/CH-GhostCar-SmartRace.jpg" height=150/><br><br>
   * **Mit Poti:** ESP32-S3 mit Potentiometer zur Geschwindigkeitsanpassung und optionalem Start/Stop-Taster.
     [RaceBox-GhostCar-ESP32-S3-Poti.zip](./RaceBox-GhostCar-ESP32-S3-Poti.zip)
 
