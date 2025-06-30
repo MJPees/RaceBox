@@ -53,14 +53,14 @@ Diese Version kombiniert das GhostCar mit einer Startampel. **Benötigt 20 WS281
   * **Ohne Poti:** ESP32-C3 mit Startampel, optionalen Start/Stop-Tastern, aber ohne Potentiometer zur Geschwindigkeitsanpassung.
     [RaceBox-GhostCar-StartingLights-ESP32-C3-NoPoti.zip](./RaceBox-GhostCar-StartingLights-ESP32-C3-NoPoti.zip)
   * **Mit Poti:** ESP32-C3 mit Startampel, Potentiometer zur Geschwindigkeitsanpassung und optionalen Start/Stop-Tastern.
-    [RaceBox-GhostCar-StartingLights-ESP32-C3-Poti.zip](./RaceBox-GhostCar-StartingLights-ESP32-C3-Poti.zip)
+    [RaceBox-GhostCar-StartingLights-ESP32-C3-Poti.zip](./RaceBox-GhostCar-StartingLights-ESP32-C3-Poti.zip)<br><br>[<img src="../images/Video_RaceBox-GhostCar-StartingLights-Poti.png">](https://youtu.be/PwxAJHPKN4w)<br><br>
 
 -----
 
 ### RaceBox-StartingLightsDisplay
 
 Eine optisch ansprechende Startampel, einfach zu bauen, basierend auf einem ESP32-C6 mit kleinem Display. Inklusive Werbebannern im Idle-Modus.
-[RaceBox-StartingLightsDisplay-ESP32-C6.zip](./RaceBox-StartingLightsDisplay-ESP32-C6.zip)
+[RaceBox-StartingLightsDisplay-ESP32-C6.zip](./RaceBox-StartingLightsDisplay-ESP32-C6.zip)<br><br><img src="../images/RaceBox-StartingLightsDisplay_1.jpg" width=200/><img src="../images/RaceBox-StartingLightsDisplay_2.jpg" width=200/><img src="../images/RaceBox-StartingLightsDisplay_3.jpg" width=200/><br><br>
 
 -----
 
