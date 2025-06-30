@@ -312,7 +312,7 @@ void connectWebsocket() {
     JsonDocument doc;
     if(config_target_system == "smart_race") {
       doc["type"] = "controller_set";
-      doc["data"]["controller_id"] = "Z";
+      doc["data"]["controller_id"] = "1";
     }
     else if(config_target_system == "ch_racing_club") {
       doc["command"] = "starting_light_connect";
@@ -431,11 +431,16 @@ void handleRacingClubUpdateEvent(String command, JsonDocument doc) {
 void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
   if (type == "update_event_status" && doc.containsKey("data")) {
     String data = doc["data"].as<String>();
+    currentStatus = data;
     if (data == "prepare_for_start") {
       displayImage("/off.png");
     } else if (data == "starting") {
-      displayImage("/off.png");
-      // TODO: start sequence for smartrace
+      wait(1000);
+      for(int i=1; i < 6; i++) {
+        String imagePath = "/red_" + String(i) + ".png";
+        displayImage(imagePath.c_str());
+        wait(900);
+      }
     } else if (data == "running") {
       displayImage("/green_5.png");
     } else if (data == "suspended") {
@@ -447,6 +452,7 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
     }
   } else if (type == "reset") {
     displayImage("/carrera_hybrid.png");
+    currentStatus = "idle";
   } else {
     #ifdef DEBUG
       Serial.println("Unknown message type: " + type);
@@ -492,11 +498,14 @@ void stopRace() {
 
 void yellowFlag() {
   for (int i = 0; i < 4; ++i) {
+    if(currentStatus != "suspended") return;
     displayImage("/yellow_5.png", true);
     wait(300);
+    if(currentStatus != "suspended") return;
     displayImage("/off.png", true);
     wait(300);
   }
+  if(currentStatus != "suspended") return;
   displayImage("/yellow_5.png");
 }
 
