@@ -24,7 +24,7 @@ Verwandeln Sie ein Fahrzeug in ein Geisterauto\!
 #### Für ESP32-S3 (Bluetooth-GhostCar und USB-GhostCar)
 
   * **Ohne Poti:** ESP32-S3 ohne zusätzliche Verdrahtung oder nur mit Start/Stop-Taster.
-    [RaceBox-GhostCar-ESP32-S3-NoPoti.zip](./RaceBox-GhostCar-ESP32-S3-NoPoti.zip)
+    [RaceBox-GhostCar-ESP32-S3-NoPoti.zip](./RaceBox-GhostCar-ESP32-S3-NoPoti.zip)<br><img src="../images/CH-GhostCar-SmartRace.jpg"/><br><br>
   * **Mit Poti:** ESP32-S3 mit Potentiometer zur Geschwindigkeitsanpassung und optionalem Start/Stop-Taster.
     [RaceBox-GhostCar-ESP32-S3-Poti.zip](./RaceBox-GhostCar-ESP32-S3-Poti.zip)
 
@@ -46,7 +46,7 @@ Diese Version kombiniert das GhostCar mit einer Startampel. **Benötigt 20 WS281
   * **Ohne Poti:** ESP32-S3 mit Startampel, optionalen Start/Stop-Tastern, aber ohne Potentiometer zur Geschwindigkeitsanpassung.
     [RaceBox-GhostCar-StartingLights-ESP32-S3-NoPoti.zip](./RaceBox-GhostCar-StartingLights-ESP32-S3-NoPoti.zip)
   * **Mit Poti:** ESP32-S3 mit Startampel, Potentiometer zur Geschwindigkeitsanpassung und optionalen Start/Stop-Tastern.
-    [RaceBox-GhostCar-StartingLights-ESP32-S3-Poti.zip](./RaceBox-GhostCar-StartingLights-ESP32-S3-Poti.zip)
+    [RaceBox-GhostCar-StartingLights-ESP32-S3-Poti.zip](./RaceBox-GhostCar-StartingLights-ESP32-S3-Poti.zip)<br><iframe width="560" height="315" src="http://www.youtube.com/watch?v=PwxAJHPKN4w" frameborder="0" allowfullscreen></iframe><br><br>
 
 #### Für ESP32-C3 (Startampel + Bluetooth-GhostCar)
 
