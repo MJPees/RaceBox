@@ -60,7 +60,7 @@ Diese Version kombiniert das GhostCar mit einer Startampel. **Benötigt 20 WS281
 ### RaceBox-StartingLightsDisplay
 
 Eine optisch ansprechende Startampel, einfach zu bauen, basierend auf einem ESP32-C6 mit kleinem Display. Inklusive Werbebannern im Idle-Modus.
-[RaceBox-StartingLightsDisplay-ESP32-C6.zip](./RaceBox-StartingLightsDisplay-ESP32-C6.zip)<br><br><img src="../images/RaceBox-StartingLightsDisplay_1.jpg" width=200/><img src="../images/RaceBox-StartingLightsDisplay_2.jpg" width=200/><img src="../images/RaceBox-StartingLightsDisplay_3.jpg" width=200/><br><br>
+[RaceBox-StartingLightsDisplay-ESP32-C6.zip](./RaceBox-StartingLightsDisplay-ESP32-C6.zip)<br><br><img src="../images/RaceBox-StartingLightsDisplay_1.jpg" height = 150/><img src="../images/RaceBox-StartingLightsDisplay_2.jpg" height=150/><img src="../images/RaceBox-StartingLightsDisplay_3.jpg" height=150/><br><br>
 
 -----
 
