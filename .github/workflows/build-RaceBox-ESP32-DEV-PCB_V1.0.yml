@@ -48,6 +48,10 @@ jobs:
           sed -i 's/^[[:space:]]*\/\/#[[:space:]]*define RaceBox_PCB_V1_0/#define RaceBox_PCB_V1_0/g' "${CONFIG_FILE}"
           echo "-> '#define RaceBox_PCB_V1_0 aktiviert.
 
+          # Optional: Änderungen im Log anzeigen
+          echo "Angepasster Sketch-Inhalt (Auszug Definitionen):"
+          grep -E "define RaceBox_PCB_V1_0 "${CONFIG_FILE}" || true
+
       - name: Compile ESP32 Sketch
         run: |
           # Define a clear build output directory
