@@ -20,19 +20,29 @@
 #define ESP32DEV
 
 //#define INVERT_LEDS
+//#define RaceBox_PCB_V1_0
 
 #ifdef ESP32DEV
   #define SerialRFID Serial2
-  #define RX_PIN 16
-  #define TX_PIN 17
-  #ifdef INVERT_LEDS
+  #ifdef RaceBox_PCB_V1_0
+    #define RX_PIN 17
+    #define TX_PIN 16
     #define RFID_LED_PIN 32
     #define WEBSOCKET_LED_PIN 33
     #define WIFI_AP_LED_PIN 25
+    #define PUSH_BUTTON_PIN 23
   #else
-    #define RFID_LED_PIN 2
-    #define WEBSOCKET_LED_PIN 4
-    #define WIFI_AP_LED_PIN 25
+    #define RX_PIN 16
+    #define TX_PIN 17
+    #ifdef INVERT_LEDS
+      #define RFID_LED_PIN 32
+      #define WEBSOCKET_LED_PIN 33
+      #define WIFI_AP_LED_PIN 25
+    #else
+      #define RFID_LED_PIN 2
+      #define WEBSOCKET_LED_PIN 4
+      #define WIFI_AP_LED_PIN 25
+    #endif
   #endif
 #elif defined(ESP32C3)
   HardwareSerial SerialRFID(1);
@@ -1071,6 +1081,10 @@ void setup() {
   pinMode(WIFI_AP_LED_PIN, OUTPUT);
   ledOff(WIFI_AP_LED_PIN);
 
+  #ifdef PUSH_BUTTON_PIN
+    pinMode(PUSH_BUTTON_PIN, INPUT_PULLUP);
+  #endif
+
   //init rfid storage
   resetRfidStorage();
   delay(2000);
@@ -1150,4 +1164,14 @@ void loop() {
   if(isLedOn(RFID_LED_PIN) && (rfid_led_on_ms + RFID_LED_ON_TIME) < millis()) {
     ledOff(RFID_LED_PIN);
   }
+  #ifdef PUSH_BUTTON_LED_PIN
+    if(digitalRead(PUSH_BUTTON_PIN) == LOW) {
+      resetRfidStorage();
+      while(digitalRead(PUSH_BUTTON_PIN) == LOW) {
+        ledOn(RFID_LED_PIN);
+        wait(100);
+      }
+      ledOff(RFID_LED_PIN);
+    }
+  #endif
 }
