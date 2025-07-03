@@ -46,11 +46,11 @@ jobs:
 
           # Zeile '#define RaceBox_PCB_V1_0' aktivieren (entkommentieren, falls auskommentiert)
           sed -i 's/^[[:space:]]*\/\/#[[:space:]]*define RaceBox_PCB_V1_0/#define RaceBox_PCB_V1_0/g' "${CONFIG_FILE}"
-          echo "-> '#define RaceBox_PCB_V1_0 aktiviert.
+          echo "-> '#define RaceBox_PCB_V1_0' aktiviert."
 
-          # Optional: Änderungen im Log anzeigen
+          # Optional: Aenderungen im Log anzeigen
           echo "Angepasster Sketch-Inhalt (Auszug Definitionen):"
-          grep -E "define RaceBox_PCB_V1_0 "${CONFIG_FILE}" || true
+          grep -E "define RaceBox_PCB_V1_0" "${CONFIG_FILE}" || true
 
       - name: Compile ESP32 Sketch
         run: |
