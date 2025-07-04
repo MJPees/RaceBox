@@ -73,6 +73,7 @@ String config_ch_racing_club_api_key;
 
 int speed = DEFAULT_SPEED; // ghostcar speed %
 bool startButtonPressed = false;
+bool paceCarButtonPressed = false;
 bool stopButtonPressed = false;
 
 StartingLights startingLights(NUM_LEDS, LED_ROWS);
