@@ -34,7 +34,9 @@
   #define STOP_BUTTON_PIN 11 // optional - Stop button for ghostcar - should not be commented out!
   //#define SPEED_POT_PIN 3 // optional - Speed-Potentiometer for ghostcar speed
 #elif defined(ESP32C3)
-  #define LED_PIN 8 // optional - LED is used for feedback
+  #define WIFI_LED_PIN 8 // optional - LED is used for feedback
+  #define WEBSOCKET_LED_PIN 9 // optional - LED is used for feedback
+  #define PACECAR_BUTTON_PIN 5 // optional - Yellow Flag button for ghostcar - should not be commented out!
   #define START_BUTTON_PIN 6 // optional - Start button for ghostcar - should not be commented out!
   #define STOP_BUTTON_PIN 7 // optional - Stop button for ghostcar - should not be commented out!
   //#define SPEED_POT_PIN 3 // optional - Speed-Potentiometer for ghostcar speed

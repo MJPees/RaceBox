@@ -29,7 +29,7 @@
     #define TX_PIN 16
     #define RFID_LED_PIN 32
     #define WEBSOCKET_LED_PIN 33
-    #define WIFI_AP_LED_PIN 25
+    #define WIFI_LED_PIN 25
     #define PUSH_BUTTON_PIN 23
   #else
     #define RX_PIN 16
@@ -37,11 +37,11 @@
     #ifdef INVERT_LEDS
       #define RFID_LED_PIN 32
       #define WEBSOCKET_LED_PIN 33
-      #define WIFI_AP_LED_PIN 25
+      #define WIFI_LED_PIN 25
     #else
       #define RFID_LED_PIN 2
       #define WEBSOCKET_LED_PIN 4
-      #define WIFI_AP_LED_PIN 25
+      #define WIFI_LED_PIN 25
     #endif
   #endif
 #elif defined(ESP32C3)
@@ -50,7 +50,7 @@
   #define TX_PIN 6
   #define RFID_LED_PIN 8
   #define WEBSOCKET_LED_PIN 9
-  #define WIFI_AP_LED_PIN 10
+  #define WIFI_LED_PIN 10
 #endif
 
 #define WIFI_CONNECT_ATTEMPTS 20
@@ -473,7 +473,7 @@ void wifi_reload() {
     Serial.print("WiFi: Hostname: ");
     Serial.println(WiFi.getHostname());
     wifi_ap_mode = false;
-    ledOff(WIFI_AP_LED_PIN);
+    ledOn(WIFI_LED_PIN);
   } else {
     Serial.println("\nWiFi: connect failed, starting AP mode");
     WiFi.disconnect(true);
@@ -481,7 +481,7 @@ void wifi_reload() {
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
     wifi_ap_mode = true;
-    ledOn(WIFI_AP_LED_PIN);
+    ledOff(WIFI_LED_PIN);
     Serial.print("\nWiFi: AP started, IP: ");
     Serial.println(WiFi.softAPIP());
   }
@@ -1078,8 +1078,8 @@ void setup() {
   pinMode(WEBSOCKET_LED_PIN, OUTPUT);
   ledOff(WEBSOCKET_LED_PIN);
 
-  pinMode(WIFI_AP_LED_PIN, OUTPUT);
-  ledOff(WIFI_AP_LED_PIN);
+  pinMode(WIFI_LED_PIN, OUTPUT);
+  ledOff(WIFI_LED_PIN);
 
   #ifdef PUSH_BUTTON_PIN
     pinMode(PUSH_BUTTON_PIN, INPUT_PULLUP);
@@ -1118,21 +1118,21 @@ void setup() {
       Serial.print("WiFi: Hostname: ");
       Serial.println(WiFi.getHostname());
       wifi_ap_mode = false;
-      ledOff(WIFI_AP_LED_PIN);
+      ledOn(WIFI_LED_PIN);
     } else {
       Serial.println("\nWiFi: connection failed!");
       WiFi.softAP(WIFI_AP_SSID);
       dnsServer.start();
       Serial.println("WiFi: started AP mode");
       wifi_ap_mode = true;
-      ledOn(WIFI_AP_LED_PIN);
+      ledOff(WIFI_LED_PIN);
     }
   } else {
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
     Serial.println("WiFi: started AP mode");
     wifi_ap_mode = true;
-    ledOn(WIFI_AP_LED_PIN);
+    ledOff(WIFI_LED_PIN);
   }
 
   server.on("/", handleRoot);

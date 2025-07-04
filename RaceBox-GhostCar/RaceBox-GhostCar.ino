@@ -317,6 +317,9 @@ void wifi_reload() {
       Serial.println(WiFi.getHostname());
     #endif
     wifi_ap_mode = false;
+    #ifdef WIFI_LED_PIN
+      ledOn(WIFI_LED_PIN);
+    #endif
     startingLights.stopRunningSequence();
     startingLights.setRowLights(wifiLedRows, wifiLedNumRows, BLUE);
   } else {
@@ -328,6 +331,9 @@ void wifi_reload() {
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
     wifi_ap_mode = true;
+    #ifdef WIFI_LED_PIN
+      ledOff(WIFI_LED_PIN);
+    #endif
     #ifdef ESP32C3
       Serial.print("\nWiFi: AP started, IP: ");
       Serial.println(WiFi.softAPIP());
@@ -552,10 +558,10 @@ void onEventsCallback(WebsocketsEvent event, String data) {
     #ifdef RGB_LED
       rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
     #endif
-    #ifdef LED_PIN
-      digitalWrite(LED_PIN, LOW);
-    #endif
     websocket_connected = true;
+    #ifdef WEBSOCKET_LED_PIN
+      ledOn(WEBSOCKET_LED_PIN);
+    #endif
     startingLights.stopRunningSequence();
     startingLights.setRowLights(websocketLedRows, websocketLedNumRows, WHITE);
   } else if(event == WebsocketsEvent::ConnectionClosed) {
@@ -565,10 +571,10 @@ void onEventsCallback(WebsocketsEvent event, String data) {
     #ifdef RGB_LED
       rgbLedWrite(RGB_LED_PIN, 0, 0, 255);
     #endif
-    #ifdef LED_PIN
-      digitalWrite(LED_PIN, HIGH);
-    #endif
     websocket_connected = false;
+    #ifdef WEBSOCKET_LED_PIN
+      ledOff(WEBSOCKET_LED_PIN);
+    #endif
     startingLights.stopRunningSequence();
     startingLights.runFlashLights(websocketLedRows, websocketLedNumRows, WEBSOCKET_FLAHS_INTERVAL, WHITE);
   } else if(event == WebsocketsEvent::GotPing) {
@@ -707,9 +713,10 @@ void resetJoystickPosition() {
 
 void checkButtons() {
   startButtonPressed = digitalRead(START_BUTTON_PIN) == LOW;
+  paceCarButtonPressed = digitalRead(PACECAR_BUTTON_PIN) == LOW;
   stopButtonPressed = digitalRead(STOP_BUTTON_PIN) == LOW;
 
-  if(startButtonPressed || stopButtonPressed) {
+  if(startButtonPressed || stopButtonPressed || paceCarButtonPressed) {
     #ifdef ESP32C3
       Serial.println("Button pressed");
     #endif
@@ -742,6 +749,30 @@ void checkButtons() {
         drive();
       }
     }
+    else if(paceCarButtonPressed) {
+      //TODO: implement yellow flag button
+      /*
+      if(websocket_connected) {
+        if(config_target_system == "smart_race") {
+          doc["type"] = "race_control";
+          doc["data"]["value"] = "stop";
+        }
+        else if(config_target_system == "ch_racing_club") {
+          if(isDriving) {
+            doc["command"] = "stop";
+            doc["status"] = "suspended";
+            doc["api_key"] = config_ch_racing_club_api_key;
+          } else {
+            doc["command"] = "drive";
+            doc["status"] = "running";
+            doc["api_key"] = config_ch_racing_club_api_key;
+          }
+        }
+      } else {
+        stop();
+      }
+      */
+    }
     else if(stopButtonPressed) {
       if(websocket_connected) {
         if(config_target_system == "smart_race") {
@@ -769,15 +800,39 @@ void checkButtons() {
       client.ping();
       client.send(output);
     }
-    while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW) {
+    while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW || digitalRead(PACECAR_BUTTON_PIN) == LOW) {
       wait(100);
     }
   }
 }
 
+bool isLedOn(int led_pin) {
+  if (digitalRead(led_pin) == LOW) {
+    return true;
+  }
+  return false;
+}
+
+void ledOn(int led_pin) {
+  digitalWrite(led_pin, LOW);
+}
+
+void ledOff(int led_pin) {
+  digitalWrite(led_pin, HIGH);
+}
+
 void setup() {
   startingLights.begin();
   preferences.begin(PREFERENCES_NAMESPACE, false);
+
+  #ifdef WEBSOCKET_LED_PIN
+    pinMode(WEBSOCKET_LED_PIN, OUTPUT);
+    ledOff(WEBSOCKET_LED_PIN);
+  #endif
+  #ifdef WIFI_LED_PIN
+    pinMode(WIFI_LED_PIN, OUTPUT);
+    ledOff(WIFI_LED_PIN);
+  #endif
 
   #ifdef ESP32C3
     Serial.begin(115200);
@@ -815,6 +870,9 @@ void setup() {
         Serial.println(WiFi.getHostname());
       #endif
       wifi_ap_mode = false;
+      #ifdef WIFI_LED_PIN
+        ledOn(WIFI_LED_PIN);
+      #endif
       startingLights.setRowLights(wifiLedRows, wifiLedNumRows, BLUE);
     } else {
       #ifdef ESP32C3
@@ -826,6 +884,9 @@ void setup() {
         Serial.println("WiFi: started AP mode");
       #endif
       wifi_ap_mode = true;
+      #ifdef WIFI_LED_PIN
+        ledOff(WIFI_LED_PIN);
+      #endif
       startingLights.setRowLights(wifiLedRows, wifiLedNumRows, BLUE);
     }
   } else {
@@ -835,6 +896,9 @@ void setup() {
       Serial.println("WiFi: started AP mod");
     #endif
     wifi_ap_mode = true;
+    #ifdef WIFI_LED_PIN
+      ledOff(WIFI_LED_PIN);
+    #endif
     startingLights.runFlashLights(wifiLedRows, wifiLedNumRows, WIFI_FLAHS_INTERVAL, BLUE, -1);
   }
 
@@ -842,16 +906,11 @@ void setup() {
     pinMode(RGB_LED_PIN, OUTPUT);
     rgbLedWrite(RGB_LED_PIN, 0, 0, 255);
   #endif
-  #ifdef LED_PIN
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, LOW);
-    wait(500);
-    digitalWrite(LED_PIN, HIGH);
-  #endif
 
   wait(2000);
 
   pinMode(START_BUTTON_PIN, INPUT_PULLUP);
+  pinMode(PACECAR_BUTTON_PIN, INPUT_PULLUP);
   pinMode(STOP_BUTTON_PIN, INPUT_PULLUP);
 
   initializeJoystickMode();
