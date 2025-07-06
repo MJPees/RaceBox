@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define VERSION "1.2.0" // dont forget to update the releases.json
+#define VERSION "1.2.1" // dont forget to update the releases.json
 
 //#define DEBUG // enable debug output to Serial Monitor
 
@@ -30,14 +30,12 @@
 #ifdef ESP32S3
   #define RGB_LED // optional - RGB LED is used for feedback
   #define RGB_LED_PIN 21
-  #define PACECAR_BUTTON_PIN 9 // optional - Yellow Flag button for pace car - should not be commented out!
   #define START_BUTTON_PIN 10 // optional - Start button for ghostcar - should not be commented out!
   #define STOP_BUTTON_PIN 11 // optional - Stop button for ghostcar - should not be commented out!
   //#define SPEED_POT_PIN 3 // optional - Speed-Potentiometer for ghostcar speed
 #elif defined(ESP32C3)
   #define WIFI_LED_PIN 8 // optional - LED is used for feedback
   #define WEBSOCKET_LED_PIN 9 // optional - LED is used for feedback
-  #define PACECAR_BUTTON_PIN 5 // optional - Yellow Flag button for pace car - should not be commented out!
   #define START_BUTTON_PIN 6 // optional - Start button for ghostcar - should not be commented out!
   #define STOP_BUTTON_PIN 7 // optional - Stop button for ghostcar - should not be commented out!
   //#define SPEED_POT_PIN 3 // optional - Speed-Potentiometer for ghostcar speed
@@ -50,7 +48,7 @@
 // define the FastLED pin
 #define FAST_LED_PIN 5 // Pin for FastLED, e.g. GPIO 5
 
-#define LED_BRIGHTNESS 150 // LED brightness (0-255)
+#define DEFAULT_BRIGHTNESS 150 // default brightness for the LEDs, can be changed in the web interface
 
 // define colors for the starting lights
 #define RED CRGB::Red // Green and Red may be swapped

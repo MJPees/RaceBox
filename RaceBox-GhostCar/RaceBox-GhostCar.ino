@@ -72,8 +72,8 @@ String config_ch_racing_club_websocket_ca_cert;
 String config_ch_racing_club_api_key;
 
 int speed = DEFAULT_SPEED; // ghostcar speed %
+int ledBrightness = DEFAULT_BRIGHTNESS; // LED brightness
 bool startButtonPressed = false;
-bool paceCarButtonPressed = false;
 bool stopButtonPressed = false;
 
 StartingLights startingLights(NUM_LEDS, LED_ROWS);
@@ -102,8 +102,13 @@ void configuration_save() {
   preferences.putString("chrc_ws_server", config_ch_racing_club_websocket_server);
   preferences.putString("chrc_ws_ca_cert", config_ch_racing_club_websocket_ca_cert);
   preferences.putString("chrc_api_key", config_ch_racing_club_api_key);
-
-  preferences.putInt("speed", speed);
+  
+  #ifndef SPEED_POT_PIN
+    preferences.putInt("speed", speed);
+  #endif
+  #ifdef STARTING_LIGHTS
+    preferences.putInt("led_brightness", ledBrightness);
+  #endif
 }
 
 void configuration_load() {
@@ -119,8 +124,12 @@ void configuration_load() {
   config_ch_racing_club_websocket_server = preferences.getString("chrc_ws_server", "");
   config_ch_racing_club_websocket_ca_cert = preferences.getString("chrc_ws_ca_cert", "");
   config_ch_racing_club_api_key = preferences.getString("chrc_api_key", "");
-  speed = preferences.getInt("speed", DEFAULT_SPEED);
-
+  #ifndef SPEED_POT_PIN
+    speed = preferences.getInt("speed", DEFAULT_SPEED);
+  #endif
+  #ifdef STARTING_LIGHTS
+    startingLights.setBrightness(preferences.getInt("led_brightness", 150));
+  #endif
   if (config_target_system == "smart_race") {
     websocket_server = config_smart_race_websocket_server;
     websocket_ca_cert = config_smart_race_websocket_ca_cert;
@@ -187,8 +196,14 @@ void handleRoot() {
     html += "    <textarea id='config_smart_race_websocket_ca_cert' name='config_smart_race_websocket_ca_cert' rows='12' cols='64' style='font-family:monospace;width:100%;'>" + config_smart_race_websocket_ca_cert + "</textarea><br>";
     html += "  </div>";
     html += "</div>";
-    html += "<label for='speed'>GhostCar speed (%):</label>";
-    html += "<input type='number' id='speed' name='speed' value='" + String(speed) + "'><br>";
+    #ifdef STARTING_LIGHTS
+      html += "<label for='led_brightness'>LED Brightness (0-255):</label>";
+      html += "<input type='number' id='led_brightness' name='led_brightness' value='" + String(ledBrightness) + "' min='0' max='255'><br>";
+    #endif
+    #ifndef SPEED_POT_PIN
+      html += "<label for='speed'>GhostCar speed (%):</label>";
+      html += "<input type='number' id='speed' name='speed' value='" + String(speed) + "'><br>";
+    #endif
   }
 
   html += "<input type='submit' style='margin-bottom:20px;' value='Speichern'>";
@@ -234,23 +249,34 @@ void handleConfig() {
         websocket_server = config_ch_racing_club_websocket_server;
         websocket_ca_cert = config_ch_racing_club_websocket_ca_cert;
       }
-      speed = server.arg("speed").toInt();
-      if (speed > 100) {
-        speed = 100;
-      }
-      else if (speed < 10) {
-        speed = 10;
-      }
-      if(isDriving) {
-        Joystick_BLE.setAccelerator(speed);
-        Joystick_BLE.setAccelerator(speed);
-        Joystick_BLE.sendState();
-        #ifndef ESP32C3
-          Joystick.setAccelerator(speed);
-          Joystick.setAccelerator(speed);
-          Joystick.sendState();
-        #endif
-      }
+      #ifdef STARTING_LIGHTS
+        ledBrightness = server.arg("led_brightness").toInt();
+        if (ledBrightness < 0) {
+          ledBrightness = 0;
+        } else if (ledBrightness > 255) {
+          ledBrightness = 255;
+        }
+        startingLights.setBrightness(ledBrightness);
+      #endif
+      #ifndef SPEED_POT_PIN
+        speed = server.arg("speed").toInt();
+        if (speed > 100) {
+          speed = 100;
+        }
+        else if (speed < 10) {
+          speed = 10;
+        }
+        if(isDriving) {
+          Joystick_BLE.setAccelerator(speed);
+          Joystick_BLE.setAccelerator(speed);
+          Joystick_BLE.sendState();
+          #ifndef ESP32C3
+            Joystick.setAccelerator(speed);
+            Joystick.setAccelerator(speed);
+            Joystick.sendState();
+          #endif
+        }
+      #endif
     }
     configuration_save();
     server.send(200, "text/html", String("<!DOCTYPE html><html><head><title>") + PRODUCT_NAME + "</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
@@ -524,7 +550,7 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
       #endif
       stop();
       startingLights.stopRunningSequence();
-      startingLights.runFlashLights(smartraceYellowLedRows, smartraceYellowLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, YELLOW, -1);
+      startingLights.runFlashLights(smartraceStopLedRows, smartraceStopLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, RED, -1);
     } else if (data == "ended") {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("INFO - ended");
@@ -532,10 +558,27 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
       stop();
       startingLights.stopRunningSequence();
       startingLights.runFlashLights(smartraceStopLedRows, smartraceStopLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, RED, -1);
-    } else {
+      } else {
       #if defined(DEBUG) && defined(ESP32C3)
         Serial.println("Unknown message type: " + type);
       #endif
+    }
+  } else if(type == "update_vsc_status") {
+    String data = doc["data"].as<String>();
+    if (data == "active") {
+      #if defined(DEBUG) && defined(ESP32C3)
+        Serial.println("INFO - vsc active");
+      #endif
+      stop();
+      startingLights.stopRunningSequence();
+      startingLights.runFlashLights(smartraceYellowLedRows, smartraceYellowLedNumRows, SMARTRACE_LEDS_FLASH_INTERVAL, YELLOW, -1);
+    } else if (data == "off") {
+      #if defined(DEBUG) && defined(ESP32C3)
+        Serial.println("INFO - vsc off");
+      #endif
+      startingLights.stopRunningSequence();
+      startingLights.setRowLights(smartraceDriveLedRows, smartraceDriveLedNumRows, GREEN);
+      drive();
     }
   } else if (type == "reset") {
     #if defined(DEBUG) && defined(ESP32C3)
@@ -714,10 +757,9 @@ void resetJoystickPosition() {
 
 void checkButtons() {
   startButtonPressed = digitalRead(START_BUTTON_PIN) == LOW;
-  paceCarButtonPressed = digitalRead(PACECAR_BUTTON_PIN) == LOW;
   stopButtonPressed = digitalRead(STOP_BUTTON_PIN) == LOW;
 
-  if(startButtonPressed || stopButtonPressed || paceCarButtonPressed) {
+  if(startButtonPressed || stopButtonPressed) {
     #ifdef ESP32C3
       Serial.println("Button pressed");
     #endif
@@ -725,8 +767,13 @@ void checkButtons() {
     if(startButtonPressed) {
       if(websocket_connected) {
         if(config_target_system == "smart_race") {
-          doc["type"] = "race_control";
-          doc["data"]["value"] = "start";
+          if(isDriving) {
+            doc["type"] = "race_control";
+            doc["data"]["value"]  = "vsc";
+          } else {
+            doc["type"] = "race_control";
+            doc["data"]["value"] = "start";
+          }
         }
         else if(config_target_system == "ch_racing_club") {
           if(isDriving) {
@@ -750,35 +797,16 @@ void checkButtons() {
         drive();
       }
     }
-    else if(paceCarButtonPressed) {
-      //TODO: implement yellow flag button
-      /*
-      if(websocket_connected) {
-        if(config_target_system == "smart_race") {
-          doc["type"] = "race_control";
-          doc["data"]["value"] = "stop";
-        }
-        else if(config_target_system == "ch_racing_club") {
-          if(isDriving) {
-            doc["command"] = "stop";
-            doc["status"] = "suspended";
-            doc["api_key"] = config_ch_racing_club_api_key;
-          } else {
-            doc["command"] = "drive";
-            doc["status"] = "running";
-            doc["api_key"] = config_ch_racing_club_api_key;
-          }
-        }
-      } else {
-        stop();
-      }
-      */
-    }
     else if(stopButtonPressed) {
       if(websocket_connected) {
         if(config_target_system == "smart_race") {
-          doc["type"] = "race_control";
-          doc["data"]["value"] = "stop";
+          if(isDriving) {
+            doc["type"] = "race_control";
+            doc["data"]["value"] = "stop";
+          } else {
+            doc["type"] = "race_control";
+            doc["data"]["value"] = "esc";
+          }
         }
         else if(config_target_system == "ch_racing_club") {
           if(isDriving) {
@@ -801,7 +829,7 @@ void checkButtons() {
       client.ping();
       client.send(output);
     }
-    while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW || digitalRead(PACECAR_BUTTON_PIN) == LOW) {
+    while(digitalRead(START_BUTTON_PIN) == LOW || digitalRead(STOP_BUTTON_PIN) == LOW) {
       wait(100);
     }
   }
@@ -823,7 +851,7 @@ void ledOff(int led_pin) {
 }
 
 void setup() {
-  startingLights.begin();
+  startingLights.begin(ledBrightness);
   preferences.begin(PREFERENCES_NAMESPACE, false);
 
   #ifdef WEBSOCKET_LED_PIN
@@ -911,7 +939,6 @@ void setup() {
   wait(2000);
 
   pinMode(START_BUTTON_PIN, INPUT_PULLUP);
-  pinMode(PACECAR_BUTTON_PIN, INPUT_PULLUP);
   pinMode(STOP_BUTTON_PIN, INPUT_PULLUP);
 
   initializeJoystickMode();

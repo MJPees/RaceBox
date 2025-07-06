@@ -23,7 +23,8 @@ class StartingLights {
   public:
     StartingLights(int numLeds, int ledRows);
     ~StartingLights();
-    void begin();
+    void begin(int brightness);
+    void setBrightness(int brightness);
     int getMatrixIndex(int row, int col) const;
     void setAllLightsOff();
     void setAllLights(CRGB color);

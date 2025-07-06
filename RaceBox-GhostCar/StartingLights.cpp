@@ -67,10 +67,18 @@ int StartingLights::getMatrixIndex(int row, int col) const {
   return ledMatrix[row][col];
 }
 
-void StartingLights::begin() {
+void StartingLights::begin(int brightness) {
   FastLED.addLeds<LED_TYPE, FAST_LED_PIN, GRB>(leds, numLeds);
-  FastLED.setBrightness(LED_BRIGHTNESS);
+  if(brightness < 0 || brightness > 255) {
+    brightness = 100;
+  }
+  setBrightness(brightness);
   setAllLightsOff();
+}
+
+void StartingLights::setBrightness(int brightness) {
+  FastLED.setBrightness(brightness);
+  FastLED.show();
 }
 
 void StartingLights::setAllLightsOff() {
