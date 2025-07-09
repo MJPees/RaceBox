@@ -66,7 +66,7 @@ Eine optisch ansprechende Startampel, einfach zu bauen, basierend auf einem ESP3
 
 ### RFID-Label-Writer
 
-Mit dem **RFID-Label-Writer** können Sie neue RFID-Tags mit einer einmalig neuen ID beschreiben. Die Firmware kann temporär auf die RaceBox aufgespielt werden. Ziehen Sie anschließend alle Tags **nacheinander** einmal über die Antenne. Die IDs werden ab 1 mit jedem Tag hochgezählt und sind somit eindeutig.
+Mit dem **RFID-Label-Writer** können Sie neue RFID-Tags mit einer einmalig neuen ID beschreiben. Die Firmware kann temporär auf den RFID-Connector aufgespielt werden. Ziehen Sie anschließend alle Tags **nacheinander** einmal über die Antenne. Die IDs werden ab 1 mit jedem Tag hochgezählt und sind somit eindeutig.
 
 **Wichtig:** Bei einem Neustart der Box beginnt der Schreibvorgang wieder bei 1\!
 [RFID-Label-Writer-ESP32-DEV.zip](./RFID-Label-Writer-ESP32-DEV.zip)

@@ -1,9 +1,9 @@
-# RaceBox
+# RFID-Connector
 
-RaceBox ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a> oder <a href="https://carrera-hybrid-racing-club.de/">CH-Racing-Club</a>. Hierzu wird bei SmartRace der analoge Sensormodus genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 8 Autos möglich (8 Controller in SmartRace).<br>
+Der RFID-Connector ermöglicht eine Zeitnahme für z.B. Carrera Hybrid oder Dr!ft von Sturmkind usw. mit <a href="https://www.smartrace.de/">SmartRace</a> oder <a href="https://carrera-hybrid-racing-club.de/">CH-Racing-Club</a>. Hierzu wird bei SmartRace der analoge Sensormodus genutzt. Die Anbindung erfolgt über WLAN. Die Zeitnahme ist aktuell für 8 Autos möglich (8 Controller in SmartRace).<br>
 Des Weiteren können 2 RFID-Ids für einen Controller definiert werden. Somit sind auch Langstreckenrennen mit jeweils zwei Fahrzeugen pro Team möglich.
 Der ESP32 geht bei fehlender WLAN-Konfiguration automatisch in einen Accesspoint-Modus.
-Über das Webinterface <a href="http://RaceBox">http://RaceBox</a> kann RaceBox konfiguriert werden.
+Über das Webinterface <a href="http://rfid-connector">http://rfid-connector</a> kann der RFID-Connector konfiguriert werden.
 Neben SSID und Passwort des zu verwendenden Routers muss die IP-Addresse und der Port des SmartRace-Servers für den analogen Sensorbetrieb gesetzt werden.
 Der Power Level für den RFID-Empfang kann von 10dbm bis 26dbm eingestellt werden.
 Die Ids der RFID-Chips für Controller 1-8 werden bei neu erkannten IDs automatisch gefüllt, wenn sie im Webinterface zuvor "leer" sind.
@@ -16,7 +16,7 @@ Standard ist der ESP32-Dev mit externer Antenne.
 <a href="./script-flasher/README.md">Flash-Anleitungen</a>
 
 ## Konfiguration über Web-Interface:
-<a href="http://RaceBox">http://RaceBox</a><br><br>
+<a href="http://rfid-connector">http://rfid-connector</a><br><br>
 <img src="./images/wifi-config.png"/><br>
 <img src="./images/smartrace-config.png"/><br>
 <img src="./images/ch-racing-club-config.png"/>
