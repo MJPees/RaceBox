@@ -1,6 +1,6 @@
 # Skript-Flasher
 
-Willkommen bei den Skript-Flashern\! Hier finden Sie die Firmware für Ihrer RaceCollection Geräte. Das Flashen der unterstützten ESP32-Geräte ist einfach: Laden Sie die entsprechende Zip-Datei herunter ("<i>Download raw file</i>") und führen Sie das enthaltene Skript aus. Der Flasher unterstützt **Windows** und **Linux**.
+Willkommen bei den Skript-Flashern\! Hier finden Sie die Firmware für Ihre RaceCollection Geräte. Das Flashen der unterstützten ESP32-Geräte ist einfach: Laden Sie die entsprechende Zip-Datei herunter ("<i>Download raw file</i>") und führen Sie das enthaltene Skript aus. Der Flasher unterstützt **Windows** und **Linux**.
 
 Eine detaillierte Anleitung für den Flash-Vorgang unter Windows finden Sie hier: [Anleitung Windows](../dev-tools/github-workflow-files/flasher/windows/README.md). Diese Anleitung ist auch in jeder Flasher-Zip-Datei enthalten.
 
