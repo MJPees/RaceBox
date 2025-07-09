@@ -8,7 +8,7 @@
 ##########################################################################
 Write-Host "##############################################"
 Write-Host "#                                            #"
-Write-Host "#           RaceBox-Flasher ESP32            #"
+Write-Host "#              Flasher ESP32                 #"
 Write-Host "#                                            #"
 Write-Host "##############################################"
 Write-Host "#    Bitte im Geraetemanager den COM-Port    #"

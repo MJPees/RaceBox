@@ -11,8 +11,8 @@
 #include "src/LCD_Image.h"
 
 /* configuration */
-#define WIFI_AP_SSID "RaceBox-StartingLights-Config"
-#define WIFI_DEFAULT_HOSTNAME "racebox-starting-lights"
+#define WIFI_AP_SSID "StartingLights-Config"
+#define WIFI_DEFAULT_HOSTNAME "starting-lights"
 #define PREFERENCES_NAMESPACE "racebox"
 
 #define VERSION "1.0.1" // dont forget to update the releases.json
@@ -99,7 +99,7 @@ void configuration_load() {
     websocket_server = config_smart_race_websocket_server;
     websocket_ca_cert = config_smart_race_websocket_ca_cert;
 
-    Serial.println("\nConfiguration: RaceBox-StartingLights loaded");
+    Serial.println("\nConfiguration: StartingLights loaded");
   }
 
   if (config_target_system == "ch_racing_club") {
@@ -116,7 +116,7 @@ void handleNotFound() {
 }
 
 void handleRoot() {
-  String html = "<!DOCTYPE html><html><head><title>RaceBox</title>";
+  String html = "<!DOCTYPE html><html><head><title>StartingLights</title>";
   html += "<meta charset='UTF-8'>"; // Specify UTF-8 encoding
   html += "<style>";
   html += "*, *::before, *::after {box-sizing: border-box;}";
@@ -130,7 +130,7 @@ void handleRoot() {
   html += "<script src='https://unpkg.com/alpinejs' defer></script>";
   html += "</head><body>";
   html += "<form x-data=\"{ targetSystem: '" + config_target_system + "', smartRaceWebsocketServer: '" + config_smart_race_websocket_server + "', racingClubWebsocketServer: '" + config_ch_racing_club_websocket_server + "' }\" action='/config' method='POST'>";
-  html += "<h1 align=center>RaceBox-StartingLights</h1>";
+  html += "<h1 align=center>StartingLights</h1>";
 
   html += "<label for='config_wifi_ssid'>SSID:</label>";
   html += "<input type='text' id='config_wifi_ssid' name='config_wifi_ssid' value='" + config_wifi_ssid + "'><br>";
@@ -216,7 +216,7 @@ void handleConfig() {
 
     configuration_save();
 
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RaceBox-StartingLights</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>StartingLights</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
     wait(500);
     if (reConnectWebsocket) {
       if(websocket_connected) {
@@ -232,7 +232,7 @@ void handleConfig() {
     }
     Serial.println("RFID: started ReadMulti.");
   } else {
-    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>RaceBox-StartingLights</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
+    server.send(200, "text/html", "<!DOCTYPE html><html><head><title>StartingLights</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + config_wifi_hostname + "'; }, 2000);</script></body></html>");
   }
 }
 
@@ -595,7 +595,7 @@ void setup() {
 
   wait(2000);
 
-  Serial.print("RaceBox-StartingLights Version: ");
+  Serial.print("StartingLights Version: ");
   Serial.println(VERSION);
   Serial.println("############################");
 

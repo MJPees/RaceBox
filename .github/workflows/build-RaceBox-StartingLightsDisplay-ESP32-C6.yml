@@ -1,4 +1,4 @@
-name: Build RaceBox-StartingLightsDisplay ESP32-C6 Firmware
+name: Build StartingLightsDisplay ESP32-C6 Firmware
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - main
       - 'feat/*'
     paths:
-      - 'RaceBox-StartingLightsDisplay/**'
-      - '.github/workflows/build-RaceBox-StartingLightsDisplay-ESP32-C6.yml'
+      - 'StartingLightsDisplay/**'
+      - '.github/workflows/build-StartingLightsDisplay-ESP32-C6.yml'
       - 'dev-tools/github-workflow-files/flasher/**'
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
 
       - name: Install Custom Libraries from Zips
         run: |
-          CUSTOM_LIBS_ZIP_DIR="./RaceBox-StartingLightsDisplay/libraries" # Aktualisierter Pfad für dich
+          CUSTOM_LIBS_ZIP_DIR="./StartingLightsDisplay/libraries" # Aktualisierter Pfad für dich
           ARDUINO_CLI_LIB_DIR="$HOME/Arduino/libraries" # Das Standard-Bibliotheksverzeichnis der Arduino CLI
           
           # Sicherstellen, dass die Verzeichnisse existieren
@@ -83,11 +83,11 @@ jobs:
           arduino-cli compile \
             --fqbn esp32:esp32:esp32c6 \
             --build-path ${BUILD_OUTPUT_DIR} \
-            ./RaceBox-StartingLightsDisplay/
+            ./StartingLightsDisplay/
 
       - name: Create Artifact Directory
         run: |
-          SUB_DIR="RaceBox-StartingLightsDisplay-ESP32-C6"
+          SUB_DIR="StartingLightsDisplay-ESP32-C6"
           mkdir -p artifact_package/${SUB_DIR}/bin
           mkdir -p artifact_package/${SUB_DIR}/windows
           mkdir -p artifact_package/${SUB_DIR}/linux
@@ -96,9 +96,9 @@ jobs:
       - name: Move compiled binaries to Artifact Directory
         run: |
           BUILD_OUTPUT_DIR="build_output"
-          SUB_DIR="RaceBox-StartingLightsDisplay-ESP32-C6"
+          SUB_DIR="StartingLightsDisplay-ESP32-C6"
           TARGET_BIN_DIR="./artifact_package/${SUB_DIR}/bin"
-          INO_FILE="RaceBox-StartingLightsDisplay.ino"
+          INO_FILE="StartingLightsDisplay.ino"
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.bootloader.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.partitions.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
@@ -106,13 +106,14 @@ jobs:
 
       - name: copy esptool and Flash Scripts to Artifact Package
         run: |
-          SUB_DIR="RaceBox-StartingLightsDisplay-ESP32-C6"
-          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C6_RaceBox-StartingLightsDisplay.ps1 ./artifact_package/${SUB_DIR}/windows/
+          SUB_DIR="StartingLightsDisplay-ESP32-C6"
+          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C6_StartingLightsDisplay.ps1 ./artifact_package/${SUB_DIR}/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/esptool.exe ./artifact_package/${SUB_DIR}/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/README.md ./artifact_package/${SUB_DIR}/windows/
-          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C6_RaceBox-StartingLightsDisplay.sh ./artifact_package/${SUB_DIR}/linux/
+          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C6_StartingLightsDisplay.sh ./artifact_package/${SUB_DIR}/linux/
           cp ./dev-tools/github-workflow-files/flasher/linux/esptool ./artifact_package/${SUB_DIR}/linux/
-        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-C6_RaceBox-StartingLightsDisplay.sh ./artifact_package/${SUB_DIR}/osx/
+          cp -r ./startinglightsdisplay/sdcard ./artifact_package/${SUB_DIR}/sdcard
+        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-C6_StartingLightsDisplay.sh ./artifact_package/${SUB_DIR}/osx/
         #cp ./dev-tools/github-workflow-files/flasher/osx/esptool ./artifact_package/${SUB_DIR}/osx/
 
       - name: lst package content
@@ -128,6 +129,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: artifact_package
-          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RaceBox-StartingLightsDisplay-ESP32-C6
-          name: RaceBox-StartingLightsDisplay-ESP32-C6
+          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-StartingLightsDisplay-ESP32-C6
+          name: StartingLightsDisplay-ESP32-C6
           retention-days: 7

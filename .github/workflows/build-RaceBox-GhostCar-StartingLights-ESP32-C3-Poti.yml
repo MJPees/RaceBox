@@ -1,4 +1,4 @@
-name: Build RaceBox-GhostCar-StartingLights ESP32-C3 with Poti Firmware
+name: Build GhostCar-StartingLights ESP32-C3 with Poti Firmware
 
 on:
   push:
@@ -6,8 +6,8 @@ on:
       - main
       - 'feat/*'
     paths:
-      - 'RaceBox-GhostCar/**'
-      - '.github/workflows/build-RaceBox-GhostCar-StartingLights-ESP32-C3-Poti.yml'
+      - 'GhostCar/**'
+      - '.github/workflows/build-GhostCar-StartingLights-ESP32-C3-Poti.yml'
       - 'dev-tools/github-workflow-files/flasher/**'
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
 
       - name: Install Custom Libraries from Zips
         run: |
-          CUSTOM_LIBS_ZIP_DIR="./RaceBox-GhostCar/libraries" # Aktualisierter Pfad für dich
+          CUSTOM_LIBS_ZIP_DIR="./GhostCar/libraries" # Aktualisierter Pfad für dich
           ARDUINO_CLI_LIB_DIR="$HOME/Arduino/libraries" # Das Standard-Bibliotheksverzeichnis der Arduino CLI
           
           # Sicherstellen, dass die Verzeichnisse existieren
@@ -85,7 +85,7 @@ jobs:
 
       - name: Modify Sketch Defines
         run: |
-          CONFIG_FILE="./RaceBox-GhostCar/config.h" # Pfad Konfigurationsdatei
+          CONFIG_FILE="./GhostCar/config.h" # Pfad Konfigurationsdatei
           echo "Passe ESP32-Definitionen in ${CONFIG_FILE} an..."
 
           # Zeile '#define ESP32C3' aktivieren (entkommentieren, falls auskommentiert)
@@ -120,7 +120,7 @@ jobs:
           arduino-cli compile \
             --fqbn "${FULL_FQBN}" \
             --build-path ${BUILD_OUTPUT_DIR} \
-            ./RaceBox-GhostCar/
+            ./GhostCar/
 
           echo "ACTUAL_BUILD_PATH=${BUILD_OUTPUT_DIR}" >> "$GITHUB_OUTPUT"
           echo "Inhalt des Build-Output-Verzeichnisses nach Kompilierung:"
@@ -130,7 +130,7 @@ jobs:
 
       - name: Create Artifact Directory
         run: |
-          SUB_DIR="RaceBox-GhostCar-StartingLights-ESP32-C3-Poti"
+          SUB_DIR="GhostCar-StartingLights-ESP32-C3-Poti"
           mkdir -p artifact_package/${SUB_DIR}/bin
           mkdir -p artifact_package/${SUB_DIR}/windows
           mkdir -p artifact_package/${SUB_DIR}/linux
@@ -139,9 +139,9 @@ jobs:
       - name: Move compiled binaries to Artifact Directory
         run: |
           BUILD_OUTPUT_DIR="build_output"
-          SUB_DIR="RaceBox-GhostCar-StartingLights-ESP32-C3-Poti"
+          SUB_DIR="GhostCar-StartingLights-ESP32-C3-Poti"
           TARGET_BIN_DIR="./artifact_package/${SUB_DIR}/bin"
-          INO_FILE="RaceBox-GhostCar.ino"
+          INO_FILE="GhostCar.ino"
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.bootloader.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.partitions.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
@@ -149,13 +149,13 @@ jobs:
 
       - name: copy esptool and Flash Scripts to Artifact Package
         run: |
-          SUB_DIR="RaceBox-GhostCar-StartingLights-ESP32-C3-Poti"
-          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C3_RaceBox-GhostCar.ps1 ./artifact_package/${SUB_DIR}/windows/
+          SUB_DIR="GhostCar-StartingLights-ESP32-C3-Poti"
+          cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-C3_GhostCar.ps1 ./artifact_package/${SUB_DIR}/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/esptool.exe ./artifact_package/${SUB_DIR}/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/README.md ./artifact_package/${SUB_DIR}/windows/
-          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C3_RaceBox-GhostCar.sh ./artifact_package/${SUB_DIR}/linux/
+          cp ./dev-tools/github-workflow-files/flasher/linux/ESP32-C3_GhostCar.sh ./artifact_package/${SUB_DIR}/linux/
           cp ./dev-tools/github-workflow-files/flasher/linux/esptool ./artifact_package/${SUB_DIR}/linux/
-        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-C3_RaceBox-GhostCar.sh ./artifact_package/${SUB_DIR}/osx/
+        #cp ./dev-tools/github-workflow-files/flasher/osx/ESP32-C3_GhostCar.sh ./artifact_package/${SUB_DIR}/osx/
         #cp ./dev-tools/github-workflow-files/flasher/osx/esptool ./artifact_package/${SUB_DIR}/osx/
 
       - name: lst package content
@@ -171,6 +171,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: artifact_package 
-          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-RaceBox-GhostCar-StartingLights-ESP32-C3-Poti
-          name: RaceBox-GhostCar-StartingLights-ESP32-C3-Poti
+          #name: ${{ steps.timestamp_gen.outputs.BUILD_DATE }}-GhostCar-StartingLights-ESP32-C3-Poti
+          name: GhostCar-StartingLights-ESP32-C3-Poti
           retention-days: 7

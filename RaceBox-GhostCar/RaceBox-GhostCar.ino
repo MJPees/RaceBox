@@ -14,11 +14,11 @@
 
 /* configuration */
 #ifdef STARTING_LIGHTS
-  #define WIFI_AP_SSID "RaceBox-StartingLights-Config"
-  #define PRODUCT_NAME "RaceBox-StartingLights"
+  #define WIFI_AP_SSID "StartingLights-Config"
+  #define PRODUCT_NAME "StartingLights"
 #else
-  #define WIFI_AP_SSID "RaceBox-GhostCar-Config"
-  #define PRODUCT_NAME "RaceBox-GhostCar"
+  #define WIFI_AP_SSID "GhostCar-Config"
+  #define PRODUCT_NAME "GhostCar"
 #endif
 #define PREFERENCES_NAMESPACE "racebox"
 
@@ -160,7 +160,7 @@ void handleRoot() {
   html += "</head><body>";
   html += "<form x-data=\"{ targetSystem: '" + config_target_system + "', smartRaceWebsocketServer: '" + config_smart_race_websocket_server + "', racingClubWebsocketServer: '" + config_ch_racing_club_websocket_server + "' }\" action='/config' method='POST'>";
   html += String("<h1 align=center>") + PRODUCT_NAME + "</h1>";
-
+  html += String("<h5 align=center>[") + Joystick_BLE.getDeviceName() + "]</h5>";
   html += "<label for='config_wifi_ssid'>SSID:</label>";
   html += "<input type='text' id='config_wifi_ssid' name='config_wifi_ssid' value='" + config_wifi_ssid + "'><br>";
 
@@ -344,8 +344,8 @@ void wifi_reload() {
       Serial.println(WiFi.getHostname());
     #endif
     wifi_ap_mode = false;
-    #ifdef WIFI_LED_PIN
-      ledOn(WIFI_LED_PIN);
+    #ifdef WIFI_AP_LED_PIN
+      ledOff(WIFI_AP_LED_PIN);
     #endif
     startingLights.stopRunningSequence();
     startingLights.setRowLights(wifiLedRows, wifiLedNumRows, BLUE);
@@ -358,8 +358,8 @@ void wifi_reload() {
     WiFi.softAP(WIFI_AP_SSID);
     dnsServer.start();
     wifi_ap_mode = true;
-    #ifdef WIFI_LED_PIN
-      ledOff(WIFI_LED_PIN);
+    #ifdef WIFI_AP_LED_PIN
+      ledOn(WIFI_AP_LED_PIN);
     #endif
     #ifdef ESP32C3
       Serial.print("\nWiFi: AP started, IP: ");
@@ -858,9 +858,9 @@ void setup() {
     pinMode(WEBSOCKET_LED_PIN, OUTPUT);
     ledOff(WEBSOCKET_LED_PIN);
   #endif
-  #ifdef WIFI_LED_PIN
-    pinMode(WIFI_LED_PIN, OUTPUT);
-    ledOff(WIFI_LED_PIN);
+  #ifdef WIFI_AP_LED_PIN
+    pinMode(WIFI_AP_LED_PIN, OUTPUT);
+    ledOff(WIFI_AP_LED_PIN);
   #endif
 
   #ifdef ESP32C3
@@ -899,8 +899,8 @@ void setup() {
         Serial.println(WiFi.getHostname());
       #endif
       wifi_ap_mode = false;
-      #ifdef WIFI_LED_PIN
-        ledOn(WIFI_LED_PIN);
+      #ifdef WIFI_AP_LED_PIN
+        ledOff(WIFI_AP_LED_PIN);
       #endif
       startingLights.setRowLights(wifiLedRows, wifiLedNumRows, BLUE);
     } else {
@@ -913,8 +913,8 @@ void setup() {
         Serial.println("WiFi: started AP mode");
       #endif
       wifi_ap_mode = true;
-      #ifdef WIFI_LED_PIN
-        ledOff(WIFI_LED_PIN);
+      #ifdef WIFI_AP_LED_PIN
+        ledOn(WIFI_AP_LED_PIN);
       #endif
       startingLights.setRowLights(wifiLedRows, wifiLedNumRows, BLUE);
     }
@@ -925,8 +925,8 @@ void setup() {
       Serial.println("WiFi: started AP mod");
     #endif
     wifi_ap_mode = true;
-    #ifdef WIFI_LED_PIN
-      ledOff(WIFI_LED_PIN);
+    #ifdef WIFI_AP_LED_PIN
+      ledOn(WIFI_AP_LED_PIN);
     #endif
     startingLights.runFlashLights(wifiLedRows, wifiLedNumRows, WIFI_FLAHS_INTERVAL, BLUE, -1);
   }

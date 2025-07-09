@@ -17,9 +17,9 @@ Standard ist der ESP32-Dev mit externer Antenne.
 
 ## Konfiguration über Web-Interface:
 <a href="http://RaceBox">http://RaceBox</a><br><br>
-<img src="./images/racebox-wifi-config.png"/><br>
-<img src="./images/racebox-smartrace-config.png"/><br>
-<img src="./images/racebox-ch-racing-club-config.png"/>
+<img src="./images/wifi-config.png"/><br>
+<img src="./images/smartrace-config.png"/><br>
+<img src="./images/ch-racing-club-config.png"/>
 <br><br>
 
 Als RFID-Leser wird ein R200 der Firma Inveton verwendet. Dieser kann z.B. über AliExpress bezogen werden und liegt inklusive einer 1dbi Antenne mit Versand aktuell bei ca. 50 Euro. 
@@ -76,13 +76,13 @@ WEBSOCKET LED (5V oder mit Vorwiderstand) - <--> ESP32 GPIO 4 (ESP32-DEV) / GPIO
 <img src="./images/ESP32C3_2.jpg"/>
 <br><br>
 
-# RaceBox-GhostCar
+# GhostCar
 Automatisches Starten/Stoppen des CH-Racers über SmartRace oder CH-Racing-Club.
 Es wird ein Game-Controller simuliert, der auf Events von SmartRace oder CH-Racing-Club reagiert. Die eingebaute RGB-LED des ESP32-S3 zeigt den aktiven Modus an.<br> Während der Startphase wird launch-control automatisch aktiviert.<br><br>Der genutzte ESP32-S3 mini kann bei Android Phones direkt als USB-GameController verwendet werden (#define ESP32S3) sowie als Bluetooth GameController für Android und IOs.<br>
 Wird ein ESP32-C3 genutzt so ist nur Bluetooth möglich!<br>
 Die defines können in der config.h entsprechend gesetzt werden.<br>
 
-Die Konfiguration des GhostCars erfolgt über das Webinterface <a href="http://RaceBox-GhostCar">http://racebox-ghostcar</a>
+Die Konfiguration des GhostCars erfolgt über das Webinterface <a href="http://GhostCar">http://ghostcar</a>
 <br><a href="./script-flasher/README.md">Flash-Anleitungen</a><br><br>
 ## Benötigte Hardware
 

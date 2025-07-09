@@ -8,9 +8,9 @@
 //#define STARTING_LIGHTS // define if you want to use the starting lights functionality
 
 #ifdef STARTING_LIGHTS
-  #define WIFI_DEFAULT_HOSTNAME "racebox-starting-lights"
+  #define WIFI_DEFAULT_HOSTNAME "starting-lights"
 #else
-  #define WIFI_DEFAULT_HOSTNAME "racebox-ghostcar"
+  #define WIFI_DEFAULT_HOSTNAME "ghostcar"
 #endif
 
 #define KEY_TURBO 3 // Turbo-Button at gamepad
@@ -34,7 +34,7 @@
   #define STOP_BUTTON_PIN 11 // optional - Stop button for ghostcar - should not be commented out!
   //#define SPEED_POT_PIN 3 // optional - Speed-Potentiometer for ghostcar speed
 #elif defined(ESP32C3)
-  #define WIFI_LED_PIN 8 // optional - LED is used for feedback
+  #define WIFI_AP_LED_PIN 8 // optional - LED is used for feedback
   #define WEBSOCKET_LED_PIN 9 // optional - LED is used for feedback
   #define START_BUTTON_PIN 6 // optional - Start button for ghostcar - should not be commented out!
   #define STOP_BUTTON_PIN 7 // optional - Stop button for ghostcar - should not be commented out!
