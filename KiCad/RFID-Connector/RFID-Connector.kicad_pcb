@@ -709,7 +709,7 @@
   (gr_line (start 168 75.5) (end 168 20) (layer "Edge.Cuts") (width 0.1) (tstamp d5ba9ffe-8ecd-44c3-8f46-85f18ba7ee1f))
   (gr_line (start 88 75.5) (end 88 20) (layer "Edge.Cuts") (width 0.1) (tstamp da633162-eae1-45e1-b7e1-ab4b1f69be52))
   (gr_circle (center 163 70.5) (end 164.5 70.5) (layer "Edge.Cuts") (width 0.1) (fill none) (tstamp dae4add8-1862-4dbd-8c28-2b5ebfa7934d))
-  (gr_text "RaceBox\nPCB 1.0" (at 105.45 32.725) (layer "F.SilkS") (tstamp 13b00391-2fdf-4d76-b54a-76d81d20c9a1)
+  (gr_text "RFID-Connector\nPCB 1.0" (at 107.95 35.56) (layer "F.SilkS") (tstamp 13b00391-2fdf-4d76-b54a-76d81d20c9a1)
     (effects (font (size 3 3) (thickness 0.75)))
   )
   (gr_text "R200" (at 105.41 59.69) (layer "F.SilkS") (tstamp 5aff3ee6-d55a-42ac-ba3e-3bb0c4cd6a8c)
