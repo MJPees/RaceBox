@@ -1166,7 +1166,7 @@ void loop() {
   if(isLedOn(RFID_LED_PIN) && (rfid_led_on_ms + RFID_LED_ON_TIME) < millis()) {
     ledOff(RFID_LED_PIN);
   }
-  #ifdef PUSH_BUTTON_LED_PIN
+  #ifdef PUSH_BUTTON_PIN
     if(digitalRead(PUSH_BUTTON_PIN) == LOW) {
       resetRfidStorage();
       while(digitalRead(PUSH_BUTTON_PIN) == LOW) {
