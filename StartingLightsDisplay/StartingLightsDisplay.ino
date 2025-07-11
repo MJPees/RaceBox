@@ -15,11 +15,11 @@
 #define WIFI_DEFAULT_HOSTNAME "starting-lights"
 #define PREFERENCES_NAMESPACE "racebox"
 
-#define VERSION "1.0.1" // dont forget to update the releases.json
+#define VERSION "1.0.2" // dont forget to update the releases.json
 //#define DEBUG
 
-#define WIFI_CONNECT_ATTEMPTS 20
-#define WIFI_CONNECT_DELAY_MS 500
+#define WIFI_CONNECT_ATTEMPTS 10
+#define WIFI_CONNECT_DELAY_MS 1000
 #define WEBSOCKET_PING_INTERVAL 5000
 
 #define RGB_LED_PIN 8 // Pin für RGB-LED
@@ -444,11 +444,20 @@ void handleSmartRaceUpdateEvent(String type, JsonDocument doc) {
     } else if (data == "running") {
       displayImage("/green_5.png");
     } else if (data == "suspended") {
-      yellowFlag();
+      redFlag();
     } else if (data == "ended") {
       finishRace();
     } else {
       displayImage("/off.png");
+    }
+  } else if(type == "update_vsc_status") {
+    String data = doc["data"].as<String>();
+    if (data == "active") {
+      currentStatus = "suspended";
+      yellowFlag();
+    } else if (data == "off") {
+      currentStatus = "running";
+      displayImage("/green_5.png");
     }
   } else if (type == "reset") {
     displayImage("/carrera_hybrid.png");
@@ -507,6 +516,19 @@ void yellowFlag() {
   }
   if(currentStatus != "suspended") return;
   displayImage("/yellow_5.png");
+}
+
+void redFlag() {
+  for (int i = 0; i < 4; ++i) {
+    if(currentStatus != "suspended") return;
+    displayImage("/red_5.png", true);
+    wait(300);
+    if(currentStatus != "suspended") return;
+    displayImage("/off.png", true);
+    wait(300);
+  }
+  if(currentStatus != "suspended") return;
+  displayImage("/red_5.png");
 }
 
 void finishRace() {
