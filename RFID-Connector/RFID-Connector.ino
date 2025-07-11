@@ -1075,12 +1075,16 @@ void setup() {
   preferences.begin(PREFERENCES_NAMESPACE, false);
 
   pinMode(RFID_LED_PIN, OUTPUT);
-  ledOff(RFID_LED_PIN);
+  ledOn(RFID_LED_PIN);
 
   pinMode(WEBSOCKET_LED_PIN, OUTPUT);
-  ledOff(WEBSOCKET_LED_PIN);
+  ledOn(WEBSOCKET_LED_PIN);
 
   pinMode(WIFI_AP_LED_PIN, OUTPUT);
+  ledOn(WIFI_AP_LED_PIN);
+  delay(1000);
+  ledOff(RFID_LED_PIN);
+  ledOff(WEBSOCKET_LED_PIN);
   ledOff(WIFI_AP_LED_PIN);
 
   #ifdef PUSH_BUTTON_PIN

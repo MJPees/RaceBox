@@ -856,10 +856,17 @@ void setup() {
 
   #ifdef WEBSOCKET_LED_PIN
     pinMode(WEBSOCKET_LED_PIN, OUTPUT);
-    ledOff(WEBSOCKET_LED_PIN);
+    ledOn(WEBSOCKET_LED_PIN);
   #endif
   #ifdef WIFI_AP_LED_PIN
     pinMode(WIFI_AP_LED_PIN, OUTPUT);
+    ledOn(WIFI_AP_LED_PIN);
+  #endif
+  delay(1000);
+  #ifdef WEBSOCKET_LED_PIN
+    ledOff(WEBSOCKET_LED_PIN);
+  #endif
+  #ifdef WIFI_AP_LED_PIN
     ledOff(WIFI_AP_LED_PIN);
   #endif
 
