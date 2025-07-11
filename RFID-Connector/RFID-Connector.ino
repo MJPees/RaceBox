@@ -38,10 +38,12 @@
       #define RFID_LED_PIN 32
       #define WEBSOCKET_LED_PIN 33
       #define WIFI_AP_LED_PIN 25
+      #define PUSH_BUTTON_PIN 23
     #else
       #define RFID_LED_PIN 2
       #define WEBSOCKET_LED_PIN 4
       #define WIFI_AP_LED_PIN 25
+      #define PUSH_BUTTON_PIN 23
     #endif
   #endif
 #elif defined(ESP32C3)
@@ -53,8 +55,8 @@
   #define WIFI_AP_LED_PIN 10
 #endif
 
-#define WIFI_CONNECT_ATTEMPTS 20
-#define WIFI_CONNECT_DELAY_MS 500
+#define WIFI_CONNECT_ATTEMPTS 10
+#define WIFI_CONNECT_DELAY_MS 1000
 #define WEBSOCKET_PING_INTERVAL 5000
 #define RFID_LED_ON_TIME 200
 

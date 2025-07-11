@@ -61,7 +61,7 @@ jobs:
 
       - name: Create Artifact Directory
         run: |
-          SUB_DIR="RFID-Connector-ESP32-DEV"
+          SUB_DIR="RFID-Connector-ESP32-DEV-PCB_V1.0"
           mkdir -p artifact_package/${SUB_DIR}/bin
           mkdir -p artifact_package/${SUB_DIR}/windows
           mkdir -p artifact_package/${SUB_DIR}/linux
@@ -70,7 +70,7 @@ jobs:
       - name: Move compiled binaries to Artifact Directory
         run: |
           BUILD_OUTPUT_DIR="build_output"
-          SUB_DIR="RFID-Connector-ESP32-DEV"
+          SUB_DIR="RFID-Connector-ESP32-DEV-PCB_V1.0"
           TARGET_BIN_DIR="./artifact_package/${SUB_DIR}/bin"
           INO_FILE="RFID-Connector.ino"
           find ./${BUILD_OUTPUT_DIR}/ -name "${INO_FILE}.bin" -exec mv {} ${TARGET_BIN_DIR}/ \;
@@ -80,7 +80,7 @@ jobs:
 
       - name: copy esptool and Flash Scripts to Artifact Package
         run: |
-          SUB_DIR="RFID-Connector-ESP32-DEV"
+          SUB_DIR="RFID-Connector-ESP32-DEV-PCB_V1.0"
           cp ./dev-tools/github-workflow-files/flasher/windows/ESP32-DEV_RFID-Connector.ps1 ./artifact_package/${SUB_DIR}/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/esptool.exe ./artifact_package/${SUB_DIR}/windows/
           cp ./dev-tools/github-workflow-files/flasher/windows/README.md ./artifact_package/${SUB_DIR}/windows/
