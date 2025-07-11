@@ -30,8 +30,8 @@ Joystick_BLE_ Joystick_BLE(PRODUCT_NAME);
                    false,false, false, true, true, false);
 #endif
 
-#define WIFI_CONNECT_ATTEMPTS 20
-#define WIFI_CONNECT_DELAY_MS 500
+#define WIFI_CONNECT_ATTEMPTS 10
+#define WIFI_CONNECT_DELAY_MS 1000
 #define WEBSOCKET_PING_INTERVAL 5000
 
 bool wifi_ap_mode = false;
