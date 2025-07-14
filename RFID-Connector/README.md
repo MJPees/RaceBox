@@ -47,9 +47,11 @@ optinaler Taster:<br>
 Der Taster wird an GND und Pin 23 (ESP32-DEV) angeschlossen.<br>
 
 ## Verwendung Adapter-Platine (Plug & Play):<br>
-
-<img src="../images/RFID-Connector_Platine_vorne.jpg"/>
-<img src="../images/RFID-Connector_Platine_hinten.jpg"/>
+<br>Prototyp:<br>
+<img src="../images/RFID-Connector_Platine_vorne.jpg" width=50vw/>
+<img src="../images/RFID-Connector_Platine_hinten.jpg" width=50vw/>
+<br>Finale Platine 1.0<br>
+<img src="../KiCad/RFID-Connector/RFID-Connector_Front.jpg" width=50vw/><img src="../KiCad/RFID-Connector/RFID-Connector_Back.jpg" width=50vw/>
 
 
 
@@ -58,7 +60,7 @@ Der Taster wird an GND und Pin 23 (ESP32-DEV) angeschlossen.<br>
 <img src="../images/Start_Ziel_Antenne.jpg"/>
 
 ## RFID-Aufkleber unter Carrera Hybrid Fahrzeugen
-<img src="../images/Sensoren_Auto.jpg"/>
+<img src="../images/Sensoren_Auto.jpg" max-height=33vh/>
 
 ## Darstellung in SmartRace
 <img src="../images/SmartRace.png"/>
