@@ -1,3 +1,4 @@
 local_artifacts/*
 .secrets
 dev-tools/github-workflow-files/flasher/osx/*
+KiCad/RFID-Connector/RFID-Connector-backups/*
