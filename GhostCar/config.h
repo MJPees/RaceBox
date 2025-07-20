@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define VERSION "1.3.0" // dont forget to update the releases.json
+#define VERSION "1.4.0" // dont forget to update the releases.json
 
 //#define DEBUG // enable debug output to Serial Monitor
 
@@ -66,10 +66,8 @@
   #define LED_ROWS 1
 
   const int websocketLedRows[] = {1};
-  #define WEBSOCKET_FLAHS_INTERVAL 200 // ms
 
   const int wifiLedRows[] =  {1};
-  #define WIFI_FLAHS_INTERVAL 200 // ms
 
   #define CH_RACING_CLUB_LEDS_COUNTDOWN_TIME 5000
   #define CH_RACING_CLUB_LEDS_FLASH_INTERVAL 500
@@ -91,10 +89,8 @@
   #define LED_ROWS 2
 
   const int websocketLedRows[] = {1, 2};
-  #define WEBSOCKET_FLAHS_INTERVAL 200 // ms
 
   const int wifiLedRows[] =  {1, 2};
-  #define WIFI_FLAHS_INTERVAL 200 // ms
 
   #define CH_RACING_CLUB_LEDS_COUNTDOWN_TIME 5000
   #define CH_RACING_CLUB_LEDS_FLASH_INTERVAL 500
@@ -116,10 +112,8 @@
   #define LED_ROWS 3
 
   const int websocketLedRows[] = {1, 3};
-  #define WEBSOCKET_FLAHS_INTERVAL 200 // ms
 
   const int wifiLedRows[] =  {1, 3};
-  #define WIFI_FLAHS_INTERVAL 200 // ms
 
   #define CH_RACING_CLUB_LEDS_COUNTDOWN_TIME 5000
   #define CH_RACING_CLUB_LEDS_FLASH_INTERVAL 500
@@ -141,10 +135,8 @@
   #define LED_ROWS 4
 
   const int websocketLedRows[] = {1, 4};
-  #define WEBSOCKET_FLAHS_INTERVAL 200 // ms
 
   const int wifiLedRows[] =  {1, 4};
-  #define WIFI_FLAHS_INTERVAL 200 // ms
 
   #define CH_RACING_CLUB_LEDS_COUNTDOWN_TIME 5000
   #define CH_RACING_CLUB_LEDS_FLASH_INTERVAL 300

@@ -19,5 +19,5 @@ Die Konfiguration des GhostCars erfolgt über das Webinterface <a href="http://G
  - optional ein Potentimeter (GND <-> Pin 3 <-> 3.3V)
  - optional für  StartingLight-LED 20 x WS2812B (5 x 4er Kette), <a href="../docs/StartingLights.dxf">Platine</a> zum Aufbau.
 <br><br>
-<img src="../images/CH-GhostCar-SmartRace.jpg" width=424/>
+<img src="../images/CH-GhostCar-SmartRace.jpg" width=424/><br>
 [<img src="../images/Video_GhostCar-StartingLights-Poti.png">](https://youtu.be/PwxAJHPKN4w)
