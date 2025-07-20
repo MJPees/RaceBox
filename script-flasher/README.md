@@ -13,7 +13,8 @@ Hier eine Übersicht der verschiedenen Firmware-Versionen:
 ### RFID-Connector
 
 Der **RFID-Connector** ist Ihr RFID-Empfänger zur präzisen Erfassung von Fahrzeugen und zur Übertragung der Zieldurchfahrten an SmartRace oder CH-Racing-Club.
-[RFID-Connector-ESP32-DEV.zip](./RFID-Connector-ESP32-DEV.zip)
+[RFID-Connector-ESP32-DEV.zip](./RFID-Connector-ESP32-DEV.zip)<br>
+[RFID-Connector-ESP32-DEV-PCB_V1.0.zip](./RFID-Connector-ESP32-DEV-PCB_V1.0.zip)
 
 -----
 
