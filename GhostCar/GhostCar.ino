@@ -89,7 +89,7 @@ const int smartraceStopLedNumRows = sizeof(smartraceStopLedRows) / sizeof(smartr
 const int smartraceYellowLedNumRows = sizeof(smartraceYellowLedRows) / sizeof(smartraceYellowLedRows[0]);
 const int smartraceCountdownLedNumRows = sizeof(smartraceCountdownLedRows) / sizeof(smartraceCountdownLedRows[0]);
 
-void configuration_save() {
+void configurationSave() {
   preferences.putString("target_system", targetSystem);
 
   preferences.putString("wifi_ssid", wifiSsid);
@@ -111,7 +111,7 @@ void configuration_save() {
   preferences.putInt("controller_id", controllerId);
 }
 
-void configuration_load() {
+void configurationLoad() {
   targetSystem = preferences.getString("target_system", "smart_race");
 
   wifiSsid = preferences.getString("wifi_ssid", "");
@@ -293,7 +293,7 @@ void handleConfig() {
         }
       #endif
     }
-    configuration_save();
+    configurationSave();
 
     server.send(200, "text/html", String("<!DOCTYPE html><html><head><title>") + PRODUCT_NAME + "</title></head><body><h1>Configuration saved!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + wifiHostname + "'; }, 2000);</script></body></html>");
     wait(500);
@@ -307,14 +307,14 @@ void handleConfig() {
     }
 
     if(reConnectWifi) {
-      wifi_reload();
+      wifiReload();
     }
   } else {
     server.send(200, "text/html", String("<!DOCTYPE html><html><head><title>")+ PRODUCT_NAME + "</title></head><body><h1>Invalid request!</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + wifiHostname + "'; }, 2000);</script></body></html>");
   }
 }
 
-void wifi_reload() {
+void wifiReload() {
   #ifdef ESP32C3
     Serial.println("WiFi: Initiating reload...");
   #endif
@@ -345,7 +345,7 @@ void wifi_reload() {
 
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
-    wait(WIFI_CONNECT_DELAY_MS);
+    waitForWifi(WIFI_CONNECT_DELAY_MS);
     #ifdef ESP32C3
       Serial.print(".");
     #endif
@@ -404,7 +404,7 @@ void connectWebsocket() {
   client.onEvent(onEventsCallback);
 
   #ifdef ESP32C3
-    Serial.print("Websocket: connecting ... ");
+    Serial.print("Websocket: connecting ");
     Serial.println(websocketServer);
   #endif
 
@@ -660,6 +660,15 @@ void wait(unsigned long waitTime) {
   }
 }
 
+void waitForWifi(unsigned long waitTime) {
+  unsigned long startWaitTime = millis();
+  while((millis() - startWaitTime) < waitTime) {
+    if(WiFi.status() == WL_CONNECTED) return; // exit if WiFi is connected
+    startingLights.updateLeds();
+    delay(10);
+  }
+}
+
 void activateLaunchControl() {
    #if defined(DEBUG) && defined(ESP32C3)
     Serial.println("INFO - activate launch control");
@@ -898,7 +907,7 @@ void setup() {
     Serial.println(" started.");
     Serial.println("############################");
   #endif
-  configuration_load();
+  configurationLoad();
 
   #ifdef ESP32C3
     Serial.println();
@@ -911,7 +920,7 @@ void setup() {
 
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
-      wait(WIFI_CONNECT_DELAY_MS);
+      waitForWifi(WIFI_CONNECT_DELAY_MS);
       #ifdef ESP32C3
         Serial.print(".");
       #endif

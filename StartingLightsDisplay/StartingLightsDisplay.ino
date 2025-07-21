@@ -15,7 +15,7 @@
 #define WIFI_DEFAULT_HOSTNAME "starting-lights"
 #define PREFERENCES_NAMESPACE "racebox"
 
-#define VERSION "1.0.2" // dont forget to update the releases.json
+#define VERSION "1.0.3" // dont forget to update the releases.json
 //#define DEBUG
 
 #define WIFI_CONNECT_ATTEMPTS 10
@@ -264,7 +264,7 @@ void wifi_reload() {
 
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
-    wait(WIFI_CONNECT_DELAY_MS);
+    waitForWifi(WIFI_CONNECT_DELAY_MS);
     Serial.print(".");
     attempts++;
   }
@@ -590,6 +590,14 @@ void wait(unsigned long waitTime) {
   }
 }
 
+void waitForWifi(unsigned long waitTime) {
+  unsigned long startWaitTime = millis();
+  while((millis() - startWaitTime) < waitTime) {
+    if(WiFi.status() == WL_CONNECTED) return; // exit if WiFi is connected
+    delay(10);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   wait(2000);
@@ -632,7 +640,7 @@ void setup() {
 
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < WIFI_CONNECT_ATTEMPTS) {
-      wait(WIFI_CONNECT_DELAY_MS);
+      waitForWifi(WIFI_CONNECT_DELAY_MS);
       Serial.print(".");
       attempts++;
     }
