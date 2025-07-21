@@ -4,7 +4,7 @@ Es wird ein Game-Controller simuliert, der auf Events von SmartRace oder CH-Raci
 Wird ein ESP32-C3 genutzt so ist nur Bluetooth möglich!<br>Das GhostCar gibt es in verschiedenen Ausbau-Varianten. NUR ESP32, ESP32 mit zwei Tastern zum starten und stoppen und einem optionalen Potentimeter zur Änderung der Geschwindigkeit des GhostCars (ersetzt Geschwindigkeitsangabe im Webinterface).
 
 Die Konfiguration des GhostCars erfolgt über das Webinterface <a href="http://GhostCar">http://ghostcar</a>
-<br><br><a href="./script-flasher/README.md">Flash-Anleitungen</a><br><br>
+<br><br><a href="../script-flasher/README.md">Flash-Anleitungen</a><br><br>
 ## Benötigte Hardware
 
 - ESP32-S3 mini (Waveshare) oder ESP32C3 (nur Bluetooth)

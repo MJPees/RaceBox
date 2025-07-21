@@ -10,7 +10,7 @@ Die Ids der RFID-Chips für Controller 1-8 werden bei neu erkannten IDs automati
 Die optionale ID2 pro Controller muss für Team-Rennen im Webinterface ausgefüllt werden.<br><br>
 
 
-<a href="./script-flasher/README.md">Flash-Anleitungen</a>
+<a href="../script-flasher/README.md">Flash-Anleitungen</a>
 
 Als RFID-Leser wird ein R200 der Firma Inveton verwendet. Dieser kann z.B. über AliExpress bezogen werden und liegt inklusive einer 1dbi Antenne mit Versand aktuell bei ca. 50 Euro. 
 Des Weiteren wird ein ESP32 benötigt.
