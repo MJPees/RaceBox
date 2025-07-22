@@ -380,7 +380,7 @@ void handleWriteEpc() {
     int newEpcId = server.arg("new_epc_id").toInt();
     if (newEpcId >= 0 && newEpcId <= 255) {
       if(writeRfidEpc(newEpcId)) {
-        server.send(200, "text/plain", "EPC ID updated successfully.");
+        server.send(200, "text/html", "<!DOCTYPE html><html><head><title>Label-Writer</title></head><body><h1 align=center>EPC ID updated successfully.</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + wifiHostname + "/label-writer'; }, 2000);</script></body></html>");
       }
       else {
         server.send(200, "text/html", "<!DOCTYPE html><html><head><title>Label-Writer</title></head><body><h1 align=center>Could not write EPC ID.</h1><p>You will be redirected in 2 seconds.</p><script>setTimeout(function() { window.location.href = 'http://" + wifiHostname + "/label-writer'; }, 2000);</script></body></html>");
@@ -1030,7 +1030,7 @@ bool readRfid() {
       #endif
     }
   }
-  return false:
+  return false;
 }
 
 void resetRfidData() {
@@ -1223,6 +1223,7 @@ bool writeRfidEpc(int newEpcId) {
           wait(200);
           ledOff(RFID_LED_PIN);
           ledOff(WEBSOCKET_LED_PIN);
+          SerialRFID.write(ReadMulti,10);
           return true; // Successfully wrote EPC
       } else {
           Serial.println("Could not write EPC to label.");
@@ -1230,6 +1231,7 @@ bool writeRfidEpc(int newEpcId) {
   } else {
     Serial.println("Failed to send select command.");
   }
+  SerialRFID.write(ReadMulti,10);
   return false; // Failed to write EPC
 }
 
