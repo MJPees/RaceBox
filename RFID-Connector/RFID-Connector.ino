@@ -1012,6 +1012,7 @@ void readRfid() {
       #ifdef DEBUG
         Serial.println("Restart ReadMulti");
       #endif
+      /*
       if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
         #ifdef DEBUG
           Serial.println("RFID: stopped ReadMulti.");
@@ -1020,10 +1021,10 @@ void readRfid() {
         #ifdef DEBUG
           Serial.println("RFID: failed to stop ReadMulti.");
         #endif
-      }
+      }*/
       SerialRFID.write(ReadMulti,10);
       #ifdef DEBUG
-        Serial.println("RFID: started ReadMulti.");
+        Serial.println("RFID: restarted ReadMulti.");
       #endif
     }
   }
