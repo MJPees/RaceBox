@@ -111,6 +111,7 @@ String lastEpcString = "";
 unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
 unsigned long RfidLedOnMs = 0;
+bool readTag = false;
 
 int minLapTime = DEFAULT_MIN_LAP_TIME;
 
@@ -941,7 +942,7 @@ void readDataBytes(unsigned char *dataBytes, int dataLength) {
   dataCheckSum = (dataCheckSum & 0xFF);
 }
 
-void readRfid() {
+bool readRfid() {
   parameterLength = 0;
   if(SerialRFID.available() > 0)
   {
@@ -986,6 +987,7 @@ void readRfid() {
           else if(messageType == 0x02) {
             if(command == 0x22) {
               processLabelData(dataBytes);
+              return true;
             }
           }
           #ifdef DEBUG
@@ -1028,6 +1030,7 @@ void readRfid() {
       #endif
     }
   }
+  return false:
 }
 
 void resetRfidData() {
@@ -1347,28 +1350,31 @@ void setup() {
 
 void loop() {
   server.handleClient();
-  readRfid();
+  readTag = readRfid();
   client.poll();
-  if(websocketConnected) {
-    if(millis() > (websocketLastPing + WEBSOCKET_PING_INTERVAL)) {
+  if(!readTag) {
+    if(!websocketConnected){
+      if(!wifiApMode) connectWebsocket();
+    }
+    else if(millis() > (websocketLastPing + WEBSOCKET_PING_INTERVAL)) {
       websocketLastPing = millis();
       client.ping();
     }
-  }
-  else {
-    if(!wifiApMode) connectWebsocket();
-  }
-  if(isLedOn(RFID_LED_PIN) && (RfidLedOnMs + RFID_LED_ON_TIME) < millis()) {
-    ledOff(RFID_LED_PIN);
-  }
-  #ifdef PUSH_BUTTON_PIN
-    if(digitalRead(PUSH_BUTTON_PIN) == LOW) {
-      resetRfidStorage();
-      while(digitalRead(PUSH_BUTTON_PIN) == LOW) {
-        ledOn(RFID_LED_PIN);
-        wait(100);
-      }
+    else if(isLedOn(RFID_LED_PIN) && (RfidLedOnMs + RFID_LED_ON_TIME) < millis()) {
       ledOff(RFID_LED_PIN);
     }
-  #endif
+    #ifdef PUSH_BUTTON_PIN
+      else {
+        
+          if(digitalRead(PUSH_BUTTON_PIN) == LOW) {
+            resetRfidStorage();
+            while(digitalRead(PUSH_BUTTON_PIN) == LOW) {
+              ledOn(RFID_LED_PIN);
+              wait(100);
+            }
+            ledOff(RFID_LED_PIN);
+          }
+      }
+    #endif
+  }
 }
