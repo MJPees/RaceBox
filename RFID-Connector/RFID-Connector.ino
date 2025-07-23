@@ -65,6 +65,8 @@
 #define RFID_MAX_COUNT 8
 #define RFID_STORAGE_COUNT 2
 
+#define debounceDelay 50
+
 const unsigned char ReadMulti[10] = {0XAA,0X00,0X27,0X00,0X03,0X22,0XFF,0XFF,0X4A,0XDD};
 const unsigned char StopReadMultiResponse[8] = {0xAA,0x01,0x28,0x00,0x01,0x00,0x2A,0xDD};
 const unsigned char StopReadMulti[7] = {0XAA,0X00,0X28,0X00,0X00,0X28,0XDD};
@@ -111,7 +113,10 @@ String lastEpcString = "";
 unsigned long lastEpcRead = 0;
 unsigned long lastRestart = 0;
 unsigned long RfidLedOnMs = 0;
+unsigned long lastButtonChange = 0;
+unsigned long now = 0;
 bool readTag = false;
+bool buttonWasPressed = false;
 
 int minLapTime = DEFAULT_MIN_LAP_TIME;
 
@@ -154,8 +159,6 @@ struct rfid_data {
   unsigned long last;
 };
 rfid_data rfids[RFID_MAX_COUNT];
-
-String rfidString = "";
 
 unsigned long lastResetTime = 0;
 
@@ -534,10 +537,11 @@ void wifiReload() {
 }
 
 void connectWebsocket() {
-  if (millis() - websocketLastAttempt < websocketBackoff) {
+  now = millis();
+  if (now - websocketLastAttempt < websocketBackoff) {
     return; // wait until backoff time is reached
   }
-  websocketLastAttempt = millis();
+  websocketLastAttempt = now;
 
   client = WebsocketsClient(); // Überschreibt das alte Objekt
 
@@ -606,11 +610,20 @@ void sendFinishLineMessage(int controller_id, unsigned long timestamp, String rf
   // send the message via websocket
   char output[256];
   serializeJson(doc, output);
-  client.send(output);
+  if(websocketConnected) {
+    client.send(output);
+  } else {
+    #ifndef DEBUG
+      Serial.print("Websocket is not connected!: ");
+      Serial.println(output);
+    #endif
+  }
 
   // print the message to the serial console
-  Serial.print("Websocket: ");
-  Serial.println(output);
+  #ifdef DEBUG
+    Serial.print("Websocket: ");
+    Serial.println(output);
+  #endif
 }
 
 void sendFinishLineEvent(String rfidString, unsigned long ms) {
@@ -702,13 +715,14 @@ void waitForWifi(unsigned long waitTime) {
 
 void resetRfidStorage() {
   char nameBuf[20];
+  now = millis();
   for(int i=0; i < RFID_MAX_COUNT; i++) {
     for(int j=0; j<RFID_STORAGE_COUNT; j++) {
       rfids[i].id[j] = "";
     }
     snprintf(nameBuf, sizeof(nameBuf), "Controller %d", i+1);
     rfids[i].name = nameBuf;
-    rfids[i].last = millis();
+    rfids[i].last = now;
   }
 }
 
@@ -944,7 +958,7 @@ void readDataBytes(unsigned char *dataBytes, int dataLength) {
 
 bool readRfid() {
   parameterLength = 0;
-  if(SerialRFID.available() > 0)
+  while(SerialRFID.available() > 0)
   {
     rfidSerialByte = SerialRFID.read();
     if(!startByte && (rfidSerialByte == 0xAA)) {
@@ -1009,8 +1023,9 @@ bool readRfid() {
     }
   }
   else {
-    if ((lastRestart + RFID_RESTART_TIME) < millis()) {
-      lastRestart = millis();
+    now = millis();
+    if ((lastRestart + RFID_RESTART_TIME) < now) {
+      lastRestart = now;
       #ifdef DEBUG
         Serial.println("Restart ReadMulti");
       #endif
@@ -1085,7 +1100,7 @@ void checkRfid(unsigned char epcBytes[]) {
   buffer[24] = '\0'; // Nullterminator am Ende hinzufügen
   String epcString(buffer);
 
-  unsigned long now = millis();
+  now = millis();
   if (epcString != lastEpcString || (lastEpcRead + RFID_REPEAT_TIME) < now) {
     sendFinishLineEvent(epcString, now);
     lastEpcString = epcString;
@@ -1093,7 +1108,7 @@ void checkRfid(unsigned char epcBytes[]) {
   }
 }
 
-bool writeRfidEpc(int newEpcId) {
+bool writeRfidEpc(const int newEpcId) {
   readRfid();
   if (lastEpcString.length() % 2 != 0 && lastEpcString.length() / 2 != 12) {
     return false;
@@ -1109,7 +1124,6 @@ bool writeRfidEpc(int newEpcId) {
   }
 
   Serial.println("Writing new EPC...");
-  //this is wrong...  epcBytes[24] = newEpcId & 0xFF; // Set new EPC ID in the last byte of the EPC
   //Set Select parameter 
   unsigned char selectCommand[26];
   selectCommand[0] = 0xAA; // Header
@@ -1235,34 +1249,26 @@ bool writeRfidEpc(int newEpcId) {
   return false; // Failed to write EPC
 }
 
-bool isLedOn(int led_pin) {
-  #ifdef INVERT_LEDS
-    if (digitalRead(led_pin) == HIGH) {
-      return true;
-    }
-  #else
-    if (digitalRead(led_pin) == LOW) {
-      return true;
-    }
-  #endif
-  return false;
-}
-
-void ledOn(int led_pin) {
+void ledOn(const int led_pin) {
   #ifdef INVERT_LEDS
     digitalWrite(led_pin, HIGH);
   #else
     digitalWrite(led_pin, LOW);
   #endif
-  RfidLedOnMs = millis();
+  if(led_pin == RFID_LED_PIN) {
+    RfidLedOnMs = millis();
+  }
 }
 
-void ledOff(int led_pin) {
+void ledOff(const int led_pin) {
   #ifdef INVERT_LEDS
     digitalWrite(led_pin, LOW);
   #else
     digitalWrite(led_pin, HIGH);
   #endif
+  if(led_pin == RFID_LED_PIN) {
+    RfidLedOnMs = 0;
+  }
 }
 
 void setup() {
@@ -1354,28 +1360,33 @@ void loop() {
   server.handleClient();
   readTag = readRfid();
   client.poll();
+  now = millis();
+
+  if(!websocketConnected){
+    if(!wifiApMode) connectWebsocket();
+  }
+  else if(now > (websocketLastPing + WEBSOCKET_PING_INTERVAL)) {
+    websocketLastPing = now;
+    client.ping();
+  }
+
   if(!readTag) {
-    if(!websocketConnected){
-      if(!wifiApMode) connectWebsocket();
-    }
-    else if(millis() > (websocketLastPing + WEBSOCKET_PING_INTERVAL)) {
-      websocketLastPing = millis();
-      client.ping();
-    }
-    else if(isLedOn(RFID_LED_PIN) && (RfidLedOnMs + RFID_LED_ON_TIME) < millis()) {
+    if((RfidLedOnMs > 0) && (RfidLedOnMs + RFID_LED_ON_TIME) < now) {
       ledOff(RFID_LED_PIN);
     }
     #ifdef PUSH_BUTTON_PIN
-      else {
-        
-          if(digitalRead(PUSH_BUTTON_PIN) == LOW) {
-            resetRfidStorage();
-            while(digitalRead(PUSH_BUTTON_PIN) == LOW) {
-              ledOn(RFID_LED_PIN);
-              wait(100);
-            }
-            ledOff(RFID_LED_PIN);
-          }
+      if(digitalRead(PUSH_BUTTON_PIN) == LOW) {
+        if(!buttonWasPressed  && now - lastButtonChange > debounceDelay) {
+          buttonWasPressed = true;
+          resetRfidStorage();
+          ledOn(RFID_LED_PIN);
+        }
+      } else {
+        if(buttonWasPressed && now - lastButtonChange > debounceDelay) {
+          buttonWasPressed = false;
+          lastButtonChange = now;
+          ledOff(RFID_LED_PIN);
+        }
       }
     #endif
   }
