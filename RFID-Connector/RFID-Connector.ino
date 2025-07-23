@@ -542,6 +542,7 @@ void connectWebsocket() {
     return; // wait until backoff time is reached
   }
   websocketLastAttempt = now;
+  setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8);
 
   client = WebsocketsClient(); // Überschreibt das alte Objekt
 
@@ -585,6 +586,7 @@ void connectWebsocket() {
       websocketBackoff = 3000; // set backoff time for SmartRace
     }
   }
+  SerialRFID.write(ReadMulti,10);
 }
 
 void sendFinishLineMessage(int controller_id, unsigned long timestamp, String rfidString) {
