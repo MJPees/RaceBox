@@ -1022,28 +1022,26 @@ bool readRfid() {
       resetRfidData();
     }
   }
-  else {
-    now = millis();
-    if ((lastRestart + RFID_RESTART_TIME) < now) {
-      lastRestart = now;
+  now = millis();
+  if ((lastRestart + RFID_RESTART_TIME) < now) {
+    lastRestart = now;
+    #ifdef DEBUG
+      Serial.println("Restart ReadMulti");
+    #endif
+    /*
+    if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
       #ifdef DEBUG
-        Serial.println("Restart ReadMulti");
+        Serial.println("RFID: stopped ReadMulti.");
       #endif
-      /*
-      if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
-        #ifdef DEBUG
-          Serial.println("RFID: stopped ReadMulti.");
-        #endif
-      } else {
-        #ifdef DEBUG
-          Serial.println("RFID: failed to stop ReadMulti.");
-        #endif
-      }*/
-      SerialRFID.write(ReadMulti,10);
+    } else {
       #ifdef DEBUG
-        Serial.println("RFID: restarted ReadMulti.");
+        Serial.println("RFID: failed to stop ReadMulti.");
       #endif
-    }
+    }*/
+    SerialRFID.write(ReadMulti,10);
+    #ifdef DEBUG
+      Serial.println("RFID: restarted ReadMulti.");
+    #endif
   }
   return false;
 }
