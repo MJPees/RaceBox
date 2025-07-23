@@ -943,6 +943,8 @@ void setup() {
         rgbLedWrite(RGB_LED_PIN, 200, 200, 200);
       #endif
     } else {
+      WiFi.disconnect(true);
+      wait(500);
       #ifdef ESP32C3
         Serial.println("\nWiFi: connection failed!");
       #endif

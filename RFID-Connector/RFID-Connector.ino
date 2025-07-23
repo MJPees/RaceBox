@@ -1326,6 +1326,8 @@ void setup() {
       wifiApMode = false;
       ledOff(WIFI_AP_LED_PIN);
     } else {
+      WiFi.disconnect(true);
+      wait(500);
       Serial.println("\nWiFi: connection failed!");
       WiFi.softAP(WIFI_AP_SSID);
       dnsServer.start();

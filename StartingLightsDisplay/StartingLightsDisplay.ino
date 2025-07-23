@@ -652,6 +652,8 @@ void setup() {
       Serial.println(WiFi.getHostname());
       wifi_ap_mode = false;
     } else {
+      WiFi.disconnect(true);
+      wait(500);
       Serial.println("\nWiFi: connection failed!");
       WiFi.softAP(WIFI_AP_SSID);
       dnsServer.start();
