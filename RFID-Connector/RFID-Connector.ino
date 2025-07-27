@@ -370,7 +370,7 @@ void handleLabelWriter() {
   html += "<div style=\"text-align: center; margin-bottom:20px;\">";
   html += "<a href=\"http://" + wifiHostname + "\">RFID-Connector</a><br>";
   html += "</div>";
-  html += "<label for='new_epc_id'>Current EPC:</label>";
+  html += "<label for='new_epc_id'>New EPC:</label>";
   html += "<input type='number' id='new_epc_id' name='new_epc_id' value=" + String(newEpcId) +" min='0' max='255'><br>";
   html += "<input type='submit' style='margin-bottom:20px;' value='write EPC'>";
   html += "</form>";
@@ -613,6 +613,7 @@ void sendFinishLineMessage(int controller_id, unsigned long timestamp, String rf
   char output[256];
   serializeJson(doc, output);
   if(websocketConnected) {
+    ledOn(RFID_LED_PIN);
     client.send(output);
   } else {
     #ifndef DEBUG
@@ -634,7 +635,6 @@ void sendFinishLineEvent(String rfidString, unsigned long ms) {
     for (int i = 0; i < RFID_MAX_COUNT; i++) {
       if(rfids[i].id[j] == rfidString) {
         if(rfids[i].last + minLapTime < ms) {
-          ledOn(RFID_LED_PIN);
           sendFinishLineMessage(i, ms, rfidString);
         }
         found = true;
@@ -653,7 +653,6 @@ void sendFinishLineEvent(String rfidString, unsigned long ms) {
         Serial.print(i+1);
         Serial.print(rfids[i].id[0]);
         Serial.println();
-        ledOn(RFID_LED_PIN);
         sendFinishLineMessage(i, ms, rfidString);
         break;
       }
