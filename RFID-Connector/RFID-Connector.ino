@@ -958,6 +958,7 @@ void readDataBytes(unsigned char *dataBytes, int dataLength) {
 }
 
 bool readRfid() {
+  readTag = false;
   parameterLength = 0;
   while(SerialRFID.available() > 0)
   {
@@ -1002,7 +1003,7 @@ bool readRfid() {
           else if(messageType == 0x02) {
             if(command == 0x22) {
               processLabelData(dataBytes);
-              return true;
+              readTag = true;
             }
           }
           #ifdef DEBUG
@@ -1023,28 +1024,20 @@ bool readRfid() {
       resetRfidData();
     }
   }
-  now = millis();
-  if ((lastRestart + RFID_RESTART_TIME) < now) {
-    lastRestart = now;
-    #ifdef DEBUG
-      Serial.println("Restart ReadMulti");
-    #endif
-    /*
-    if(setReaderSetting(StopReadMulti, 7, StopReadMultiResponse, 8)) {
+  if(!readTag) {
+    now = millis();
+    if ((lastRestart + RFID_RESTART_TIME) < now) {
+      lastRestart = now;
       #ifdef DEBUG
-        Serial.println("RFID: stopped ReadMulti.");
+        Serial.println("Restart ReadMulti");
       #endif
-    } else {
+      SerialRFID.write(ReadMulti,10);
       #ifdef DEBUG
-        Serial.println("RFID: failed to stop ReadMulti.");
+        Serial.println("RFID: restarted ReadMulti.");
       #endif
-    }*/
-    SerialRFID.write(ReadMulti,10);
-    #ifdef DEBUG
-      Serial.println("RFID: restarted ReadMulti.");
-    #endif
+    }
   }
-  return false;
+  return readTag;
 }
 
 void resetRfidData() {
