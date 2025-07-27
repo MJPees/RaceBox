@@ -15,7 +15,7 @@
 #define WIFI_DEFAULT_HOSTNAME "starting-lights"
 #define PREFERENCES_NAMESPACE "racebox"
 
-#define VERSION "1.0.3" // dont forget to update the releases.json
+#define VERSION "1.0.4" // dont forget to update the releases.json
 //#define DEBUG
 
 #define WIFI_CONNECT_ATTEMPTS 10
