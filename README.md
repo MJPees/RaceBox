@@ -7,7 +7,8 @@ Die **RaceCollection** ist ein System für den Miniatur-Automobilsport, das vers
 ### RFID-Connector
 
 Der **RFID-Connector** fungiert als RFID-Empfänger. Er erfasst Fahrzeuge präzise und übermittelt die Zieldurchfahrten an Rennmanagement-Software wie **SmartRace** oder **CH-Racing-Club**.<br><br>
-<a href="./RFID-Connector/README.md">Zum RFID-Connector</a>
+<a href="./RFID-Connector/README.md">Zum RFID-Connector</a><br><br>
+<img src="./images/RFID-Connector_Platine_vorne.jpg" width=300px/>
 
 -----
 

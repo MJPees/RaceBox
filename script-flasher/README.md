@@ -12,9 +12,11 @@ Hier eine Übersicht der verschiedenen Firmware-Versionen:
 
 ### RFID-Connector
 
-Der **RFID-Connector** ist Ihr RFID-Empfänger zur präzisen Erfassung von Fahrzeugen und zur Übertragung der Zieldurchfahrten an SmartRace oder CH-Racing-Club.
+Der **RFID-Connector** ist Ihr RFID-Empfänger zur präzisen Erfassung von Fahrzeugen und zur Übertragung der Zieldurchfahrten an SmartRace oder CH-Racing-Club.<br><br>
 [RFID-Connector-ESP32-DEV.zip](./RFID-Connector-ESP32-DEV.zip)<br>
 [RFID-Connector-ESP32-DEV-PCB_V1.0.zip](./RFID-Connector-ESP32-DEV-PCB_V1.0.zip)
+
+<img src="../images/RFID-Connector_Platine_vorne.jpg" width=300px/>
 
 -----
 
@@ -66,6 +68,7 @@ Eine optisch ansprechende Startampel, einfach zu bauen, basierend auf einem ESP3
 -----
 
 ### RFID-Label-Writer
+<font color="red">Label/Tags können jetzt auch direkt mit dem RFID-Connector geschrieben werden!</font>
 
 Mit dem **RFID-Label-Writer** können Sie neue RFID-Tags mit einer einmalig neuen ID beschreiben. Die Firmware kann temporär auf den RFID-Connector aufgespielt werden. Ziehen Sie anschließend alle Tags **nacheinander** einmal über die Antenne. Die IDs werden ab 1 mit jedem Tag hochgezählt und sind somit eindeutig.
 
