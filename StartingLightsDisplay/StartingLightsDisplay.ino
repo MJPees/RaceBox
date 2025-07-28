@@ -15,7 +15,7 @@
 #define WIFI_DEFAULT_HOSTNAME "starting-lights"
 #define PREFERENCES_NAMESPACE "racebox"
 
-#define VERSION "1.0.3" // dont forget to update the releases.json
+#define VERSION "1.0.4" // dont forget to update the releases.json
 //#define DEBUG
 
 #define WIFI_CONNECT_ATTEMPTS 10
@@ -652,6 +652,8 @@ void setup() {
       Serial.println(WiFi.getHostname());
       wifi_ap_mode = false;
     } else {
+      WiFi.disconnect(true);
+      wait(500);
       Serial.println("\nWiFi: connection failed!");
       WiFi.softAP(WIFI_AP_SSID);
       dnsServer.start();

@@ -47,12 +47,11 @@ optinaler Taster:<br>
 Der Taster wird an GND und Pin 23 (ESP32-DEV) angeschlossen.<br>
 
 ## Verwendung Adapter-Platine (Plug & Play):<br>
-<br>Prototyp:<br>
+Platinen können auf Anfrage zum Selbstkostenpreis bezogen werden.
+
 <img src="../images/RFID-Connector_Platine_vorne.jpg" width=300px/>
 <img src="../images/RFID-Connector_Platine_hinten.jpg" width=300px/>
-<br>Finale Platine 1.0<br>
 <img src="../KiCad/RFID-Connector/RFID-Connector_Front.jpg" width=300px/><img src="../KiCad/RFID-Connector/RFID-Connector_Back.jpg" width=300px/>
-
 
 
 ## Montage der 1dbi Antenne als Brücke über Start/Ziel:
